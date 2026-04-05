@@ -17,6 +17,14 @@ import html2canvas from 'html2canvas';
 /* ─── Types ─── */
 interface Point { x: number; y: number; }
 
+interface Task {
+  id: string;
+  text: string;
+  done: boolean;
+  assignee: string;
+  createdAt: string;
+}
+
 interface PlacedItem {
   id: string;
   equipmentId?: string;
@@ -304,7 +312,7 @@ export default function DesignStudio() {
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // Right panel
-  const [rightPanelTab, setRightPanelTab] = useState<'catalog' | 'properties' | 'notes'>('catalog');
+  const [rightPanelTab, setRightPanelTab] = useState<'catalog' | 'properties' | 'notes' | 'info'>('catalog');
   const [catalogSearch, setCatalogSearch] = useState('');
   const [catalogCategory, setCatalogCategory] = useState('');
   const [trayDragItem, setTrayDragItem] = useState<any>(null);
@@ -314,6 +322,11 @@ export default function DesignStudio() {
   const [showMobileProps, setShowMobileProps] = useState(false);
   const [selectedVertex, setSelectedVertex] = useState<number | null>(null);
   const [notes, setNotes] = useState<string>(saved?.notes || '');
+  const [description, setDescription] = useState<string>(saved?.description || '');
+  const [pricePerM2, setPricePerM2] = useState<number>(saved?.pricePerM2 || 0);
+  const [tasks, setTasks] = useState<Task[]>(saved?.tasks || []);
+  const [newTaskText, setNewTaskText] = useState('');
+  const [newTaskAssignee, setNewTaskAssignee] = useState('');
   const [pdfExporting, setPdfExporting] = useState(false);
   const canvasWrapRef = useRef<HTMLDivElement>(null);
 
@@ -357,9 +370,12 @@ export default function DesignStudio() {
         roomPolygon,
         wallOpenings,
         notes,
+        description,
+        pricePerM2,
+        tasks,
       }));
     } catch {}
-  }, [placedItems, roomWidthCm, roomHeightCm, roomShape, roomPolygon, wallOpenings, notes, storageKey]);
+  }, [placedItems, roomWidthCm, roomHeightCm, roomShape, roomPolygon, wallOpenings, notes, description, pricePerM2, tasks, storageKey]);
 
   // Catalog items
   const getCatalogItems = useCallback(() => {
@@ -660,6 +676,18 @@ export default function DesignStudio() {
     if (draggingVertex !== null) {
       let px = coords.x, py = coords.y;
       if (snapToGrid) { px = snapVal(px, gridSize); py = snapVal(py, gridSize); }
+      // Snap to nearby vertex for merging
+      const MERGE_DIST = 15 / zoom;
+      let snapped = false;
+      for (let i = 0; i < roomPolygon.length; i++) {
+        if (i === draggingVertex) continue;
+        if (distancePP({ x: px, y: py }, roomPolygon[i]) < MERGE_DIST) {
+          px = roomPolygon[i].x;
+          py = roomPolygon[i].y;
+          snapped = true;
+          break;
+        }
+      }
       setRoomPolygon(prev => prev.map((p, i) => i === draggingVertex ? { x: px, y: py } : p));
       return;
     }
@@ -682,7 +710,25 @@ export default function DesignStudio() {
   };
 
   const handleCanvasMouseUp = () => {
-    if (draggingVertex !== null) { setDraggingVertex(null); return; }
+    if (draggingVertex !== null) {
+      // Merge vertices that are on top of each other
+      const MERGE_DIST = 15 / zoom;
+      const draggedPt = roomPolygon[draggingVertex];
+      let mergeTarget = -1;
+      for (let i = 0; i < roomPolygon.length; i++) {
+        if (i === draggingVertex) continue;
+        if (distancePP(draggedPt, roomPolygon[i]) < MERGE_DIST) {
+          mergeTarget = i;
+          break;
+        }
+      }
+      if (mergeTarget !== -1 && roomPolygon.length > 3) {
+        // Remove the dragged vertex (merge it into target)
+        setRoomPolygon(prev => prev.filter((_, i) => i !== draggingVertex));
+      }
+      setDraggingVertex(null);
+      return;
+    }
     if (draggingId) { saveHistory(placedItems); setDraggingId(null); }
     setIsPanning(false);
   };
@@ -1126,6 +1172,7 @@ export default function DesignStudio() {
                           strokeWidth={2 / zoom}
                           style={{ cursor: 'move' }}
                           onMouseDown={(e) => { e.stopPropagation(); setDraggingVertex(i); setSelectedVertex(i); }}
+                          onDoubleClick={(e) => { e.stopPropagation(); deleteVertex(i); }}
                         />
                         <text cx={p.x} cy={p.y} textAnchor="middle" dominantBaseline="central"
                           fontSize={6 / zoom} fill={isVSel ? 'white' : '#3b82f6'} fontWeight="bold" style={{ pointerEvents: 'none' }}>
@@ -1367,9 +1414,10 @@ export default function DesignStudio() {
       {/* Right Panel */}
       <aside className="w-72 xl:w-80 bg-white border-l border-slate-200 flex flex-col shrink-0 hidden lg:flex" style={{ height: 'calc(100vh - 3.5rem)' }}>
         <div className="flex border-b border-slate-200 shrink-0">
-          <button onClick={() => setRightPanelTab('catalog')} className={`flex-1 py-2.5 text-[11px] font-bold text-center transition-all ${rightPanelTab === 'catalog' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Ekipman</button>
-          <button onClick={() => setRightPanelTab('properties')} className={`flex-1 py-2.5 text-[11px] font-bold text-center transition-all ${rightPanelTab === 'properties' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Özellikler</button>
-          <button onClick={() => setRightPanelTab('notes')} className={`flex-1 py-2.5 text-[11px] font-bold text-center transition-all ${rightPanelTab === 'notes' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Notlar</button>
+          <button onClick={() => setRightPanelTab('catalog')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'catalog' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Ekipman</button>
+          <button onClick={() => setRightPanelTab('properties')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'properties' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Özellik</button>
+          <button onClick={() => setRightPanelTab('info')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'info' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Görevler</button>
+          <button onClick={() => setRightPanelTab('notes')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'notes' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Notlar</button>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -1524,6 +1572,170 @@ export default function DesignStudio() {
               {catalogItems.length === 0 && (
                 <div className="text-center py-8 text-slate-400"><Package size={28} className="mx-auto mb-2 opacity-40" /><p className="text-xs font-medium">Urun bulunamadi</p></div>
               )}
+            </div>
+          )}
+
+          {rightPanelTab === 'info' && (
+            <div className="p-3 space-y-4">
+              {/* Area stats */}
+              <div className="bg-slate-50 rounded-xl p-3 space-y-2 border border-slate-200">
+                <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Alan Hesabı</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white rounded-lg p-2.5 text-center border border-slate-200">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Oda Alanı</div>
+                    <div className="text-lg font-black text-primary">{roomAreaM2}<span className="text-[10px] ml-0.5">m²</span></div>
+                  </div>
+                  <div className="bg-white rounded-lg p-2.5 text-center border border-slate-200">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Çevre</div>
+                    <div className="text-lg font-black text-slate-700">{roomPerimeterM}<span className="text-[10px] ml-0.5">m</span></div>
+                  </div>
+                  <div className="bg-white rounded-lg p-2.5 text-center border border-slate-200">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Ekipman Alanı</div>
+                    <div className="text-lg font-black text-slate-700">{equipmentAreaM2}<span className="text-[10px] ml-0.5">m²</span></div>
+                  </div>
+                  <div className="bg-white rounded-lg p-2.5 text-center border border-slate-200">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Doluluk</div>
+                    <div className="text-lg font-black text-amber-600">{roomAreaM2 !== '0.0' ? Math.round((Number(equipmentAreaM2) / Number(roomAreaM2)) * 100) : 0}<span className="text-[10px] ml-0.5">%</span></div>
+                  </div>
+                </div>
+
+                {/* Price per m² */}
+                <div className="bg-white rounded-lg p-2.5 border border-slate-200 space-y-1.5">
+                  <label className="text-[9px] font-black uppercase text-slate-400">m² Birim Fiyatı (€)</label>
+                  <input
+                    type="number"
+                    value={pricePerM2 || ''}
+                    onChange={(e) => setPricePerM2(Number(e.target.value))}
+                    placeholder="0"
+                    className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md focus:ring-2 focus:ring-primary outline-none"
+                  />
+                  {pricePerM2 > 0 && (
+                    <div className="flex justify-between text-[10px] font-bold text-primary bg-primary/5 rounded px-2 py-1">
+                      <span>Tahmini Toplam</span>
+                      <span>€{(pricePerM2 * Number(roomAreaM2)).toLocaleString('de-DE', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Açıklama</h4>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Proje veya oda hakkında açıklama..."
+                  rows={4}
+                  className="w-full text-xs border border-slate-200 rounded-xl p-2.5 resize-none focus:ring-2 focus:ring-primary outline-none text-slate-700 placeholder:text-slate-300 leading-relaxed"
+                />
+              </div>
+
+              {/* Task list */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-wider">İş Adımları</h4>
+                  <span className="text-[9px] text-slate-400">{tasks.filter(t => t.done).length}/{tasks.length} tamamlandı</span>
+                </div>
+
+                {/* Add task */}
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    value={newTaskText}
+                    onChange={(e) => setNewTaskText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newTaskText.trim()) {
+                        const task: Task = {
+                          id: Date.now().toString(),
+                          text: newTaskText.trim(),
+                          done: false,
+                          assignee: newTaskAssignee.trim(),
+                          createdAt: new Date().toLocaleDateString('tr-TR'),
+                        };
+                        setTasks(prev => [...prev, task]);
+                        setNewTaskText('');
+                        setNewTaskAssignee('');
+                      }
+                    }}
+                    placeholder="Yeni görev ekle (Enter ile kaydet)"
+                    className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                  />
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={newTaskAssignee}
+                      onChange={(e) => setNewTaskAssignee(e.target.value)}
+                      placeholder="Atanan kişi (opsiyonel)"
+                      className="flex-1 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                    />
+                    <button
+                      onClick={() => {
+                        if (!newTaskText.trim()) return;
+                        const task: Task = {
+                          id: Date.now().toString(),
+                          text: newTaskText.trim(),
+                          done: false,
+                          assignee: newTaskAssignee.trim(),
+                          createdAt: new Date().toLocaleDateString('tr-TR'),
+                        };
+                        setTasks(prev => [...prev, task]);
+                        setNewTaskText('');
+                        setNewTaskAssignee('');
+                      }}
+                      className="px-3 py-1.5 text-[10px] font-bold bg-primary text-white rounded-lg hover:bg-primary/90 transition-all"
+                    >
+                      Ekle
+                    </button>
+                  </div>
+                </div>
+
+                {/* Task list */}
+                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                  {tasks.length === 0 && (
+                    <p className="text-[9px] text-slate-400 text-center py-4">Henüz görev yok. Yukarıdan ekleyin.</p>
+                  )}
+                  {tasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className={`flex items-start gap-2 p-2 rounded-lg border transition-all ${task.done ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-200'}`}
+                    >
+                      <button
+                        onClick={() => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: !t.done } : t))}
+                        className={`mt-0.5 shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${task.done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 hover:border-primary'}`}
+                      >
+                        {task.done && <span className="text-white text-[8px] font-black">✓</span>}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[10px] font-medium leading-tight ${task.done ? 'text-emerald-700 line-through' : 'text-slate-700'}`}>{task.text}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {task.assignee && <span className="text-[8px] text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded-full">@{task.assignee}</span>}
+                          <span className="text-[8px] text-slate-400">{task.createdAt}</span>
+                          {task.done && <span className="text-[8px] text-emerald-600 font-bold">✓ Tamamlandı</span>}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))}
+                        className="shrink-0 text-slate-300 hover:text-red-400 transition-colors"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Progress bar */}
+                {tasks.length > 0 && (
+                  <div className="space-y-1">
+                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                        style={{ width: `${(tasks.filter(t => t.done).length / tasks.length) * 100}%` }}
+                      />
+                    </div>
+                    <p className="text-[8px] text-slate-400 text-center">{Math.round((tasks.filter(t => t.done).length / tasks.length) * 100)}% tamamlandı</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
