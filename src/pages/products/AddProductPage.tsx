@@ -53,6 +53,7 @@ export default function AddProductPage() {
   const [imageData, setImageData] = useState<string | undefined>(undefined);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -94,7 +95,9 @@ export default function AddProductPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !projectId) return;
+    setFormError('');
+    if (!form.name) { setFormError('Ürün adı zorunludur.'); return; }
+    if (!projectId) { setFormError('Proje bulunamadı.'); return; }
 
     addProductToProject(projectId, {
       name: form.name,
@@ -128,19 +131,25 @@ export default function AddProductPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto w-full space-y-6">
+    <div className="max-w-4xl mx-auto w-full space-y-5 pb-24 md:pb-0">
       <button onClick={() => navigate(`/projects/${projectId}`)} className="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors text-sm font-medium">
         <ArrowLeft size={18} /> {project.name} projesine geri dön
       </button>
 
       <div>
-        <h1 className="font-headline text-3xl font-black text-on-surface tracking-tight">Yeni Ürün Ekle</h1>
+        <h1 className="font-headline text-2xl md:text-3xl font-black text-on-surface tracking-tight">Yeni Ürün Ekle</h1>
         <p className="text-on-surface-variant mt-1 text-sm">
           <span className="font-bold text-primary">{project.name}</span> projesine ürün ekleyin
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {formError && (
+        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm font-medium border border-red-200">
+          {formError}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* Image Upload */}
         <div className="bg-surface-container-lowest rounded-xl shadow-sm p-6 border border-outline-variant/10">
           <h2 className="font-headline font-bold text-primary text-sm uppercase tracking-wider mb-4">Ürün Görseli</h2>
@@ -309,8 +318,8 @@ export default function AddProductPage() {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-4">
+        {/* Desktop Actions */}
+        <div className="hidden md:flex justify-end gap-4">
           <button type="button" onClick={() => navigate(`/projects/${projectId}`)} className="px-6 py-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors">
             İptal
           </button>
@@ -319,6 +328,44 @@ export default function AddProductPage() {
           </button>
         </div>
       </form>
+
+      {/* Mobile Sticky Bottom Actions */}
+      <div className="fixed md:hidden bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 px-4 py-3 flex gap-3 shadow-lg">
+        <button type="button" onClick={() => navigate(`/projects/${projectId}`)} className="flex-1 py-3 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+          İptal
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (!form.name) { setFormError('Ürün adı zorunludur.'); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+            setFormError('');
+            if (!projectId) return;
+            addProductToProject(projectId, {
+              name: form.name,
+              code: form.code || `PROD-${Date.now().toString(36).toUpperCase()}`,
+              category: form.category,
+              icon: form.icon,
+              imageData,
+              dimensions: {
+                width: Number(form.width) || 80,
+                height: Number(form.height) || 70,
+                depth: Number(form.depth) || 85,
+              },
+              kw: Number(form.kw) || 0,
+              powerType: form.powerType,
+              price: Number(form.price) || 0,
+              description: form.description,
+              brand: form.brand,
+              series: form.series,
+              features: form.features.split(',').map(f => f.trim()).filter(Boolean),
+            });
+            navigate(`/projects/${projectId}`);
+          }}
+          className="flex-1 flex items-center justify-center gap-2 brushed-metal text-white py-3 rounded-xl font-bold shadow-lg hover:opacity-90 transition-all"
+        >
+          <Save size={18} /> Ürünü Kaydet
+        </button>
+      </div>
     </div>
   );
 }

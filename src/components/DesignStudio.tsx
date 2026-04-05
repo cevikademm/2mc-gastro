@@ -703,7 +703,7 @@ export default function DesignStudio() {
   const renderSVGHeight = roomShape === 'polygon' && roomPolygon.length >= 3 ? bounds.maxY + 50 : roomHeightCm;
 
   return (
-    <div className="flex-1 flex overflow-hidden" style={{ height: 'calc(100vh - 4rem)' }}>
+    <div className="flex-1 flex overflow-hidden" style={{ height: 'calc(100vh - 3.5rem)' }}>
       {/* Canvas Area */}
       <div className="flex-1 flex flex-col bg-slate-100 min-w-0">
         {/* Toolbar */}
@@ -958,7 +958,7 @@ export default function DesignStudio() {
       </div>
 
       {/* Right Panel */}
-      <aside className="w-80 xl:w-96 bg-white border-l border-slate-200 flex flex-col shrink-0 hidden md:flex" style={{ height: 'calc(100vh - 4rem)' }}>
+      <aside className="w-72 xl:w-80 bg-white border-l border-slate-200 flex flex-col shrink-0 hidden lg:flex" style={{ height: 'calc(100vh - 3.5rem)' }}>
         <div className="flex border-b border-slate-200 shrink-0">
           <button onClick={() => setRightPanelTab('catalog')} className={`flex-1 py-2.5 text-xs font-bold text-center transition-all ${rightPanelTab === 'catalog' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Ekipman</button>
           <button onClick={() => setRightPanelTab('properties')} className={`flex-1 py-2.5 text-xs font-bold text-center transition-all ${rightPanelTab === 'properties' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Ozellikler</button>
