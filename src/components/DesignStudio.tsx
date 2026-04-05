@@ -351,18 +351,33 @@ export default function DesignStudio() {
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
+      // Drawing mode: add point on tap
+      if (isDrawingRoom) {
+        if (!canvasRef.current) return;
+        const rect = canvasRef.current.getBoundingClientRect();
+        let px = (touch.clientX - rect.left - panOffset.x) / zoom;
+        let py = (touch.clientY - rect.top - panOffset.y) / zoom;
+        if (snapToGrid) { px = snapVal(px, gridSize); py = snapVal(py, gridSize); }
+        // Close polygon if tapping near first point
+        if (drawingPoints.length >= 3 && distancePP({ x: px, y: py }, drawingPoints[0]) < 30 / zoom) {
+          finishDrawingRoom();
+          return;
+        }
+        setDrawingPoints(prev => [...prev, { x: px, y: py }]);
+        return;
+      }
       setPanStart({ x: touch.clientX - panOffset.x, y: touch.clientY - panOffset.y });
       setIsPanning(true);
     }
-  }, [panOffset]);
+  }, [panOffset, isDrawingRoom, drawingPoints, zoom, snapToGrid, gridSize]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
-    if (e.touches.length === 1 && isPanning) {
+    if (e.touches.length === 1 && isPanning && !isDrawingRoom) {
       const touch = e.touches[0];
       setPanOffset({ x: touch.clientX - panStart.x, y: touch.clientY - panStart.y });
     }
-  }, [isPanning, panStart]);
+  }, [isPanning, panStart, isDrawingRoom]);
 
   const handleTouchEnd = useCallback(() => {
     setIsPanning(false);
@@ -688,7 +703,7 @@ export default function DesignStudio() {
   const renderSVGHeight = roomShape === 'polygon' && roomPolygon.length >= 3 ? bounds.maxY + 50 : roomHeightCm;
 
   return (
-    <div className="flex-1 flex overflow-hidden -m-6 md:-m-8" style={{ height: 'calc(100vh - 4rem)' }}>
+    <div className="flex-1 flex overflow-hidden" style={{ height: 'calc(100vh - 4rem)' }}>
       {/* Canvas Area */}
       <div className="flex-1 flex flex-col bg-slate-100 min-w-0">
         {/* Toolbar */}
@@ -707,15 +722,34 @@ export default function DesignStudio() {
             <button onClick={startDrawingRoom} className={`p-1.5 rounded-md transition-all ${activeTool === 'draw' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400'}`} title="Oda Ciz"><Pen size={15} /></button>
           </div>
 
+          {/* Mobil: Oda şekli butonları */}
+          <div className="flex md:hidden bg-slate-100 rounded-lg p-0.5 mr-2">
+            <button
+              onClick={switchToRectangle}
+              className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 ${roomShape === 'rectangle' ? 'bg-white shadow-sm text-primary' : 'text-slate-400'}`}
+            >
+              <Square size={11} /> Rect
+            </button>
+            <button
+              onClick={startDrawingRoom}
+              className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 ${roomShape === 'polygon' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400'}`}
+            >
+              <Pen size={11} /> Çiz
+            </button>
+          </div>
+
           {isDrawingRoom && (
-            <div className="flex items-center gap-1 mr-2">
-              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
-                {drawingPoints.length} nokta — tiklayarak cizin, kapatmak icin ilk noktaya tiklayin
+            <div className="flex items-center gap-1 mr-2 flex-wrap">
+              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded hidden sm:inline">
+                {drawingPoints.length} nokta — tıklayarak çizin
+              </span>
+              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded sm:hidden">
+                {drawingPoints.length} nokta
               </span>
               {drawingPoints.length >= 3 && (
                 <button onClick={finishDrawingRoom} className="px-2 py-1 text-[10px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded transition-colors">Tamamla</button>
               )}
-              <button onClick={cancelDrawingRoom} className="px-2 py-1 text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded transition-colors">Iptal</button>
+              <button onClick={cancelDrawingRoom} className="px-2 py-1 text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded transition-colors">İptal</button>
             </div>
           )}
 
