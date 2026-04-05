@@ -6,7 +6,7 @@ import { useCartStore } from '../stores/cartStore';
 import NotificationPanel from './NotificationPanel';
 import {
   Bell, Settings, LayoutDashboard, Ruler, Refrigerator,
-  ClipboardList, SlidersHorizontal, HelpCircle, BookOpen, PlusCircle,
+  SlidersHorizontal, HelpCircle, BookOpen, PlusCircle,
   Menu, X, LogOut, User, Globe, CreditCard, FolderOpen, ShoppingCart, PenLine
 } from 'lucide-react';
 
@@ -14,7 +14,6 @@ const NAV_ITEMS = [
   { path: '/dashboard', labelKey: 'nav.project', id: 'project' },
   { path: '/catalog', labelKey: 'nav.inventory', id: 'inventory' },
   { path: '/design', labelKey: 'nav.design', id: 'design' },
-  { path: '/bom', labelKey: 'nav.bom', id: 'bom' },
 ];
 
 const SIDE_ITEMS = [
@@ -22,7 +21,6 @@ const SIDE_ITEMS = [
   { path: '/projects', labelKey: 'nav.project', icon: FolderOpen, id: 'projects' },
   { path: '/design', labelKey: 'nav.floorPlan', icon: Ruler, id: 'design' },
   { path: '/catalog', labelKey: 'nav.equipment', icon: Refrigerator, id: 'inventory' },
-  { path: '/bom', labelKey: 'nav.materials', icon: ClipboardList, id: 'bom' },
   { path: '/cart', labelKey: 'nav.cart', icon: ShoppingCart, id: 'cart' },
   { path: '/sketch', labelKey: 'nav.sketch', icon: PenLine, id: 'sketch' },
   { path: '/settings', labelKey: 'nav.settings', icon: SlidersHorizontal, id: 'settings' },
@@ -35,7 +33,7 @@ const BOTTOM_NAV = [
   { path: '/catalog', icon: Refrigerator, label: 'Katalog' },
   { path: '/sketch', icon: PenLine, label: 'Kat Planı' },
   { path: '/design', icon: Ruler, label: 'Çizim' },
-  { path: '/bom', icon: ClipboardList, label: 'BOM' },
+  { path: '/cart', icon: ShoppingCart, label: 'Sepet' },
 ];
 
 export default function Layout() {
