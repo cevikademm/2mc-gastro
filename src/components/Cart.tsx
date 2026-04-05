@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useCartStore } from '../stores/cartStore';
 import { CATEGORIES } from '../stores/equipmentStore';
 import {
-  ShoppingCart, Trash2, Plus, Minus, Package, Euro,
+  ShoppingCart, Trash2, Plus, Minus, Package,
   Phone, Mail, Globe, MapPin, ChevronDown, ChevronRight,
-  FileText, Send, X
+  FileText, Send, Euro
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
@@ -15,8 +15,32 @@ const COMPANY_INFO = {
   email: 'info@2mc-gastro.de',
   website: 'www.2mc-gastro.de',
   vat: 'DE123456789',
-  tagline: 'Profesyonel Mutfak Ekipmanları & Gastronomi Çözümleri',
+  tagline: 'Alles rund um deine Marke · Gastronomi Çözümleri',
 };
+
+// Load an image URL → base64 dataURL via canvas
+async function loadImageAsDataURL(src: string, opacity = 1): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || 200;
+        canvas.height = img.naturalHeight || 200;
+        const ctx = canvas.getContext('2d')!;
+        ctx.globalAlpha = opacity;
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    // Use absolute URL relative to current origin for local assets
+    img.src = src.startsWith('http') ? src : window.location.origin + (src.startsWith('/') ? '' : '/') + src;
+  });
+}
 
 function ProductImage({ src, alt }: { src: string; alt: string }) {
   const [err, setErr] = useState(false);
@@ -41,6 +65,7 @@ export default function Cart() {
   const { items, removeItem, updateQuantity, clearCart, getTotalItems, getTotalPrice, getItemsByCategory } = useCartStore();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [offerSent, setOfferSent] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const grouped = getItemsByCategory();
   const categoryKeys = Object.keys(grouped);
@@ -56,99 +81,343 @@ export default function Cart() {
   const toggleCollapse = (cat: string) =>
     setCollapsed(prev => ({ ...prev, [cat]: !prev[cat] }));
 
-  const exportPDF = () => {
-    const doc = new jsPDF();
+  // ─── PDF Export ────────────────────────────────────────────────────────────
+  const exportPDF = async () => {
+    setPdfLoading(true);
+    try {
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const PW = 210; // page width mm
+      const PH = 297; // page height mm
+      const quoteNo = `2MC-${Date.now().toString().slice(-6)}`;
+      const dateStr = new Date().toLocaleDateString('tr-TR');
 
-    // Header - Company Info
-    doc.setFillColor(37, 99, 235);
-    doc.rect(0, 0, 210, 40, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text(COMPANY_INFO.name, 14, 16);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(COMPANY_INFO.tagline, 14, 24);
-    doc.text(`${COMPANY_INFO.address}  |  ${COMPANY_INFO.phone}  |  ${COMPANY_INFO.email}`, 14, 31);
-    doc.text(`${COMPANY_INFO.website}  |  USt-IdNr: ${COMPANY_INFO.vat}`, 14, 37);
+      // ── Load logos ──
+      const [logoFull, logoIcon, logoHolo] = await Promise.all([
+        loadImageAsDataURL('/logo-werbung.png'),
+        loadImageAsDataURL('/logo-icon.png'),
+        loadImageAsDataURL('/logo-icon.png', 1), // will be made transparent via canvas trick below
+      ]);
 
-    doc.setTextColor(0, 0, 0);
+      // ── Helper: draw hologram watermark on current page ──
+      const drawHologram = () => {
+        if (!logoHolo) return;
+        // Draw a canvas with very low opacity version
+        const canvas = document.createElement('canvas');
+        // A4 at 96dpi ≈ 794×1123px
+        canvas.width = 794;
+        canvas.height = 1123;
+        const ctx = canvas.getContext('2d')!;
+        const img = new Image();
+        img.src = logoHolo;
+        // Draw centered, covering full page
+        const size = Math.min(canvas.width, canvas.height) * 0.92;
+        const x = (canvas.width - size) / 2;
+        const y = (canvas.height - size) / 2;
+        ctx.globalAlpha = 0.055;
+        // tint cyan-blue
+        ctx.filter = 'hue-rotate(200deg) saturate(3)';
+        ctx.drawImage(img, x, y, size, size);
+        const holoData = canvas.toDataURL('image/png');
+        doc.addImage(holoData, 'PNG', 0, 0, PW, PH);
+      };
 
-    // Title
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Teklif / Angebot', 14, 54);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, 14, 62);
-    doc.text(`Toplam Ürün: ${totalItems} adet`, 100, 62);
+      // ── Helper: decorative diagonal stripe ──
+      const drawStripe = () => {
+        doc.setFillColor(37, 99, 235);
+        doc.setGState(doc.GState({ opacity: 0.06 }));
+        // Draw 3 thin diagonal bands across page
+        for (let i = 0; i < 3; i++) {
+          const offset = 60 + i * 25;
+          doc.triangle(
+            0, PH - offset,
+            PW + 20, PH - offset - 80,
+            PW + 20, PH - offset - 84,
+            'F'
+          );
+        }
+        doc.setGState(doc.GState({ opacity: 1 }));
+      };
 
-    let y = 74;
+      // ── Page 1 header ──
+      const drawPageHeader = (pageNum: number, totalPages?: number) => {
+        // Dark gradient header band
+        doc.setFillColor(15, 23, 60);
+        doc.rect(0, 0, PW, 38, 'F');
 
-    // Items by category
-    categoryKeys.forEach((cat) => {
-      const catItems = grouped[cat];
-      if (!catItems?.length) return;
+        // Blue accent stripe
+        doc.setFillColor(37, 99, 235);
+        doc.rect(0, 38, PW, 2, 'F');
 
-      // Category header
-      doc.setFillColor(243, 244, 246);
-      doc.rect(14, y - 4, 182, 8, 'F');
-      doc.setFontSize(9);
+        // Logo full (white version via CSS filter won't work in PDF, just place as-is)
+        if (logoFull) {
+          doc.addImage(logoFull, 'PNG', 10, 5, 72, 20);
+        } else {
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(18);
+          doc.setFont('helvetica', 'bold');
+          doc.text('2MC WERBUNG', 14, 20);
+        }
+
+        // Logo icon on right
+        if (logoIcon) {
+          doc.addImage(logoIcon, 'PNG', PW - 38, 4, 28, 28);
+        }
+
+        // Company details in header
+        doc.setTextColor(180, 200, 255);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.text(COMPANY_INFO.address, PW - 10, 34, { align: 'right' });
+
+        // Page number
+        if (totalPages) {
+          doc.setTextColor(150, 170, 220);
+          doc.setFontSize(7);
+          doc.text(`Sayfa ${pageNum}`, PW - 10, 36, { align: 'right' });
+        }
+      };
+
+      // ── Page 1: cover info ──
+      drawHologram();
+      drawStripe();
+      drawPageHeader(1);
+
+      // Quote title block
+      doc.setFillColor(245, 247, 255);
+      doc.roundedRect(10, 46, PW - 20, 28, 3, 3, 'F');
+      doc.setFillColor(37, 99, 235);
+      doc.roundedRect(10, 46, 4, 28, 2, 2, 'F');
+
+      doc.setTextColor(15, 23, 60);
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(37, 99, 235);
-      doc.text(getCategoryName(cat).toUpperCase(), 16, y + 1);
-      y += 10;
+      doc.text('TEKLİF  /  ANGEBOT', 20, 57);
 
-      // Column headers
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(80, 80, 80);
       doc.setFontSize(8);
-      doc.text('Adet', 14, y);
-      doc.text('Ürün Kodu', 30, y);
-      doc.text('Ürün Adı', 75, y);
-      doc.text('Birim Fiyat', 155, y, { align: 'right' });
-      doc.text('Toplam', 196, y, { align: 'right' });
-      y += 2;
-      doc.setDrawColor(200, 200, 200);
-      doc.line(14, y, 196, y);
-      y += 5;
-
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0, 0, 0);
-      catItems.forEach(({ product, quantity }) => {
-        if (y > 265) { doc.addPage(); y = 20; }
-        doc.text(String(quantity), 14, y);
-        doc.text(product.id.substring(0, 20), 30, y);
-        doc.text(product.name.substring(0, 45), 75, y);
-        doc.text(product.price > 0 ? formatPrice(product.price) : '—', 155, y, { align: 'right' });
-        doc.text(product.price > 0 ? formatPrice(quantity * product.price) : '—', 196, y, { align: 'right' });
-        y += 7;
-      });
+      doc.setTextColor(80, 90, 120);
+      doc.text(`Teklif No: ${quoteNo}`, 20, 65);
+      doc.text(`Tarih: ${dateStr}`, 80, 65);
+      doc.text(`Toplam Kalem: ${categoryKeys.length}  |  Toplam Adet: ${totalItems}`, 130, 65);
+
+      // Contact row
+      doc.setFillColor(15, 23, 60);
+      doc.rect(10, 78, PW - 20, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7.5);
+      const contactY = 85;
+      doc.text(`✆  ${COMPANY_INFO.phone}`, 14, contactY);
+      doc.text(`✉  ${COMPANY_INFO.email}`, 68, contactY);
+      doc.text(`⌂  ${COMPANY_INFO.website}`, 128, contactY);
+      doc.text(`USt: ${COMPANY_INFO.vat}`, 175, contactY);
+
+      let y = 96;
+      let pageNum = 1;
+
+      // Pre-load all product images
+      const imgCache: Record<string, string | null> = {};
+      const uniqueImgs = [...new Set(items.map(i => i.product.img).filter(Boolean))];
+      await Promise.all(
+        uniqueImgs.map(async (src) => {
+          imgCache[src] = await loadImageAsDataURL(src);
+        })
+      );
+
+      // ── Draw items by category ──
+      for (const cat of categoryKeys) {
+        const catItems = grouped[cat];
+        if (!catItems?.length) continue;
+
+        // Space check — add page if needed
+        if (y > 240) {
+          doc.addPage();
+          pageNum++;
+          drawHologram();
+          drawStripe();
+          drawPageHeader(pageNum);
+          y = 48;
+        }
+
+        // Category header
+        doc.setFillColor(15, 23, 60);
+        doc.roundedRect(10, y, PW - 20, 8, 1.5, 1.5, 'F');
+        doc.setFillColor(37, 99, 235);
+        doc.roundedRect(10, y, 3, 8, 1, 1, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text(getCategoryName(cat).toUpperCase(), 16, y + 5.5);
+        const catTotal = catItems.reduce((s, i) => s + i.quantity * (i.product.price || 0), 0);
+        if (catTotal > 0) {
+          doc.text(formatPrice(catTotal), PW - 12, y + 5.5, { align: 'right' });
+        }
+        y += 11;
+
+        // Column headers
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(100, 110, 140);
+        doc.text('GÖRSEL', 12, y);
+        doc.text('ADET', 32, y);
+        doc.text('ÜRÜN KODU', 42, y);
+        doc.text('ÜRÜN ADI', 78, y);
+        doc.text('BİRİM FİYAT', 158, y, { align: 'right' });
+        doc.text('TOPLAM', PW - 12, y, { align: 'right' });
+        y += 2;
+        doc.setDrawColor(200, 210, 230);
+        doc.line(10, y, PW - 10, y);
+        y += 3;
+
+        // Product rows
+        let rowAlt = false;
+        for (const { product, quantity } of catItems) {
+          const rowH = 18;
+          if (y + rowH > 272) {
+            doc.addPage();
+            pageNum++;
+            drawHologram();
+            drawStripe();
+            drawPageHeader(pageNum);
+            y = 48;
+          }
+
+          // Alternating row background
+          if (rowAlt) {
+            doc.setFillColor(245, 247, 255);
+            doc.rect(10, y - 1, PW - 20, rowH, 'F');
+          }
+          rowAlt = !rowAlt;
+
+          // Product image
+          const imgData = product.img ? imgCache[product.img] : null;
+          if (imgData) {
+            doc.addImage(imgData, 'PNG', 12, y, 14, 14);
+          } else {
+            doc.setFillColor(230, 235, 245);
+            doc.roundedRect(12, y, 14, 14, 2, 2, 'F');
+            doc.setTextColor(180, 190, 210);
+            doc.setFontSize(6);
+            doc.text('N/A', 19, y + 8, { align: 'center' });
+          }
+
+          // Quantity badge
+          doc.setFillColor(37, 99, 235);
+          doc.roundedRect(30, y + 3, 9, 7, 1.5, 1.5, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.text(String(quantity), 34.5, y + 8.5, { align: 'center' });
+
+          // Product code
+          doc.setTextColor(37, 99, 235);
+          doc.setFontSize(6.5);
+          doc.setFont('helvetica', 'bold');
+          doc.text(product.id.substring(0, 22), 42, y + 5);
+
+          // Brand
+          if (product.brand) {
+            doc.setTextColor(140, 150, 170);
+            doc.setFontSize(6);
+            doc.setFont('helvetica', 'normal');
+            doc.text(product.brand, 42, y + 11);
+          }
+
+          // Product name
+          doc.setTextColor(15, 23, 60);
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', 'bold');
+          const name = product.name.length > 42 ? product.name.substring(0, 42) + '…' : product.name;
+          doc.text(name, 78, y + 5);
+
+          // Dims & kW
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(6);
+          doc.setTextColor(120, 130, 155);
+          const dims = `${product.l}×${product.w}×${product.h} mm${product.kw > 0 ? `  |  ${product.kw} kW` : ''}`;
+          doc.text(dims, 78, y + 11);
+
+          // Unit price
+          doc.setTextColor(80, 90, 120);
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', 'normal');
+          doc.text(product.price > 0 ? formatPrice(product.price) : '—', 158, y + 7, { align: 'right' });
+
+          // Line total
+          const lineTotal = quantity * (product.price || 0);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(15, 23, 60);
+          doc.text(lineTotal > 0 ? formatPrice(lineTotal) : '—', PW - 12, y + 7, { align: 'right' });
+
+          // Separator line
+          doc.setDrawColor(220, 225, 240);
+          doc.line(10, y + rowH - 1, PW - 10, y + rowH - 1);
+
+          y += rowH;
+        }
+
+        y += 5;
+      }
+
+      // ── Totals block ──
+      if (y + 45 > 272) {
+        doc.addPage();
+        pageNum++;
+        drawHologram();
+        drawStripe();
+        drawPageHeader(pageNum);
+        y = 48;
+      }
 
       y += 4;
-    });
+      doc.setFillColor(245, 247, 255);
+      doc.roundedRect(PW / 2, y, PW / 2 - 10, 40, 3, 3, 'F');
 
-    // Total
-    doc.setDrawColor(37, 99, 235);
-    doc.line(130, y, 196, y);
-    y += 5;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('TOPLAM:', 130, y);
-    doc.text(formatPrice(totalPrice), 196, y, { align: 'right' });
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80, 90, 120);
+      doc.text('Ara Toplam:', PW / 2 + 5, y + 9);
+      doc.text(formatPrice(totalPrice), PW - 12, y + 9, { align: 'right' });
 
-    // Footer
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(150, 150, 150);
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.text(`${COMPANY_INFO.name} — ${COMPANY_INFO.address} — ${COMPANY_INFO.website}`, 14, 290);
+      doc.text('KDV (%19):', PW / 2 + 5, y + 17);
+      doc.text(formatPrice(totalPrice * 0.19), PW - 12, y + 17, { align: 'right' });
+
+      doc.setDrawColor(37, 99, 235);
+      doc.line(PW / 2 + 3, y + 21, PW - 10, y + 21);
+
+      doc.setFillColor(15, 23, 60);
+      doc.roundedRect(PW / 2, y + 23, PW / 2 - 10, 13, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('GENEL TOPLAM:', PW / 2 + 5, y + 31);
+      doc.text(formatPrice(totalPrice * 1.19), PW - 12, y + 31, { align: 'right' });
+
+      // ── Footer on all pages ──
+      const totalPagesCount = doc.getNumberOfPages();
+      for (let p = 1; p <= totalPagesCount; p++) {
+        doc.setPage(p);
+        doc.setFillColor(15, 23, 60);
+        doc.rect(0, PH - 12, PW, 12, 'F');
+        doc.setFillColor(37, 99, 235);
+        doc.rect(0, PH - 12, PW, 1.5, 'F');
+        doc.setTextColor(180, 200, 255);
+        doc.setFontSize(6.5);
+        doc.setFont('helvetica', 'normal');
+        doc.text(
+          `${COMPANY_INFO.name}  ·  ${COMPANY_INFO.address}  ·  ${COMPANY_INFO.phone}  ·  ${COMPANY_INFO.email}`,
+          PW / 2, PH - 6,
+          { align: 'center' }
+        );
+        doc.setTextColor(100, 130, 200);
+        doc.text(`${p} / ${totalPagesCount}`, PW - 12, PH - 6, { align: 'right' });
+      }
+
+      doc.save(`Teklif_2MC_${quoteNo}_${dateStr.replace(/\./g, '-')}.pdf`);
+    } catch (err) {
+      console.error('PDF export error:', err);
+    } finally {
+      setPdfLoading(false);
     }
-
-    doc.save(`Teklif_2MC_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const handleSendOffer = () => {
@@ -184,15 +453,16 @@ export default function Cart() {
         <div className="flex gap-3 flex-wrap">
           <button
             onClick={exportPDF}
-            className="bg-surface-container-low hover:bg-surface-container-high text-primary px-5 py-2.5 rounded-lg font-headline font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
+            disabled={pdfLoading}
+            className="bg-surface-container-low hover:bg-surface-container-high text-primary px-5 py-2.5 rounded-lg font-headline font-bold text-sm flex items-center gap-2 transition-all shadow-sm disabled:opacity-60"
           >
-            <FileText size={16} /> PDF Teklif
+            <FileText size={16} /> {pdfLoading ? 'Hazırlanıyor...' : 'PDF Teklif'}
           </button>
           <button
             onClick={handleSendOffer}
             className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg font-headline font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
           >
-            {offerSent ? <><X size={16} /> Gönderildi!</> : <><Send size={16} /> Teklif İste</>}
+            {offerSent ? 'Gönderildi!' : <><Send size={16} /> Teklif İste</>}
           </button>
           <button
             onClick={clearCart}
@@ -204,17 +474,20 @@ export default function Cart() {
       </div>
 
       {/* Company Info Card */}
-      <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-5">
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+      <div className="bg-gradient-to-r from-[#0f1740] to-[#1e3a8a] rounded-xl p-5 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <img src="/logo-icon.png" alt="" className="absolute right-4 top-1/2 -translate-y-1/2 h-24 w-24 object-contain" />
+        </div>
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center relative z-10">
           <div className="flex-1">
-            <h2 className="text-base font-headline font-black text-primary">{COMPANY_INFO.name}</h2>
-            <p className="text-xs text-on-surface-variant mt-0.5">{COMPANY_INFO.tagline}</p>
+            <img src="/logo-werbung.png" alt="2MC Werbung" className="h-8 object-contain mb-2" style={{ filter: 'brightness(0) invert(1)' }} />
+            <p className="text-xs text-blue-200">{COMPANY_INFO.tagline}</p>
           </div>
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-on-surface-variant">
-            <span className="flex items-center gap-1.5"><MapPin size={12} className="text-primary" /> {COMPANY_INFO.address}</span>
-            <span className="flex items-center gap-1.5"><Phone size={12} className="text-primary" /> {COMPANY_INFO.phone}</span>
-            <span className="flex items-center gap-1.5"><Mail size={12} className="text-primary" /> {COMPANY_INFO.email}</span>
-            <span className="flex items-center gap-1.5"><Globe size={12} className="text-primary" /> {COMPANY_INFO.website}</span>
+          <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-blue-100">
+            <span className="flex items-center gap-1.5"><MapPin size={11} className="text-blue-300" /> {COMPANY_INFO.address}</span>
+            <span className="flex items-center gap-1.5"><Phone size={11} className="text-blue-300" /> {COMPANY_INFO.phone}</span>
+            <span className="flex items-center gap-1.5"><Mail size={11} className="text-blue-300" /> {COMPANY_INFO.email}</span>
+            <span className="flex items-center gap-1.5"><Globe size={11} className="text-blue-300" /> {COMPANY_INFO.website}</span>
           </div>
         </div>
       </div>
@@ -229,7 +502,6 @@ export default function Cart() {
 
           return (
             <div key={cat} className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/10">
-              {/* Category Header */}
               <button
                 onClick={() => toggleCollapse(cat)}
                 className="w-full flex items-center justify-between px-5 py-3.5 bg-surface-container hover:bg-surface-container-high transition-colors"
@@ -244,7 +516,6 @@ export default function Cart() {
                 <span className="text-sm font-mono font-bold text-emerald-600">{formatPrice(catTotal)}</span>
               </button>
 
-              {/* Items */}
               {!isCollapsed && (
                 <div className="divide-y divide-outline-variant/10">
                   {catItems.map(({ product, quantity }) => (
@@ -260,11 +531,10 @@ export default function Cart() {
                       </div>
 
                       <div className="text-right text-xs text-on-surface-variant hidden sm:block w-24">
-                        <p>{formatPrice(product.price)}</p>
+                        <p className="flex items-center justify-end gap-1"><Euro size={10} /> {formatPrice(product.price)}</p>
                         <p className="text-[10px]">birim fiyat</p>
                       </div>
 
-                      {/* Quantity Controls */}
                       <div className="flex items-center gap-1.5 bg-surface-container rounded-lg p-1">
                         <button
                           onClick={() => updateQuantity(product.id, quantity - 1)}
@@ -318,9 +588,8 @@ export default function Cart() {
         </div>
       </div>
 
-      {/* Offer sent notification */}
       {offerSent && (
-        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm flex items-center gap-2 z-50 animate-bounce">
+        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm flex items-center gap-2 z-50">
           <Send size={16} /> Teklif talebiniz gönderildi!
         </div>
       )}
