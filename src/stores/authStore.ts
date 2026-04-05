@@ -68,8 +68,7 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true });
         // Try Supabase if configured
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        if (supabaseUrl) {
+        if (supabase) {
           const { data, error } = await supabase.auth.signInWithPassword({ email, password });
           if (!error && data.user) {
             const user: User = {
@@ -96,8 +95,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       loginWithGoogle: async () => {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        if (!supabaseUrl) {
+        if (!supabase) {
           // Mock: just authenticate directly
           set({ user: { ...defaultUser }, isAuthenticated: true });
           return;
