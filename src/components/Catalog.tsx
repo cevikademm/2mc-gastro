@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useEquipmentStore, CATEGORIES, type EquipmentItem } from '../stores/equipmentStore';
+import { useProjectStore } from '../stores/projectStore';
 import {
   Search, X, ChevronLeft, ChevronRight, Grid3X3, List,
   Refrigerator, Flame, Droplets, Microwave, Waves, Table,
-  Zap, Ruler, Euro, Package, ExternalLink, Heart, MapPin
+  Zap, Ruler, Euro, Package, ExternalLink, Heart, MapPin, CheckCircle2, Clock
 } from 'lucide-react';
 
 const iconMap: Record<string, any> = {
@@ -52,6 +53,7 @@ export default function Catalog() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const store = useEquipmentStore();
+  const { projects } = useProjectStore();
   const {
     selectedCategory, selectedSubrange, searchQuery, currentPage,
     setCategory, setSubrange, setSearch, setPage,
@@ -62,10 +64,22 @@ export default function Catalog() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [detailItem, setDetailItem] = useState<EquipmentItem | null>(null);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [projectModalItem, setProjectModalItem] = useState<string | null>(null);
+
+  const activeProjects = projects.filter(p => p.status !== 'complete');
+  const completedProjects = projects.filter(p => p.status === 'complete');
 
   const handleShowOnFloorPlan = (id: string) => {
-    setFloorPlanItem(id);
-    navigate('/design');
+    setProjectModalItem(id);
+    setDetailItem(null);
+  };
+
+  const handleProjectSelect = (projectId: string) => {
+    if (projectModalItem) {
+      setFloorPlanItem(projectModalItem);
+      setProjectModalItem(null);
+      navigate(`/projects/${projectId}/design`);
+    }
   };
 
   let items = getFilteredItems();
@@ -464,6 +478,89 @@ export default function Catalog() {
                 <a href={detailItem.img} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-xs text-primary hover:underline">
                   <ExternalLink size={12} /> Tam boyut gorsel
                 </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Project Selection Modal */}
+      {projectModalItem && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setProjectModalItem(null)}>
+          <div className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-outline-variant/10">
+              <div>
+                <h2 className="text-base font-headline font-black text-on-surface">Projeye Ekle</h2>
+                <p className="text-xs text-on-surface-variant mt-0.5">Ürünü hangi projenin kat planına eklemek istiyorsunuz?</p>
+              </div>
+              <button onClick={() => setProjectModalItem(null)} className="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4 space-y-4">
+              {/* Active Projects */}
+              {activeProjects.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Clock size={13} className="text-primary" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-primary">Devam Eden Projeler</span>
+                  </div>
+                  <div className="space-y-2">
+                    {activeProjects.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => handleProjectSelect(p.id)}
+                        className="w-full text-left px-4 py-3 rounded-xl bg-primary/5 hover:bg-primary/10 border border-primary/15 hover:border-primary/30 transition-all group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors">{p.name}</span>
+                          <MapPin size={14} className="text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[10px] text-on-surface-variant">{p.clientName}</span>
+                          <span className="text-[10px] text-on-surface-variant">{p.area} m²</span>
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant">{p.progress}%</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Completed Projects */}
+              {completedProjects.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <CheckCircle2 size={13} className="text-on-surface-variant/50" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/50">Tamamlanan Projeler</span>
+                  </div>
+                  <div className="space-y-2">
+                    {completedProjects.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => handleProjectSelect(p.id)}
+                        className="w-full text-left px-4 py-3 rounded-xl bg-surface-container-highest hover:bg-surface-container-high border border-outline-variant/10 transition-all group opacity-70 hover:opacity-100"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-bold text-on-surface-variant group-hover:text-on-surface transition-colors">{p.name}</span>
+                          <MapPin size={14} className="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[10px] text-on-surface-variant/70">{p.clientName}</span>
+                          <span className="text-[10px] text-on-surface-variant/70">{p.area} m²</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {projects.length === 0 && (
+                <div className="py-10 text-center">
+                  <Package size={36} className="mx-auto text-on-surface-variant/20 mb-3" />
+                  <p className="text-sm font-bold text-on-surface-variant">Henüz proje yok</p>
+                  <p className="text-xs text-on-surface-variant/60 mt-1">Önce bir proje oluşturun.</p>
+                </div>
               )}
             </div>
           </div>
