@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { useProjectStore, type ProductItem } from '../../stores/projectStore';
 import {
   ArrowLeft, Ruler, ClipboardList, Calendar, Building,
-  Plus, Trash2, Edit, Package, Flame, Droplets, Refrigerator,
-  Table, Microwave, Waves, Image as ImageIcon, Eye, Settings2, Users
+  Plus, Trash2, Package, Flame, Droplets, Refrigerator,
+  Table, Microwave, Waves, Eye, Settings2, Users, FileText, Download
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 
 const ICON_MAP: Record<string, any> = {
   refrigerator: Refrigerator, flame: Flame, droplets: Droplets,
@@ -21,12 +22,199 @@ const CATEGORY_COLORS: Record<string, string> = {
   cooking: '#ef4444', cold: '#3b82f6', cleaning: '#06b6d4', neutral: '#6b7280', other: '#8b5cf6',
 };
 
+function QuoteTab({ project }: { project: import('../../stores/projectStore').Project }) {
+  const { products, name, clientName, id } = project;
+  const subtotal = products.reduce((sum, p) => sum + p.price, 0);
+  const vatRate = 0.19;
+  const vat = subtotal * vatRate;
+  const total = subtotal + vat;
+  const fmt = (n: number) => n > 0 ? `€${n.toLocaleString('de-DE', { minimumFractionDigits: 2 })}` : '—';
+
+  const exportQuotePDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text(`2MC Gastro — Teklif`, 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Proje: ${name}`, 14, 30);
+    doc.text(`Müşteri: ${clientName || '—'}`, 14, 37);
+    doc.text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, 14, 44);
+    let y = 58;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Ürün', 14, y);
+    doc.text('Açıklama', 70, y);
+    doc.text('Adet', 140, y);
+    doc.text('Fiyat', 165, y);
+    y += 2; doc.line(14, y, 196, y); y += 6;
+    doc.setFont('helvetica', 'normal');
+    products.forEach((prod) => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.text(prod.name.substring(0, 30), 14, y);
+      doc.text(prod.description.substring(0, 35), 70, y);
+      doc.text('1', 140, y);
+      doc.text(prod.price > 0 ? `€${prod.price.toLocaleString()}` : '—', 165, y);
+      y += 7;
+    });
+    y += 4; doc.line(14, y, 196, y); y += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Ara Toplam: ${fmt(subtotal)}`, 140, y); y += 7;
+    doc.text(`KDV (19%): ${fmt(vat)}`, 140, y); y += 7;
+    doc.text(`TOPLAM: ${fmt(total)}`, 140, y);
+    doc.save(`Teklif_${id}_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="font-headline font-black text-xl text-on-surface">Teklif Formu</h2>
+          <p className="text-sm text-on-surface-variant mt-0.5">{clientName || 'Müşteri'} — {name}</p>
+        </div>
+        <button
+          onClick={exportQuotePDF}
+          className="flex items-center gap-2 bg-surface-container-low hover:bg-surface-container-high text-primary px-5 py-2.5 rounded-lg font-bold text-sm transition-all shadow-sm border border-primary/20 self-start"
+        >
+          <Download size={16} /> PDF İndir
+        </button>
+      </div>
+
+      {/* Quote Header Card */}
+      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden">
+        <div className="bg-primary px-6 py-4">
+          <div className="flex items-center justify-between text-white">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest opacity-70">Proje</p>
+              <p className="text-lg font-black">{name}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-bold uppercase tracking-widest opacity-70">Tarih</p>
+              <p className="font-bold">{new Date().toLocaleDateString('tr-TR')}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Product rows */}
+        {products.length === 0 ? (
+          <div className="py-16 text-center">
+            <Package size={40} className="mx-auto text-slate-200 mb-3" />
+            <p className="text-slate-400 font-medium">Teklif için ürün ekleyin</p>
+            <Link to={`/projects/${project.id}/products/add`} className="text-primary text-sm font-bold hover:underline mt-2 inline-block">
+              Ürün ekle →
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-outline-variant/10">
+            {/* Table header — hidden on mobile */}
+            <div className="hidden sm:grid grid-cols-12 gap-2 px-6 py-3 bg-surface-container text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+              <div className="col-span-1"></div>
+              <div className="col-span-4">Ürün</div>
+              <div className="col-span-3">Açıklama</div>
+              <div className="col-span-1 text-center">Adet</div>
+              <div className="col-span-3 text-right">Fiyat</div>
+            </div>
+
+            {products.map((prod, idx) => {
+              const Icon = ICON_MAP[prod.icon] || Package;
+              return (
+                <div key={prod.id} className={`px-4 sm:px-6 py-4 ${idx % 2 === 0 ? '' : 'bg-surface-container/30'}`}>
+                  {/* Mobile layout */}
+                  <div className="flex items-start gap-4 sm:hidden">
+                    {prod.imageData ? (
+                      <img src={prod.imageData} alt={prod.name} className="w-14 h-14 object-contain rounded-lg border border-outline-variant/20 bg-white p-1 flex-shrink-0" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                        <Icon size={20} style={{ color: CATEGORY_COLORS[prod.category] }} />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-on-surface">{prod.name}</p>
+                      <p className="text-[10px] font-mono text-on-surface-variant mt-0.5">{prod.code}</p>
+                      {prod.description && <p className="text-xs text-slate-400 mt-1">{prod.description}</p>}
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-bold text-sm text-primary">{prod.price > 0 ? fmt(prod.price) : '—'}</p>
+                      <p className="text-[10px] text-slate-400">Adet: 1</p>
+                    </div>
+                  </div>
+
+                  {/* Desktop layout */}
+                  <div className="hidden sm:grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-1">
+                      {prod.imageData ? (
+                        <img src={prod.imageData} alt={prod.name} className="w-12 h-12 object-contain rounded-lg border border-outline-variant/20 bg-white p-1" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center">
+                          <Icon size={18} style={{ color: CATEGORY_COLORS[prod.category] }} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="col-span-4">
+                      <p className="font-bold text-sm text-on-surface">{prod.name}</p>
+                      <p className="text-[10px] font-mono text-on-surface-variant mt-0.5">{prod.code}</p>
+                      {prod.brand && <p className="text-[10px] text-slate-400">{prod.brand}</p>}
+                    </div>
+                    <div className="col-span-3">
+                      <p className="text-xs text-on-surface-variant">{prod.description || '—'}</p>
+                      {prod.kw > 0 && <p className="text-[10px] text-slate-400 mt-0.5">{prod.kw} kW · {prod.powerType}</p>}
+                    </div>
+                    <div className="col-span-1 text-center">
+                      <span className="font-black text-primary text-lg">1</span>
+                    </div>
+                    <div className="col-span-3 text-right">
+                      {prod.price > 0 ? (
+                        <span className="font-bold text-sm text-primary">{fmt(prod.price)}</span>
+                      ) : (
+                        <span className="text-slate-300 text-sm">—</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Totals */}
+        {products.length > 0 && (
+          <div className="px-6 py-5 bg-surface-container border-t border-outline-variant/10">
+            <div className="max-w-xs ml-auto space-y-2">
+              <div className="flex justify-between text-sm text-on-surface-variant">
+                <span>Ara Toplam</span>
+                <span className="font-bold">{fmt(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-on-surface-variant">
+                <span>KDV (19%)</span>
+                <span className="font-bold">{fmt(vat)}</span>
+              </div>
+              <div className="flex justify-between items-center border-t border-outline-variant/20 pt-3">
+                <span className="font-black text-base text-on-surface uppercase tracking-wide">Genel Toplam</span>
+                <span className="font-black text-xl text-primary">{fmt(total)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Notes */}
+      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-5">
+        <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-3">Notlar & Koşullar</h3>
+        <ul className="text-xs text-on-surface-variant space-y-1.5">
+          <li>• Bu teklif hazırlanış tarihinden itibaren 30 gün geçerlidir.</li>
+          <li>• Fiyatlara KDV dahil değildir. %19 KDV ayrıca uygulanır.</li>
+          <li>• Teslimat süresi sipariş tarihinden itibaren 4-8 haftadır.</li>
+          <li>• Montaj ve devreye alma hizmetleri ayrıca fiyatlandırılır.</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 export default function ProjectDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { projects, selectedProject, selectProject, clearSelection, removeProductFromProject } = useProjectStore();
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'quote' | 'settings'>('overview');
   const [viewProduct, setViewProduct] = useState<ProductItem | null>(null);
 
   useEffect(() => {
@@ -97,6 +285,7 @@ export default function ProjectDetailPage() {
           {[
             { key: 'overview', label: 'Genel Bakış', icon: Building },
             { key: 'products', label: `Ürünler (${p.products.length})`, icon: Package },
+            { key: 'quote', label: 'Teklif', icon: FileText },
             { key: 'settings', label: 'Ayarlar', icon: Settings2 },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -321,6 +510,11 @@ export default function ProjectDetailPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Quote Tab */}
+      {activeTab === 'quote' && (
+        <QuoteTab project={p} />
       )}
 
       {/* Settings Tab */}

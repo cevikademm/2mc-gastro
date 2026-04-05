@@ -52,7 +52,8 @@
     "logout": "Çıkış Yap",
     "newSpecification": "Yeni Şartname",
     "saveRevision": "Revizyon Kaydet",
-    "exportDWG": "DWG Dışa Aktar"
+    "exportDWG": "DWG Dışa Aktar",
+    "payment": "Abonelik"
   },
   "brand": {
     "name": "2MC Gastro",

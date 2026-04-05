@@ -17,6 +17,7 @@ import SettingsPage from './pages/settings/SettingsPage';
 import SupportPage from './pages/support/SupportPage';
 import DocsPage from './pages/docs/DocsPage';
 import ProfilePage from './pages/profile/ProfilePage';
+import PaymentPage from './pages/payment/PaymentPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="support" element={<SupportPage />} />
           <Route path="docs" element={<DocsPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="payment" element={<PaymentPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

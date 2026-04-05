@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabase';
 
 export interface User {
   id: string;
@@ -29,6 +30,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  loginWithGoogle: () => Promise<void>;
   register: (data: Partial<User> & { password: string }) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
@@ -63,8 +65,27 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: true,
       isLoading: false,
 
-      login: async (email: string, _password: string) => {
+      login: async (email: string, password: string) => {
         set({ isLoading: true });
+        // Try Supabase if configured
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        if (supabaseUrl) {
+          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+          if (!error && data.user) {
+            const user: User = {
+              ...defaultUser,
+              id: data.user.id,
+              email: data.user.email || email,
+              fullName: data.user.user_metadata?.full_name || defaultUser.fullName,
+              avatar: data.user.user_metadata?.avatar_url,
+            };
+            set({ user, isAuthenticated: true, isLoading: false });
+            return true;
+          }
+          set({ isLoading: false });
+          return false;
+        }
+        // Fallback mock auth
         await new Promise((r) => setTimeout(r, 800));
         if (email) {
           set({ user: { ...defaultUser, email }, isAuthenticated: true, isLoading: false });
@@ -72,6 +93,21 @@ export const useAuthStore = create<AuthState>()(
         }
         set({ isLoading: false });
         return false;
+      },
+
+      loginWithGoogle: async () => {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        if (!supabaseUrl) {
+          // Mock: just authenticate directly
+          set({ user: { ...defaultUser }, isAuthenticated: true });
+          return;
+        }
+        await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/#/dashboard`,
+          },
+        });
       },
 
       register: async (data) => {

@@ -21,6 +21,7 @@ export default function BOM() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { items, searchQuery, setSearch, getFilteredItems, getTotalItems, getUniqueSKUs, projectId } = useBOMStore();
+  const totalValue = getFilteredItems().reduce((sum, i) => sum + i.quantity * (i.unitPrice || 0), 0);
   const equipmentStore = useEquipmentStore();
   const filtered = getFilteredItems();
   const [detailItem, setDetailItem] = useState<EquipmentItem | null>(null);
@@ -124,7 +125,7 @@ export default function BOM() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm">
           <p className="text-on-surface-variant text-xs uppercase tracking-widest font-bold mb-2">{t('bom.totalItems')}</p>
           <p className="text-4xl font-headline font-black text-primary">{getTotalItems()}</p>
@@ -136,6 +137,10 @@ export default function BOM() {
         <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm">
           <p className="text-on-surface-variant text-xs uppercase tracking-widest font-bold mb-2">Favoriler</p>
           <p className="text-4xl font-headline font-black text-pink-500">{equipmentStore.favorites.length}</p>
+        </div>
+        <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm">
+          <p className="text-on-surface-variant text-xs uppercase tracking-widest font-bold mb-2">Toplam Değer</p>
+          <p className="text-2xl font-headline font-black text-emerald-600">{formatPrice(totalValue)}</p>
         </div>
         <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 relative overflow-hidden shadow-sm">
           <div className="absolute inset-0 bg-primary opacity-5"></div>
@@ -175,7 +180,9 @@ export default function BOM() {
                 <th className="px-4 py-4 w-20">{t('bom.quantity')}</th>
                 <th className="px-4 py-4 w-48">{t('bom.articleCode')}</th>
                 <th className="px-4 py-4">{t('bom.designation')}</th>
-                <th className="px-4 py-4 text-center w-32">Islemler</th>
+                <th className="px-4 py-4 text-right w-32">Birim Fiyat</th>
+                <th className="px-4 py-4 text-right w-32">Toplam</th>
+                <th className="px-4 py-4 text-center w-32">İşlemler</th>
                 <th className="px-4 py-4 text-right w-28">{t('common.status')}</th>
               </tr>
             </thead>
@@ -200,6 +207,12 @@ export default function BOM() {
                     <td className="px-4 py-3 font-headline font-bold text-primary text-lg">{String(item.quantity).padStart(2, '0')}</td>
                     <td className="px-4 py-3 text-on-surface-variant font-mono text-xs">{item.code}</td>
                     <td className="px-4 py-3 font-medium text-sm">{item.description}</td>
+                    <td className="px-4 py-3 text-right font-mono text-sm text-on-surface-variant">
+                      {item.unitPrice > 0 ? formatPrice(item.unitPrice) : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono text-sm font-bold text-primary">
+                      {item.unitPrice > 0 ? formatPrice(item.quantity * item.unitPrice) : '—'}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1">
                         {/* Show on floor plan button */}
@@ -233,7 +246,7 @@ export default function BOM() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-on-surface-variant">{t('common.noData')}</td>
+                  <td colSpan={8} className="px-6 py-12 text-center text-on-surface-variant">{t('common.noData')}</td>
                 </tr>
               )}
             </tbody>
