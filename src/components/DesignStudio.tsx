@@ -9,7 +9,7 @@ import {
   Microwave, Waves, Table, Refrigerator,
   MousePointer2, Hand, Plus, Minus, Lock, Unlock,
   Package, ArrowLeft, Search, X, Heart, Zap,
-  Ruler, Euro, ExternalLink, Pen, Square, RotateCcw
+  Ruler, Euro, ExternalLink, Pen, RotateCcw
 } from 'lucide-react';
 
 /* ─── Types ─── */
@@ -232,12 +232,13 @@ export default function DesignStudio() {
 
   const saved = loadSaved();
 
-  // Room shape state
-  const [roomShape, setRoomShape] = useState<RoomShape>(saved?.roomShape || 'rectangle');
+  // Room shape state — always polygon (architectural mode)
+  const [roomShape, setRoomShape] = useState<RoomShape>('polygon');
   const [roomWidthCm, setRoomWidthCm] = useState(saved?.roomWidthCm || project?.roomWidthCm || 1000);
   const [roomHeightCm, setRoomHeightCm] = useState(saved?.roomHeightCm || project?.roomHeightCm || 600);
   const [roomPolygon, setRoomPolygon] = useState<Point[]>(saved?.roomPolygon || []);
-  const [isDrawingRoom, setIsDrawingRoom] = useState(false);
+  const savedPolygonExists = (saved?.roomPolygon?.length ?? 0) >= 3;
+  const [isDrawingRoom, setIsDrawingRoom] = useState(!savedPolygonExists);
   const [drawingPoints, setDrawingPoints] = useState<Point[]>([]);
   const [mousePos, setMousePos] = useState<Point>({ x: 0, y: 0 });
   const [draggingVertex, setDraggingVertex] = useState<number | null>(null);
@@ -753,22 +754,6 @@ export default function DesignStudio() {
             <button onClick={startDrawingRoom} className={`p-1.5 rounded-md transition-all ${activeTool === 'draw' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400'}`} title="Oda Ciz"><Pen size={15} /></button>
           </div>
 
-          {/* Mobil: Oda şekli butonları */}
-          <div className="flex md:hidden bg-slate-100 rounded-lg p-0.5 mr-2">
-            <button
-              onClick={switchToRectangle}
-              className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 ${roomShape === 'rectangle' ? 'bg-white shadow-sm text-primary' : 'text-slate-400'}`}
-            >
-              <Square size={11} /> Rect
-            </button>
-            <button
-              onClick={startDrawingRoom}
-              className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 ${roomShape === 'polygon' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400'}`}
-            >
-              <Pen size={11} /> Çiz
-            </button>
-          </div>
-
           {isDrawingRoom && (
             <div className="flex items-center gap-1 mr-2 flex-wrap">
               <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded hidden sm:inline">
@@ -850,15 +835,8 @@ export default function DesignStudio() {
                 </>
               )}
 
-              {/* Room shape */}
-              {roomShape === 'rectangle' ? (
-                <>
-                  <rect x={0} y={0} width={roomWidthCm} height={roomHeightCm} fill="#ffffff" stroke="#334155" strokeWidth={3} className="room-floor" />
-                  {/* Dimension labels */}
-                  <text x={roomWidthCm / 2} y={-12} textAnchor="middle" fontSize={11} fontWeight="bold" fill="#475569" fontFamily="monospace">{(roomWidthCm / 100).toFixed(1)}m</text>
-                  <text x={roomWidthCm + 20} y={roomHeightCm / 2} textAnchor="middle" fontSize={11} fontWeight="bold" fill="#475569" fontFamily="monospace" transform={`rotate(90 ${roomWidthCm + 20} ${roomHeightCm / 2})`}>{(roomHeightCm / 100).toFixed(1)}m</text>
-                </>
-              ) : roomPolygon.length >= 3 ? (
+              {/* Room shape — architectural polygon */}
+              {roomPolygon.length >= 3 && (
                 <>
                   <path d={polygonSVGPath(roomPolygon)} fill="#ffffff" stroke="#334155" strokeWidth={3} className="room-floor" />
                   {/* Wall dimension labels */}
@@ -879,7 +857,7 @@ export default function DesignStudio() {
                     />
                   ))}
                 </>
-              ) : null}
+              )}
 
               {/* ─── Scale Ruler ─── */}
               {(() => {
@@ -1033,58 +1011,33 @@ export default function DesignStudio() {
         <div className="flex-1 overflow-y-auto">
           {rightPanelTab === 'catalog' && (
             <div className="p-3 space-y-3">
-              {/* Room shape controls */}
+              {/* Room shape controls — architectural (polygon) mode only */}
               <div className="p-3 bg-slate-50 rounded-lg space-y-3">
-                <h4 className="text-[10px] font-black uppercase text-slate-500">Oda Sekli</h4>
-                <div className="flex gap-2">
-                  <button
-                    onClick={switchToRectangle}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold transition-all ${
-                      roomShape === 'rectangle' ? 'bg-primary text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:border-primary/30'
-                    }`}
-                  >
-                    <Square size={12} /> Dikdortgen
-                  </button>
-                  <button
-                    onClick={startDrawingRoom}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold transition-all ${
-                      roomShape === 'polygon' ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:border-emerald-300'
-                    }`}
-                  >
-                    <Pen size={12} /> Ozel Ciz
-                  </button>
-                </div>
-
-                {roomShape === 'rectangle' && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[9px] font-bold text-slate-400 uppercase">Uzunluk (cm)</label>
-                      <input type="number" value={roomWidthCm} onChange={(e) => setRoomWidthCm(Math.max(100, Number(e.target.value)))} className="w-full mt-0.5 px-2 py-1.5 text-sm font-bold border border-slate-200 rounded-md focus:ring-2 focus:ring-primary outline-none" />
-                    </div>
-                    <div>
-                      <label className="text-[9px] font-bold text-slate-400 uppercase">Genislik (cm)</label>
-                      <input type="number" value={roomHeightCm} onChange={(e) => setRoomHeightCm(Math.max(100, Number(e.target.value)))} className="w-full mt-0.5 px-2 py-1.5 text-sm font-bold border border-slate-200 rounded-md focus:ring-2 focus:ring-primary outline-none" />
-                    </div>
-                  </div>
-                )}
-
-                {roomShape === 'polygon' && roomPolygon.length >= 3 && (
+                <h4 className="text-[10px] font-black uppercase text-slate-500">Oda Planı</h4>
+                {roomPolygon.length >= 3 ? (
                   <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-2 text-center">
                       <div className="bg-white rounded-lg p-2 border border-slate-200">
                         <div className="text-[8px] font-bold text-slate-400 uppercase">Alan</div>
-                        <div className="text-sm font-black text-primary">{roomAreaM2}m2</div>
+                        <div className="text-sm font-black text-primary">{roomAreaM2}m²</div>
                       </div>
                       <div className="bg-white rounded-lg p-2 border border-slate-200">
-                        <div className="text-[8px] font-bold text-slate-400 uppercase">Cevre</div>
+                        <div className="text-[8px] font-bold text-slate-400 uppercase">Çevre</div>
                         <div className="text-sm font-black text-primary">{roomPerimeterM}m</div>
                       </div>
                     </div>
                     <div className="text-[9px] text-slate-400">
-                      {roomPolygon.length} kose noktasi — noktalari surukleyerek duzenleyin
+                      {roomPolygon.length} köşe — noktaları sürükleyerek düzenleyin
                     </div>
                     <button onClick={startDrawingRoom} className="w-full py-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg flex items-center justify-center gap-1 transition-all">
-                      <RotateCcw size={11} /> Yeniden Ciz
+                      <RotateCcw size={11} /> Yeniden Çiz
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-[10px] text-slate-400">Oda sınırlarını çizmek için tuvale tıklayın.</p>
+                    <button onClick={startDrawingRoom} className="w-full py-1.5 text-[10px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg flex items-center justify-center gap-1 transition-all">
+                      <Pen size={11} /> Çizmeye Başla
                     </button>
                   </div>
                 )}
