@@ -588,8 +588,9 @@ export default function DesignStudio() {
 
   // Add from catalog
   const addEquipmentToFloorPlan = useCallback((eq: EquipmentItem) => {
-    const widthCm = Math.max(30, Math.round(eq.l / 10));
-    const heightCm = Math.max(30, Math.round(eq.w / 10));
+    // Gerçek ölçüler: mm → cm, minimum 5cm (çok küçük ekipmanlar için)
+    const widthCm = Math.max(5, Math.round(eq.l / 10));
+    const heightCm = Math.max(5, Math.round(eq.w / 10));
     const centerX = roomShape === 'polygon' && roomPolygon.length >= 3 ? (bounds.minX + bounds.w / 2) : roomWidthCm / 2;
     const centerY = roomShape === 'polygon' && roomPolygon.length >= 3 ? (bounds.minY + bounds.h / 2) : roomHeightCm / 2;
 
@@ -618,8 +619,8 @@ export default function DesignStudio() {
     e.preventDefault();
     if (!trayDragItem) return;
     const coords = getCanvasCoords(e as any);
-    const widthCm = Math.max(30, Math.round((trayDragItem.l || 700) / 10));
-    const heightCm = Math.max(30, Math.round((trayDragItem.w || 700) / 10));
+    const widthCm = Math.max(5, Math.round((trayDragItem.l || 700) / 10));
+    const heightCm = Math.max(5, Math.round((trayDragItem.w || 700) / 10));
     let x = coords.x - widthCm / 2;
     let y = coords.y - heightCm / 2;
     if (snapToGrid) { x = snapVal(x, gridSize); y = snapVal(y, gridSize); }
@@ -694,7 +695,11 @@ export default function DesignStudio() {
     });
   };
 
-  useEffect(() => { const t = setTimeout(zoomFit, 200); return () => clearTimeout(t); }, []);
+  useEffect(() => {
+    const t = setTimeout(zoomFit, 300);
+    window.addEventListener('resize', zoomFit);
+    return () => { clearTimeout(t); window.removeEventListener('resize', zoomFit); };
+  }, []);
 
   // Listen for floorPlanItemId from catalog
   useEffect(() => {
@@ -876,6 +881,26 @@ export default function DesignStudio() {
                 </>
               ) : null}
 
+              {/* ─── Scale Ruler ─── */}
+              {(() => {
+                // 1m = 100cm, göster: 1m çizgisi
+                const rulerX = roomShape === 'polygon' && roomPolygon.length >= 3 ? bounds.minX : 0;
+                const rulerY = (roomShape === 'polygon' && roomPolygon.length >= 3 ? bounds.maxY : roomHeightCm) + 20;
+                const rulerLen = 100; // 100cm = 1m
+                return (
+                  <g>
+                    {/* 1m ruler line */}
+                    <line x1={rulerX} y1={rulerY} x2={rulerX + rulerLen} y2={rulerY} stroke="#64748b" strokeWidth={2 / zoom} />
+                    <line x1={rulerX} y1={rulerY - 5 / zoom} x2={rulerX} y2={rulerY + 5 / zoom} stroke="#64748b" strokeWidth={2 / zoom} />
+                    <line x1={rulerX + rulerLen} y1={rulerY - 5 / zoom} x2={rulerX + rulerLen} y2={rulerY + 5 / zoom} stroke="#64748b" strokeWidth={2 / zoom} />
+                    <text x={rulerX + rulerLen / 2} y={rulerY + 14 / zoom} textAnchor="middle" fontSize={10 / zoom} fontWeight="bold" fill="#64748b" fontFamily="monospace">1 m</text>
+                    {/* 50cm half-marker */}
+                    <line x1={rulerX + 50} y1={rulerY - 3 / zoom} x2={rulerX + 50} y2={rulerY + 3 / zoom} stroke="#94a3b8" strokeWidth={1 / zoom} />
+                    <text x={rulerX + 50} y={rulerY + 14 / zoom} textAnchor="middle" fontSize={8 / zoom} fill="#94a3b8" fontFamily="monospace">50cm</text>
+                  </g>
+                );
+              })()}
+
               {/* Drawing preview */}
               {isDrawingRoom && drawingPoints.length > 0 && (
                 <>
@@ -946,15 +971,30 @@ export default function DesignStudio() {
                     onDoubleClick={(e) => handleItemDoubleClick(e, item)}
                   >
                     {item.imageData ? (
-                      <img src={item.imageData} alt={item.name} className="w-2/3 h-1/2 object-contain" style={{ pointerEvents: 'none' }} />
+                      <img src={item.imageData} alt={item.name} className="object-contain" style={{ pointerEvents: 'none', width: '70%', height: '55%', maxWidth: '100%', maxHeight: '55%' }} />
                     ) : (
-                      <Icon size={Math.min(item.width, item.height) * 0.3} className="text-slate-500" style={{ pointerEvents: 'none' }} />
+                      <Icon size={Math.max(10, Math.min(item.width, item.height) * 0.28)} className="text-slate-500" style={{ pointerEvents: 'none' }} />
                     )}
-                    <span className="text-center font-bold leading-tight mt-0.5 text-slate-700" style={{ fontSize: Math.max(7, Math.min(10, item.width * 0.065)), maxWidth: item.width - 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
-                      {item.name}
-                    </span>
-                    <span className="text-slate-400 font-mono" style={{ fontSize: Math.max(6, Math.min(8, item.width * 0.05)), pointerEvents: 'none' }}>
-                      {item.width}x{item.height}
+                    {/* Ürün adı — sadece yeterince büyükse göster */}
+                    {item.width > 20 && item.height > 15 && (
+                      <span className="text-center font-bold leading-tight text-slate-700" style={{ fontSize: Math.max(6, Math.min(9, item.width * 0.07)), maxWidth: item.width - 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', pointerEvents: 'none', marginTop: 1 }}>
+                        {item.name}
+                      </span>
+                    )}
+                    {/* Ölçü etiketi — her zaman göster (seçiliyse daha belirgin) */}
+                    <span
+                      className="font-mono font-bold"
+                      style={{
+                        fontSize: Math.max(5, Math.min(8, item.width * 0.06)),
+                        color: isSelected ? '#1d4ed8' : '#64748b',
+                        background: isSelected ? 'rgba(219,234,254,0.9)' : 'rgba(255,255,255,0.7)',
+                        padding: '0 2px',
+                        borderRadius: 2,
+                        pointerEvents: 'none',
+                        marginTop: 1,
+                      }}
+                    >
+                      {item.width}×{item.height}cm
                     </span>
                     {item.locked && <div className="absolute top-1 right-1"><Lock size={8} className="text-slate-400" /></div>}
                     {isSelected && !item.locked && (
@@ -973,13 +1013,13 @@ export default function DesignStudio() {
         </div>
 
         {/* Status bar */}
-        <div className="h-7 bg-white border-t border-slate-200 flex items-center px-4 text-[10px] font-mono text-slate-500 gap-6 shrink-0">
-          <span>Alan: {roomAreaM2}m2</span>
-          <span>Cevre: {roomPerimeterM}m</span>
-          <span>Ekipman: {totalItems} ({equipmentAreaM2}m2)</span>
-          <span>Guc: {totalKW.toFixed(1)} kW</span>
-          {totalPrice > 0 && <span>Toplam: {formatPrice(totalPrice)}</span>}
-          <span className="ml-auto">{Math.round(zoom * 100)}%</span>
+        <div className="h-7 bg-white border-t border-slate-200 flex items-center px-4 text-[10px] font-mono text-slate-500 gap-4 shrink-0 overflow-x-auto">
+          <span className="font-bold text-primary shrink-0">1px = {(1/zoom).toFixed(1)}cm</span>
+          <span className="shrink-0">Alan: {roomAreaM2}m²</span>
+          <span className="hidden sm:inline shrink-0">Ekipman: {totalItems}</span>
+          <span className="hidden sm:inline shrink-0">Güç: {totalKW.toFixed(1)} kW</span>
+          {totalPrice > 0 && <span className="hidden md:inline shrink-0">Toplam: {formatPrice(totalPrice)}</span>}
+          <span className="ml-auto shrink-0 font-bold">{Math.round(zoom * 100)}%</span>
         </div>
       </div>
 
