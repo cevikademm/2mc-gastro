@@ -9,7 +9,8 @@ import {
   Microwave, Waves, Table, Refrigerator,
   MousePointer2, Hand, Plus, Minus, Lock, Unlock,
   Package, ArrowLeft, Search, X, Heart, Zap,
-  Ruler, Euro, ExternalLink, Pen, RotateCcw
+  Ruler, Euro, ExternalLink, Pen, RotateCcw,
+  DoorOpen, AppWindow
 } from 'lucide-react';
 
 /* ─── Types ─── */
@@ -36,6 +37,17 @@ interface PlacedItem {
 }
 
 type RoomShape = 'rectangle' | 'polygon';
+
+type OpeningType = 'door' | 'window' | 'double-door';
+
+interface WallOpening {
+  id: string;
+  type: OpeningType;
+  wallIndex: number;
+  t: number;
+  widthCm: number;
+  swingDir: 1 | -1;
+}
 
 const ICON_MAP: Record<string, any> = {
   refrigerator: Refrigerator, flame: Flame, droplets: Droplets,
@@ -104,6 +116,28 @@ function polygonSVGPath(pts: Point[]): string {
 
 function distancePP(a: Point, b: Point): number {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+
+/** Returns { wallIndex, t, dist } for the closest wall segment to point p */
+function nearestWall(p: Point, polygon: Point[]): { wallIndex: number; t: number; dist: number; foot: Point } {
+  let best = { wallIndex: 0, t: 0, dist: Infinity, foot: p };
+  const n = polygon.length;
+  for (let i = 0; i < n; i++) {
+    const a = polygon[i];
+    const b = polygon[(i + 1) % n];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq < 1) continue;
+    const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq));
+    const fx = a.x + t * dx;
+    const fy = a.y + t * dy;
+    const dist = Math.sqrt((p.x - fx) ** 2 + (p.y - fy) ** 2);
+    if (dist < best.dist) {
+      best = { wallIndex: i, t, dist, foot: { x: fx, y: fy } };
+    }
+  }
+  return best;
 }
 
 /* ─── Clamp item position inside room bounds ─── */
@@ -251,13 +285,18 @@ export default function DesignStudio() {
   const [showGrid, setShowGrid] = useState(true);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [gridSize] = useState(10);
-  const [activeTool, setActiveTool] = useState<'select' | 'pan' | 'draw'>('select');
+  const [activeTool, setActiveTool] = useState<'select' | 'pan' | 'draw'>(savedPolygonExists ? 'select' : 'draw');
 
   // Items on canvas
   const [placedItems, setPlacedItems] = useState<PlacedItem[]>(saved?.items || []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  // Wall openings (doors/windows)
+  const [wallOpenings, setWallOpenings] = useState<WallOpening[]>(saved?.wallOpenings || []);
+  const [selectedOpeningId, setSelectedOpeningId] = useState<string | null>(null);
+  const [addOpeningMode, setAddOpeningMode] = useState<OpeningType | null>(null);
 
   // History
   const [history, setHistory] = useState<PlacedItem[][]>([saved?.items || []]);
@@ -311,9 +350,10 @@ export default function DesignStudio() {
         roomHeightCm,
         roomShape,
         roomPolygon,
+        wallOpenings,
       }));
     } catch {}
-  }, [placedItems, roomWidthCm, roomHeightCm, roomShape, roomPolygon, storageKey]);
+  }, [placedItems, roomWidthCm, roomHeightCm, roomShape, roomPolygon, wallOpenings, storageKey]);
 
   // Catalog items
   const getCatalogItems = useCallback(() => {
@@ -482,8 +522,46 @@ export default function DesignStudio() {
     setActiveTool('select');
   };
 
+  /* ─── Wall opening helpers ─── */
+  const getOpeningPoint = useCallback((opening: WallOpening): { px: number; py: number; dx: number; dy: number } | null => {
+    if (roomPolygon.length < 3) return null;
+    const n = roomPolygon.length;
+    const a = roomPolygon[opening.wallIndex];
+    const b = roomPolygon[(opening.wallIndex + 1) % n];
+    const wx = b.x - a.x;
+    const wy = b.y - a.y;
+    const wlen = Math.sqrt(wx * wx + wy * wy);
+    if (wlen < 1) return null;
+    return {
+      px: a.x + opening.t * wx,
+      py: a.y + opening.t * wy,
+      dx: wx / wlen,
+      dy: wy / wlen,
+    };
+  }, [roomPolygon]);
+
   /* ─── Canvas mouse handlers ─── */
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    // Opening placement mode
+    if (addOpeningMode && roomPolygon.length >= 3) {
+      const coords = getCanvasCoords(e);
+      const nearest = nearestWall(coords, roomPolygon);
+      if (nearest.dist < 40 / zoom) {
+        const newOpening: WallOpening = {
+          id: Date.now().toString() + Math.random().toString(36).slice(2),
+          type: addOpeningMode,
+          wallIndex: nearest.wallIndex,
+          t: nearest.t,
+          widthCm: addOpeningMode === 'window' ? 100 : 90,
+          swingDir: 1,
+        };
+        setWallOpenings(prev => [...prev, newOpening]);
+        setSelectedOpeningId(newOpening.id);
+        setAddOpeningMode(null);
+      }
+      return;
+    }
+
     // Drawing mode: add point on click
     if (isDrawingRoom) {
       const coords = getCanvasCoords(e);
@@ -519,6 +597,20 @@ export default function DesignStudio() {
           return;
         }
       }
+    }
+
+    // Check if clicking near an opening handle
+    if (roomPolygon.length >= 3 && activeTool === 'select') {
+      const coords = getCanvasCoords(e);
+      for (const op of wallOpenings) {
+        const pt = getOpeningPoint(op);
+        if (pt && distancePP(coords, { x: pt.px, y: pt.py }) < 14 / zoom) {
+          setSelectedOpeningId(op.id);
+          setSelectedId(null);
+          return;
+        }
+      }
+      setSelectedOpeningId(null);
     }
 
     // Deselect
@@ -754,6 +846,26 @@ export default function DesignStudio() {
             <button onClick={startDrawingRoom} className={`p-1.5 rounded-md transition-all ${activeTool === 'draw' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400'}`} title="Oda Ciz"><Pen size={15} /></button>
           </div>
 
+          {roomPolygon.length >= 3 && !isDrawingRoom && (
+            <div className="flex bg-slate-100 rounded-lg p-0.5 mr-2">
+              <button
+                onClick={() => { setAddOpeningMode(addOpeningMode === 'door' ? null : 'door'); setActiveTool('select'); }}
+                className={`p-1.5 rounded-md transition-all ${addOpeningMode === 'door' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
+                title="Kapı Ekle"
+              ><DoorOpen size={15} /></button>
+              <button
+                onClick={() => { setAddOpeningMode(addOpeningMode === 'double-door' ? null : 'double-door'); setActiveTool('select'); }}
+                className={`p-1.5 rounded-md transition-all ${addOpeningMode === 'double-door' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
+                title="Çift Kanat Kapı"
+              ><DoorOpen size={15} className="scale-x-[-1]" /></button>
+              <button
+                onClick={() => { setAddOpeningMode(addOpeningMode === 'window' ? null : 'window'); setActiveTool('select'); }}
+                className={`p-1.5 rounded-md transition-all ${addOpeningMode === 'window' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
+                title="Pencere Ekle"
+              ><AppWindow size={15} /></button>
+            </div>
+          )}
+
           {isDrawingRoom && (
             <div className="flex items-center gap-1 mr-2 flex-wrap">
               <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded hidden sm:inline">
@@ -816,6 +928,27 @@ export default function DesignStudio() {
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleCanvasDrop}
         >
+          {/* Drawing guide overlay */}
+          {isDrawingRoom && drawingPoints.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+              <div className="bg-emerald-600/90 text-white text-sm font-bold px-6 py-3 rounded-2xl shadow-xl text-center max-w-xs">
+                Tuvale tıklayarak oda köşelerini çizin.<br />
+                <span className="text-emerald-200 text-xs font-normal">Enter ile tamamlayın • Esc ile iptal edin</span>
+              </div>
+            </div>
+          )}
+
+          {/* Add opening mode overlay */}
+          {addOpeningMode && (
+            <div className="absolute inset-0 flex items-start justify-center pt-4 pointer-events-none z-10">
+              <div className="bg-blue-600/90 text-white text-sm font-bold px-5 py-2.5 rounded-2xl shadow-xl flex items-center gap-2">
+                {addOpeningMode === 'door' ? <DoorOpen size={16} /> : <AppWindow size={16} />}
+                {addOpeningMode === 'door' ? 'Kapı' : addOpeningMode === 'double-door' ? 'Çift Kanat Kapı' : 'Pencere'} eklemek için bir duvara tıklayın
+                <button className="pointer-events-auto ml-2 text-blue-200 hover:text-white" onClick={() => setAddOpeningMode(null)}><X size={14} /></button>
+              </div>
+            </div>
+          )}
+
           <div style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`, transformOrigin: '0 0', position: 'absolute', willChange: 'transform' }}>
             <svg width={renderSVGWidth} height={renderSVGHeight} className="overflow-visible">
 
@@ -858,6 +991,81 @@ export default function DesignStudio() {
                   ))}
                 </>
               )}
+
+              {/* ─── Wall Openings (doors/windows) ─── */}
+              {roomPolygon.length >= 3 && wallOpenings.map((op) => {
+                const pt = getOpeningPoint(op);
+                if (!pt) return null;
+                const { px, py, dx, dy } = pt;
+                const hw = op.widthCm / 2;
+                const nx = -dy;
+                const ny = dx;
+                const isSelected = selectedOpeningId === op.id;
+                const ax = px - dx * hw;
+                const ay = py - dy * hw;
+                const bx = px + dx * hw;
+                const by = py + dy * hw;
+
+                return (
+                  <g key={op.id} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setSelectedOpeningId(op.id); setSelectedId(null); }}>
+                    {/* White gap over wall */}
+                    <line x1={ax} y1={ay} x2={bx} y2={by} stroke="white" strokeWidth={6} />
+
+                    {op.type === 'door' && (
+                      <>
+                        {/* Door leaf line */}
+                        <line x1={ax} y1={ay} x2={ax + nx * op.widthCm * op.swingDir} y2={ay + ny * op.widthCm * op.swingDir} stroke={isSelected ? '#1d4ed8' : '#475569'} strokeWidth={2} />
+                        {/* Swing arc */}
+                        <path
+                          d={`M ${ax} ${ay} A ${op.widthCm} ${op.widthCm} 0 0 ${op.swingDir === 1 ? 1 : 0} ${ax + nx * op.widthCm * op.swingDir} ${ay + ny * op.widthCm * op.swingDir}`}
+                          fill="none" stroke={isSelected ? '#3b82f6' : '#94a3b8'} strokeWidth={1.5} strokeDasharray="4 2"
+                        />
+                        {/* Door frame lines */}
+                        <line x1={ax} y1={ay} x2={ax + nx * 4} y2={ay + ny * 4} stroke={isSelected ? '#1d4ed8' : '#475569'} strokeWidth={2} />
+                        <line x1={bx} y1={by} x2={bx + nx * 4} y2={by + ny * 4} stroke={isSelected ? '#1d4ed8' : '#475569'} strokeWidth={2} />
+                      </>
+                    )}
+
+                    {op.type === 'double-door' && (
+                      <>
+                        {/* Left door */}
+                        <line x1={px} y1={py} x2={px - dx * hw + nx * hw} y2={py - dy * hw + ny * hw} stroke={isSelected ? '#1d4ed8' : '#475569'} strokeWidth={2} />
+                        <path d={`M ${px} ${py} A ${hw} ${hw} 0 0 0 ${px - dx * hw + nx * hw} ${py - dy * hw + ny * hw}`} fill="none" stroke={isSelected ? '#3b82f6' : '#94a3b8'} strokeWidth={1.5} strokeDasharray="4 2" />
+                        {/* Right door */}
+                        <line x1={px} y1={py} x2={px + dx * hw + nx * hw} y2={py + dy * hw + ny * hw} stroke={isSelected ? '#1d4ed8' : '#475569'} strokeWidth={2} />
+                        <path d={`M ${px} ${py} A ${hw} ${hw} 0 0 1 ${px + dx * hw + nx * hw} ${py + dy * hw + ny * hw}`} fill="none" stroke={isSelected ? '#3b82f6' : '#94a3b8'} strokeWidth={1.5} strokeDasharray="4 2" />
+                        {/* Frame lines */}
+                        <line x1={ax} y1={ay} x2={ax + nx * 4} y2={ay + ny * 4} stroke={isSelected ? '#1d4ed8' : '#475569'} strokeWidth={2} />
+                        <line x1={bx} y1={by} x2={bx + nx * 4} y2={by + ny * 4} stroke={isSelected ? '#1d4ed8' : '#475569'} strokeWidth={2} />
+                      </>
+                    )}
+
+                    {op.type === 'window' && (
+                      <>
+                        {/* Double parallel lines */}
+                        <line x1={ax} y1={ay} x2={bx} y2={by} stroke={isSelected ? '#1d4ed8' : '#475569'} strokeWidth={2} />
+                        <line x1={ax + nx * 5} y1={ay + ny * 5} x2={bx + nx * 5} y2={by + ny * 5} stroke={isSelected ? '#3b82f6' : '#64748b'} strokeWidth={2} />
+                        {/* Frame ends */}
+                        <line x1={ax} y1={ay} x2={ax + nx * 5} y2={ay + ny * 5} stroke={isSelected ? '#1d4ed8' : '#475569'} strokeWidth={2} />
+                        <line x1={bx} y1={by} x2={bx + nx * 5} y2={by + ny * 5} stroke={isSelected ? '#1d4ed8' : '#475569'} strokeWidth={2} />
+                      </>
+                    )}
+
+                    {/* Selection handle circle */}
+                    <circle cx={px} cy={py} r={6 / zoom} fill={isSelected ? '#1d4ed8' : '#f8fafc'} stroke={isSelected ? '#1d4ed8' : '#94a3b8'} strokeWidth={1.5 / zoom} />
+
+                    {/* Delete X when selected */}
+                    {isSelected && (
+                      <g transform={`translate(${px + 10 / zoom}, ${py - 10 / zoom})`} style={{ cursor: 'pointer' }}
+                        onClick={(e) => { e.stopPropagation(); setWallOpenings(prev => prev.filter(o => o.id !== op.id)); setSelectedOpeningId(null); }}>
+                        <circle r={7 / zoom} fill="#ef4444" stroke="white" strokeWidth={1.5 / zoom} />
+                        <line x1={-3 / zoom} y1={-3 / zoom} x2={3 / zoom} y2={3 / zoom} stroke="white" strokeWidth={1.5 / zoom} />
+                        <line x1={3 / zoom} y1={-3 / zoom} x2={-3 / zoom} y2={3 / zoom} stroke="white" strokeWidth={1.5 / zoom} />
+                      </g>
+                    )}
+                  </g>
+                );
+              })}
 
               {/* ─── Scale Ruler ─── */}
               {(() => {
@@ -1032,6 +1240,67 @@ export default function DesignStudio() {
                     <button onClick={startDrawingRoom} className="w-full py-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg flex items-center justify-center gap-1 transition-all">
                       <RotateCcw size={11} /> Yeniden Çiz
                     </button>
+
+                    {/* Wall openings section */}
+                    <div className="mt-2 pt-2 border-t border-slate-200">
+                      <h5 className="text-[10px] font-black uppercase text-slate-500 mb-2">Açıklıklar</h5>
+                      <div className="flex gap-1 mb-2">
+                        <button
+                          onClick={() => { setAddOpeningMode(addOpeningMode === 'door' ? null : 'door'); setActiveTool('select'); }}
+                          className={`flex-1 py-1 text-[9px] font-bold rounded flex items-center justify-center gap-0.5 transition-all ${addOpeningMode === 'door' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        ><DoorOpen size={10} /> Kapı</button>
+                        <button
+                          onClick={() => { setAddOpeningMode(addOpeningMode === 'double-door' ? null : 'double-door'); setActiveTool('select'); }}
+                          className={`flex-1 py-1 text-[9px] font-bold rounded flex items-center justify-center gap-0.5 transition-all ${addOpeningMode === 'double-door' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        ><DoorOpen size={10} /> Çift</button>
+                        <button
+                          onClick={() => { setAddOpeningMode(addOpeningMode === 'window' ? null : 'window'); setActiveTool('select'); }}
+                          className={`flex-1 py-1 text-[9px] font-bold rounded flex items-center justify-center gap-0.5 transition-all ${addOpeningMode === 'window' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        ><AppWindow size={10} /> Pencere</button>
+                      </div>
+
+                      {/* Selected opening properties */}
+                      {selectedOpeningId && (() => {
+                        const op = wallOpenings.find(o => o.id === selectedOpeningId);
+                        if (!op) return null;
+                        return (
+                          <div className="bg-blue-50 rounded-lg p-2 space-y-1.5 mb-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-bold text-blue-700">{op.type === 'door' ? 'Kapı' : op.type === 'double-door' ? 'Çift Kanat' : 'Pencere'}</span>
+                              <button onClick={() => { setWallOpenings(prev => prev.filter(o => o.id !== selectedOpeningId)); setSelectedOpeningId(null); }} className="text-red-400 hover:text-red-600"><Trash2 size={11} /></button>
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-bold text-slate-400">Genişlik (cm)</label>
+                              <input type="number" value={op.widthCm} onChange={(e) => setWallOpenings(prev => prev.map(o => o.id === selectedOpeningId ? { ...o, widthCm: Math.max(30, Number(e.target.value)) } : o))}
+                                className="w-full mt-0.5 px-2 py-1 text-xs border border-slate-200 rounded outline-none focus:ring-1 focus:ring-blue-400" />
+                            </div>
+                            {op.type === 'door' && (
+                              <button onClick={() => setWallOpenings(prev => prev.map(o => o.id === selectedOpeningId ? { ...o, swingDir: (o.swingDir === 1 ? -1 : 1) as 1 | -1 } : o))}
+                                className="w-full py-1 text-[9px] font-bold bg-white text-slate-600 rounded border border-slate-200 hover:bg-slate-50">
+                                Kapı yönü çevir ({op.swingDir === 1 ? '→' : '←'})
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* List of openings */}
+                      {wallOpenings.length > 0 && (
+                        <div className="space-y-1">
+                          {wallOpenings.map(op => (
+                            <div key={op.id} className={`flex items-center gap-1.5 px-2 py-1 rounded text-[9px] cursor-pointer ${selectedOpeningId === op.id ? 'bg-blue-100 text-blue-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                              onClick={() => setSelectedOpeningId(selectedOpeningId === op.id ? null : op.id)}>
+                              {op.type === 'window' ? <AppWindow size={10} /> : <DoorOpen size={10} />}
+                              <span className="flex-1 font-bold">{op.type === 'door' ? 'Kapı' : op.type === 'double-door' ? 'Çift Kanat' : 'Pencere'} — {op.widthCm}cm</span>
+                              <button onClick={(e) => { e.stopPropagation(); setWallOpenings(prev => prev.filter(o => o.id !== op.id)); if (selectedOpeningId === op.id) setSelectedOpeningId(null); }} className="text-red-300 hover:text-red-500"><X size={10} /></button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {wallOpenings.length === 0 && (
+                        <p className="text-[9px] text-slate-400">Henüz açıklık yok. Kapı veya pencere ekleyin.</p>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-2">
