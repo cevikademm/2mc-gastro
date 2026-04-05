@@ -18,46 +18,72 @@ const COMPANY_INFO = {
   tagline: 'Alles rund um deine Marke · Gastronomi Çözümleri',
 };
 
-// Load an image URL → base64 dataURL via canvas
-async function loadImageAsDataURL(src: string, opacity = 1): Promise<string | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth || 200;
-        canvas.height = img.naturalHeight || 200;
-        const ctx = canvas.getContext('2d')!;
-        ctx.globalAlpha = opacity;
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
-      } catch {
-        resolve(null);
-      }
-    };
-    img.onerror = () => resolve(null);
-    // Use absolute URL relative to current origin for local assets
-    img.src = src.startsWith('http') ? src : window.location.origin + (src.startsWith('/') ? '' : '/') + src;
-  });
+// Load an image URL → base64 dataURL
+// Uses fetch→FileReader (avoids canvas CORS taint for cross-origin images like S3)
+async function loadImageAsDataURL(src: string): Promise<string | null> {
+  if (!src) return null;
+  const url = src.startsWith('http') ? src : window.location.origin + (src.startsWith('/') ? '' : '/') + src;
+  // Try fetch first (works for S3 with CORS headers)
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) throw new Error('fetch failed');
+    const blob = await res.blob();
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    // Fallback: canvas (works for same-origin / CORS-enabled images)
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || 200;
+          canvas.height = img.naturalHeight || 200;
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
 }
 
 function ProductImage({ src, alt }: { src: string; alt: string }) {
   const [err, setErr] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   if (err || !src) {
     return (
-      <div className="w-14 h-14 bg-surface-container-highest flex items-center justify-center rounded-lg">
+      <div className="w-14 h-14 bg-surface-container-highest flex items-center justify-center rounded-lg flex-shrink-0">
         <Package size={20} className="text-on-surface-variant/30" />
       </div>
     );
   }
   return (
-    <img
-      src={src}
-      alt={alt}
-      onError={() => setErr(true)}
-      className="w-14 h-14 object-contain rounded-lg bg-white border border-outline-variant/10 p-1"
-    />
+    <div className="w-14 h-14 relative flex-shrink-0">
+      {loading && (
+        <div className="absolute inset-0 bg-surface-container-highest rounded-lg flex items-center justify-center">
+          <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        crossOrigin="anonymous"
+        onError={() => { setErr(true); setLoading(false); }}
+        onLoad={() => setLoading(false)}
+        className={`w-14 h-14 object-contain rounded-lg bg-white border border-outline-variant/10 p-1 transition-opacity ${loading ? 'opacity-0' : 'opacity-100'}`}
+      />
+    </div>
   );
 }
 
@@ -95,7 +121,7 @@ export default function Cart() {
       const [logoFull, logoIcon, logoHolo] = await Promise.all([
         loadImageAsDataURL('/logo-werbung.png'),
         loadImageAsDataURL('/logo-icon.png'),
-        loadImageAsDataURL('/logo-icon.png', 1), // will be made transparent via canvas trick below
+        loadImageAsDataURL('/logo-icon.png'),
       ]);
 
       // ── Helper: draw hologram watermark on current page ──
