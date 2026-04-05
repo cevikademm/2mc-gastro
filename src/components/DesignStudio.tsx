@@ -252,6 +252,7 @@ export default function DesignStudio() {
   const [trayDragItem, setTrayDragItem] = useState<any>(null);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [popupItem, setPopupItem] = useState<PlacedItem | null>(null);
+  const [showMobilePanel, setShowMobilePanel] = useState(false);
 
   const selectedItem = placedItems.find(i => i.id === selectedId) || null;
 
@@ -337,6 +338,35 @@ export default function DesignStudio() {
       y: (e.clientY - rect.top - panOffset.y) / zoom,
     };
   }, [zoom, panOffset]);
+
+  const getCanvasCoordsFromTouch = useCallback((touch: React.Touch) => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    return {
+      x: (touch.clientX - rect.left - panOffset.x) / zoom,
+      y: (touch.clientY - rect.top - panOffset.y) / zoom,
+    };
+  }, [zoom, panOffset]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      setPanStart({ x: touch.clientX - panOffset.x, y: touch.clientY - panOffset.y });
+      setIsPanning(true);
+    }
+  }, [panOffset]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 1 && isPanning) {
+      const touch = e.touches[0];
+      setPanOffset({ x: touch.clientX - panStart.x, y: touch.clientY - panStart.y });
+    }
+  }, [isPanning, panStart]);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsPanning(false);
+  }, []);
 
   /* ─── Wall length editing ─── */
   const handleWallLengthChange = useCallback((wallIndex: number, newLengthCm: number) => {
@@ -712,6 +742,13 @@ export default function DesignStudio() {
           <span className="text-[10px] font-mono font-bold text-slate-500 w-10 text-center">{Math.round(zoom * 100)}%</span>
           <button onClick={zoomIn} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-md"><Plus size={15} /></button>
           <button onClick={zoomFit} className="ml-1 px-2 py-1 text-[10px] font-bold text-slate-500 hover:text-primary hover:bg-slate-100 rounded-md">FIT</button>
+          {/* Mobile: ekipman paneli aç */}
+          <button
+            onClick={() => setShowMobilePanel(true)}
+            className="md:hidden ml-2 px-3 py-1.5 text-[10px] font-bold text-white bg-primary rounded-md flex items-center gap-1"
+          >
+            <Plus size={13} /> Ekipman
+          </button>
         </div>
 
         {/* Canvas */}
@@ -723,6 +760,9 @@ export default function DesignStudio() {
           onMouseMove={handleCanvasMouseMove}
           onMouseUp={handleCanvasMouseUp}
           onMouseLeave={handleCanvasMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleCanvasDrop}
         >
@@ -1144,6 +1184,64 @@ export default function DesignStudio() {
           </div>
         );
       })()}
+
+      {/* Mobile Equipment Bottom Sheet */}
+      {showMobilePanel && (
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowMobilePanel(false)} />
+          <div className="relative bg-white rounded-t-2xl shadow-2xl flex flex-col max-h-[80vh]">
+            {/* Handle */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h3 className="font-bold text-sm text-slate-800">Ekipman Ekle</h3>
+              <button onClick={() => setShowMobilePanel(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="px-4 py-3 border-b border-slate-100">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <input
+                  type="text"
+                  value={catalogSearch}
+                  onChange={(e) => setCatalogSearch(e.target.value)}
+                  placeholder="Ürün ara..."
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            {/* Equipment list */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="grid grid-cols-2 gap-3">
+                {catalogItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => { addEquipmentToFloorPlan(item); setShowMobilePanel(false); }}
+                    className="bg-white rounded-xl border border-slate-200 overflow-hidden text-left active:scale-95 transition-transform shadow-sm"
+                  >
+                    <div className="w-full aspect-[4/3] bg-slate-50 flex items-center justify-center p-1">
+                      <ProductImage src={item.img} alt={item.name} className="w-full h-full" />
+                    </div>
+                    <div className="p-2">
+                      <p className="text-[11px] font-bold text-slate-700 leading-tight line-clamp-2">{item.name}</p>
+                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">{item.id}</p>
+                      {item.price > 0 && <p className="text-[10px] font-bold text-primary mt-1">{formatPrice(item.price)}</p>}
+                    </div>
+                  </button>
+                ))}
+                {catalogItems.length === 0 && (
+                  <div className="col-span-2 text-center py-10 text-slate-400">
+                    <Package size={28} className="mx-auto mb-2 opacity-40" />
+                    <p className="text-xs">Ürün bulunamadı</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
