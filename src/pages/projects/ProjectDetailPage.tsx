@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore, type ProductItem } from '../../stores/projectStore';
 import {
   ArrowLeft, Ruler, ClipboardList, Calendar, Building,
   Plus, Trash2, Package, Flame, Droplets, Refrigerator,
-  Table, Microwave, Waves, Eye, Settings2, Users, FileText, Download
+  Table, Microwave, Waves, Eye, Settings2, Users, FileText, Download, Loader2
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const ICON_MAP: Record<string, any> = {
   refrigerator: Refrigerator, flame: Flame, droplets: Droplets,
@@ -30,124 +31,50 @@ function QuoteTab({ project }: { project: import('../../stores/projectStore').Pr
   const vat = subtotal * vatRate;
   const total = subtotal + vat;
   const fmt = (n: number) => n > 0 ? `€${n.toLocaleString('de-DE', { minimumFractionDigits: 2 })}` : '—';
+  const quoteRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
 
-  const exportQuotePDF = () => {
-    const doc = new jsPDF();
-    const pageW = doc.internal.pageSize.getWidth();
+  const exportQuotePDF = async () => {
+    if (!quoteRef.current) return;
+    setExporting(true);
+    try {
+      // A4 portrait: 210mm × 297mm at 96dpi ≈ 794 × 1123px
+      const canvas = await html2canvas(quoteRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        imageTimeout: 5000,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();   // 210mm
+      const pageH = doc.internal.pageSize.getHeight();  // 297mm
+      const imgW = pageW;
+      const imgH = (canvas.height * pageW) / canvas.width;
 
-    // Header bar
-    doc.setFillColor(30, 64, 175); // primary blue
-    doc.rect(0, 0, pageW, 38, 'F');
-
-    // Logo text in header (fallback since jsPDF can't easily embed PNG without base64)
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('2MC GASTRO', 14, 18);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Professionelle Großküchentechnik', 14, 26);
-    doc.text(`Teklif No: ${quoteNo}`, 14, 33);
-    doc.setFontSize(9);
-    doc.text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, pageW - 14, 26, { align: 'right' });
-    doc.text(`Geçerlilik: 30 gün`, pageW - 14, 33, { align: 'right' });
-
-    // Client info
-    doc.setTextColor(30, 30, 30);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Müşteri Bilgileri', 14, 48);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Müşteri: ${clientName || '—'}`, 14, 55);
-    doc.text(`Proje: ${name}`, 14, 62);
-
-    // Separator
-    doc.setDrawColor(200, 200, 200);
-    doc.line(14, 68, pageW - 14, 68);
-
-    // Table header
-    let y = 75;
-    doc.setFillColor(240, 244, 255);
-    doc.rect(14, y - 5, pageW - 28, 8, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(30, 64, 175);
-    doc.text('#', 16, y);
-    doc.text('Ürün Adı', 24, y);
-    doc.text('Kod', 90, y);
-    doc.text('Boyut (cm)', 120, y);
-    doc.text('Güç', 152, y);
-    doc.text('Fiyat', pageW - 14, y, { align: 'right' });
-    y += 3;
-    doc.setDrawColor(30, 64, 175);
-    doc.line(14, y, pageW - 14, y);
-    y += 6;
-
-    // Product rows
-    doc.setTextColor(30, 30, 30);
-    products.forEach((prod, idx) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      if (idx % 2 === 1) {
-        doc.setFillColor(248, 250, 252);
-        doc.rect(14, y - 4, pageW - 28, 8, 'F');
+      if (imgH <= pageH) {
+        doc.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
+      } else {
+        // Multi-page: slice the canvas into A4-height chunks
+        const pxPerPage = (canvas.width * pageH) / pageW;
+        let offsetY = 0;
+        while (offsetY < canvas.height) {
+          if (offsetY > 0) doc.addPage();
+          const sliceH = Math.min(pxPerPage, canvas.height - offsetY);
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = sliceH;
+          const ctx = sliceCanvas.getContext('2d')!;
+          ctx.drawImage(canvas, 0, -offsetY);
+          doc.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, (sliceH * pageW) / canvas.width);
+          offsetY += pxPerPage;
+        }
       }
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.text(`${idx + 1}`, 16, y);
-      doc.setFont('helvetica', 'bold');
-      doc.text(prod.name.substring(0, 32), 24, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(prod.code.substring(0, 16), 90, y);
-      doc.text(`${prod.dimensions.width}×${prod.dimensions.height}`, 120, y);
-      doc.text(prod.kw > 0 ? `${prod.kw}kW` : '—', 152, y);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(prod.price > 0 ? 30 : 180, prod.price > 0 ? 64 : 180, prod.price > 0 ? 175 : 180);
-      doc.text(prod.price > 0 ? `€${prod.price.toLocaleString('de-DE', { minimumFractionDigits: 2 })}` : '—', pageW - 14, y, { align: 'right' });
-      doc.setTextColor(30, 30, 30);
-      if (prod.description) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.setTextColor(120, 120, 120);
-        doc.text(prod.description.substring(0, 60), 24, y + 4);
-        doc.setTextColor(30, 30, 30);
-        y += 4;
-      }
-      y += 8;
-    });
-
-    // Totals box
-    y += 4;
-    doc.setDrawColor(200, 200, 200);
-    doc.line(14, y, pageW - 14, y);
-    y += 6;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.text('Ara Toplam:', pageW - 60, y);
-    doc.setFont('helvetica', 'bold');
-    doc.text(fmt(subtotal), pageW - 14, y, { align: 'right' });
-    y += 7;
-    doc.setFont('helvetica', 'normal');
-    doc.text('KDV (%19):', pageW - 60, y);
-    doc.setFont('helvetica', 'bold');
-    doc.text(fmt(vat), pageW - 14, y, { align: 'right' });
-    y += 4;
-    doc.setFillColor(30, 64, 175);
-    doc.rect(pageW - 75, y, 61, 10, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('TOPLAM:', pageW - 72, y + 7);
-    doc.text(fmt(total), pageW - 14, y + 7, { align: 'right' });
-
-    // Footer
-    doc.setTextColor(150, 150, 150);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    const footerY = doc.internal.pageSize.getHeight() - 12;
-    doc.text('Bu teklif 30 gün geçerlidir. Fiyatlara KDV dahil değildir.', 14, footerY);
-    doc.text('2MC Gastro — info@2mcgastro.com', pageW - 14, footerY, { align: 'right' });
-
-    doc.save(`Teklif_${quoteNo}_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`Teklif_${quoteNo}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -160,21 +87,23 @@ function QuoteTab({ project }: { project: import('../../stores/projectStore').Pr
         </div>
         <button
           onClick={exportQuotePDF}
-          className="flex items-center gap-2 bg-surface-container-low hover:bg-surface-container-high text-primary px-5 py-2.5 rounded-lg font-bold text-sm transition-all shadow-sm border border-primary/20 self-start"
+          disabled={exporting}
+          className="flex items-center gap-2 bg-surface-container-low hover:bg-surface-container-high text-primary px-5 py-2.5 rounded-lg font-bold text-sm transition-all shadow-sm border border-primary/20 self-start disabled:opacity-60"
         >
-          <Download size={16} /> PDF İndir
+          {exporting ? <><Loader2 size={16} className="animate-spin" /> Hazırlanıyor...</> : <><Download size={16} /> PDF İndir</>}
         </button>
       </div>
 
-      {/* Quote Document */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden relative">
-        {/* Hologram watermark */}
+      {/* Quote Document — captured by html2canvas for PDF */}
+      <div ref={quoteRef} className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden relative" style={{ fontFamily: 'Arial, sans-serif' }}>
+        {/* Hologram watermark — new circular logo */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
           <img
-            src="/logo-icon.png"
+            src="/logo-hologram.png"
             alt=""
-            className="w-72 h-72 object-contain opacity-[0.04] select-none"
-            style={{ filter: 'grayscale(1)' }}
+            onError={(e) => { (e.target as HTMLImageElement).src = '/logo-icon.png'; }}
+            className="w-80 h-80 object-contain select-none"
+            style={{ opacity: 0.06, filter: 'saturate(0.3) hue-rotate(200deg)' }}
           />
         </div>
 
