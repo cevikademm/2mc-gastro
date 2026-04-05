@@ -7,7 +7,7 @@ import NotificationPanel from './NotificationPanel';
 import {
   Bell, Settings, LayoutDashboard, Ruler, Refrigerator,
   ClipboardList, SlidersHorizontal, HelpCircle, BookOpen, PlusCircle,
-  Menu, X, LogOut, User, Globe, CreditCard, FolderOpen, ShoppingCart
+  Menu, X, LogOut, User, Globe, CreditCard, FolderOpen, ShoppingCart, PenLine
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -24,6 +24,7 @@ const SIDE_ITEMS = [
   { path: '/catalog', labelKey: 'nav.equipment', icon: Refrigerator, id: 'inventory' },
   { path: '/bom', labelKey: 'nav.materials', icon: ClipboardList, id: 'bom' },
   { path: '/cart', labelKey: 'nav.cart', icon: ShoppingCart, id: 'cart' },
+  { path: '/sketch', labelKey: 'nav.sketch', icon: PenLine, id: 'sketch' },
   { path: '/settings', labelKey: 'nav.settings', icon: SlidersHorizontal, id: 'settings' },
   { path: '/payment', labelKey: 'nav.payment', icon: CreditCard, id: 'payment' },
 ];
@@ -31,8 +32,8 @@ const SIDE_ITEMS = [
 // Alt tab bar için sadece önemli 5 sayfa
 const BOTTOM_NAV = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Ana Sayfa' },
-  { path: '/projects', icon: FolderOpen, label: 'Projeler' },
   { path: '/catalog', icon: Refrigerator, label: 'Katalog' },
+  { path: '/sketch', icon: PenLine, label: 'Eskiz' },
   { path: '/design', icon: Ruler, label: 'Çizim' },
   { path: '/bom', icon: ClipboardList, label: 'BOM' },
 ];
@@ -47,7 +48,9 @@ export default function Layout() {
   const cartCount = cartItems.reduce((sum, i) => sum + i.quantity, 0);
 
   // Design sayfaları: tam ekran canvas gerektirir
-  const isDesign = location.pathname === '/design' || location.pathname.endsWith('/design');
+  const isDesign = ['/design', '/sketch'].some(p =>
+    location.pathname === p || location.pathname.endsWith(p)
+  );
 
   const handleLogout = () => {
     logout();
