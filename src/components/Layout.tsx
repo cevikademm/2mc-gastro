@@ -2,11 +2,12 @@ import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useUIStore } from '../stores/uiStore';
+import { useCartStore } from '../stores/cartStore';
 import NotificationPanel from './NotificationPanel';
 import {
   Bell, Settings, LayoutDashboard, Ruler, Refrigerator,
   ClipboardList, SlidersHorizontal, HelpCircle, BookOpen, PlusCircle,
-  Menu, X, LogOut, User, Globe, CreditCard, FolderOpen
+  Menu, X, LogOut, User, Globe, CreditCard, FolderOpen, ShoppingCart
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -22,6 +23,7 @@ const SIDE_ITEMS = [
   { path: '/design', labelKey: 'nav.floorPlan', icon: Ruler, id: 'design' },
   { path: '/catalog', labelKey: 'nav.equipment', icon: Refrigerator, id: 'inventory' },
   { path: '/bom', labelKey: 'nav.materials', icon: ClipboardList, id: 'bom' },
+  { path: '/cart', labelKey: 'nav.cart', icon: ShoppingCart, id: 'cart' },
   { path: '/settings', labelKey: 'nav.settings', icon: SlidersHorizontal, id: 'settings' },
   { path: '/payment', labelKey: 'nav.payment', icon: CreditCard, id: 'payment' },
 ];
@@ -41,6 +43,8 @@ export default function Layout() {
   const navigate = useNavigate();
   const { logout } = useAuthStore();
   const { mobileMenuOpen, toggleMobileMenu, toggleNotificationPanel, unreadCount } = useUIStore();
+  const cartItems = useCartStore((s) => s.items);
+  const cartCount = cartItems.reduce((sum, i) => sum + i.quantity, 0);
 
   // Design sayfaları: tam ekran canvas gerektirir
   const isDesign = location.pathname === '/design' || location.pathname.endsWith('/design');
@@ -69,8 +73,10 @@ export default function Layout() {
           <button onClick={toggleMobileMenu} className="hidden md:flex lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-full">
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <Link to="/dashboard" className="text-lg md:text-xl font-black text-primary uppercase tracking-wider font-headline">
-            {t('brand.name')}
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <img src="/logo-icon.png" alt="2MC" className="h-8 w-8 object-contain" />
+            <img src="/logo-werbung.png" alt="2MC Werbung" className="h-7 object-contain hidden sm:block" style={{ filter: 'brightness(0) saturate(100%) invert(24%) sepia(89%) saturate(700%) hue-rotate(210deg) brightness(90%)' }} />
+            <span className="sm:hidden text-lg font-black text-primary uppercase tracking-wider font-headline">2MC</span>
           </Link>
           <nav className="hidden lg:flex gap-6 items-center">
             {NAV_ITEMS.map((item) => {
@@ -98,6 +104,14 @@ export default function Layout() {
               {t('nav.exportDWG')}
             </button>
           </div>
+          <Link to="/cart" className="relative p-1.5 md:p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+            <ShoppingCart size={18} />
+            {cartCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-emerald-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                {cartCount > 9 ? '9+' : cartCount}
+              </span>
+            )}
+          </Link>
           <button onClick={changeLang} className="p-1.5 md:p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors flex items-center gap-1" title="Dil">
             <Globe size={16} />
             <span className="text-xs font-bold hidden sm:inline">{langLabel[i18n.language] || 'TR'}</span>
@@ -157,16 +171,9 @@ export default function Layout() {
       <div className="flex flex-1 pt-14 md:pt-16">
         {/* Desktop Sidebar — lg ve üzeri */}
         <aside className="bg-surface-container-low fixed top-14 md:top-16 left-0 h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] w-64 flex-col space-y-2 p-4 hidden lg:flex z-40 border-r border-outline-variant/10">
-          <div className="mb-4 px-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-white font-headline font-black text-sm">
-                2M
-              </div>
-              <div>
-                <p className="font-body text-sm font-bold text-primary leading-tight">{t('brand.studioVersion')}</p>
-                <p className="font-body text-xs text-on-surface-variant">{t('brand.phase')}</p>
-              </div>
-            </div>
+          <div className="mb-4 px-2">
+            <img src="/logo-werbung.png" alt="2MC Werbung" className="h-8 w-full object-contain object-left" style={{ filter: 'brightness(0) saturate(100%) invert(24%) sepia(89%) saturate(700%) hue-rotate(210deg) brightness(90%)' }} />
+            <p className="font-body text-xs text-on-surface-variant mt-1 px-2">{t('brand.phase')}</p>
           </div>
 
           <nav className="flex-1 space-y-1">

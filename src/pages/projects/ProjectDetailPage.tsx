@@ -24,6 +24,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 function QuoteTab({ project }: { project: import('../../stores/projectStore').Project }) {
   const { products, name, clientName, id } = project;
+  const quoteNo = `TKF-${id.slice(-6).toUpperCase()}-${new Date().getFullYear()}`;
   const subtotal = products.reduce((sum, p) => sum + p.price, 0);
   const vatRate = 0.19;
   const vat = subtotal * vatRate;
@@ -32,43 +33,130 @@ function QuoteTab({ project }: { project: import('../../stores/projectStore').Pr
 
   const exportQuotePDF = () => {
     const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text(`2MC Gastro — Teklif`, 14, 20);
-    doc.setFontSize(10);
-    doc.text(`Proje: ${name}`, 14, 30);
-    doc.text(`Müşteri: ${clientName || '—'}`, 14, 37);
-    doc.text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, 14, 44);
-    let y = 58;
+    const pageW = doc.internal.pageSize.getWidth();
+
+    // Header bar
+    doc.setFillColor(30, 64, 175); // primary blue
+    doc.rect(0, 0, pageW, 38, 'F');
+
+    // Logo text in header (fallback since jsPDF can't easily embed PNG without base64)
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text('Ürün', 14, y);
-    doc.text('Açıklama', 70, y);
-    doc.text('Adet', 140, y);
-    doc.text('Fiyat', 165, y);
-    y += 2; doc.line(14, y, 196, y); y += 6;
+    doc.text('2MC GASTRO', 14, 18);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    products.forEach((prod) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      doc.text(prod.name.substring(0, 30), 14, y);
-      doc.text(prod.description.substring(0, 35), 70, y);
-      doc.text('1', 140, y);
-      doc.text(prod.price > 0 ? `€${prod.price.toLocaleString()}` : '—', 165, y);
-      y += 7;
-    });
-    y += 4; doc.line(14, y, 196, y); y += 6;
+    doc.text('Professionelle Großküchentechnik', 14, 26);
+    doc.text(`Teklif No: ${quoteNo}`, 14, 33);
+    doc.setFontSize(9);
+    doc.text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, pageW - 14, 26, { align: 'right' });
+    doc.text(`Geçerlilik: 30 gün`, pageW - 14, 33, { align: 'right' });
+
+    // Client info
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Ara Toplam: ${fmt(subtotal)}`, 140, y); y += 7;
-    doc.text(`KDV (19%): ${fmt(vat)}`, 140, y); y += 7;
-    doc.text(`TOPLAM: ${fmt(total)}`, 140, y);
-    doc.save(`Teklif_${id}_${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.text('Müşteri Bilgileri', 14, 48);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Müşteri: ${clientName || '—'}`, 14, 55);
+    doc.text(`Proje: ${name}`, 14, 62);
+
+    // Separator
+    doc.setDrawColor(200, 200, 200);
+    doc.line(14, 68, pageW - 14, 68);
+
+    // Table header
+    let y = 75;
+    doc.setFillColor(240, 244, 255);
+    doc.rect(14, y - 5, pageW - 28, 8, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(30, 64, 175);
+    doc.text('#', 16, y);
+    doc.text('Ürün Adı', 24, y);
+    doc.text('Kod', 90, y);
+    doc.text('Boyut (cm)', 120, y);
+    doc.text('Güç', 152, y);
+    doc.text('Fiyat', pageW - 14, y, { align: 'right' });
+    y += 3;
+    doc.setDrawColor(30, 64, 175);
+    doc.line(14, y, pageW - 14, y);
+    y += 6;
+
+    // Product rows
+    doc.setTextColor(30, 30, 30);
+    products.forEach((prod, idx) => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      if (idx % 2 === 1) {
+        doc.setFillColor(248, 250, 252);
+        doc.rect(14, y - 4, pageW - 28, 8, 'F');
+      }
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(`${idx + 1}`, 16, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(prod.name.substring(0, 32), 24, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(prod.code.substring(0, 16), 90, y);
+      doc.text(`${prod.dimensions.width}×${prod.dimensions.height}`, 120, y);
+      doc.text(prod.kw > 0 ? `${prod.kw}kW` : '—', 152, y);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(prod.price > 0 ? 30 : 180, prod.price > 0 ? 64 : 180, prod.price > 0 ? 175 : 180);
+      doc.text(prod.price > 0 ? `€${prod.price.toLocaleString('de-DE', { minimumFractionDigits: 2 })}` : '—', pageW - 14, y, { align: 'right' });
+      doc.setTextColor(30, 30, 30);
+      if (prod.description) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(120, 120, 120);
+        doc.text(prod.description.substring(0, 60), 24, y + 4);
+        doc.setTextColor(30, 30, 30);
+        y += 4;
+      }
+      y += 8;
+    });
+
+    // Totals box
+    y += 4;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(14, y, pageW - 14, y);
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Ara Toplam:', pageW - 60, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(fmt(subtotal), pageW - 14, y, { align: 'right' });
+    y += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.text('KDV (%19):', pageW - 60, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(fmt(vat), pageW - 14, y, { align: 'right' });
+    y += 4;
+    doc.setFillColor(30, 64, 175);
+    doc.rect(pageW - 75, y, 61, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('TOPLAM:', pageW - 72, y + 7);
+    doc.text(fmt(total), pageW - 14, y + 7, { align: 'right' });
+
+    // Footer
+    doc.setTextColor(150, 150, 150);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    const footerY = doc.internal.pageSize.getHeight() - 12;
+    doc.text('Bu teklif 30 gün geçerlidir. Fiyatlara KDV dahil değildir.', 14, footerY);
+    doc.text('2MC Gastro — info@2mcgastro.com', pageW - 14, footerY, { align: 'right' });
+
+    doc.save(`Teklif_${quoteNo}_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Action bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="font-headline font-black text-xl text-on-surface">Teklif Formu</h2>
-          <p className="text-sm text-on-surface-variant mt-0.5">{clientName || 'Müşteri'} — {name}</p>
+          <p className="text-sm text-on-surface-variant mt-0.5">{clientName || 'Müşteri'} — {name} <span className="text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded ml-1">{quoteNo}</span></p>
         </div>
         <button
           onClick={exportQuotePDF}
@@ -78,24 +166,57 @@ function QuoteTab({ project }: { project: import('../../stores/projectStore').Pr
         </button>
       </div>
 
-      {/* Quote Header Card */}
-      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden">
-        <div className="bg-primary px-6 py-4">
-          <div className="flex items-center justify-between text-white">
+      {/* Quote Document */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden relative">
+        {/* Hologram watermark */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+          <img
+            src="/logo-icon.png"
+            alt=""
+            className="w-72 h-72 object-contain opacity-[0.04] select-none"
+            style={{ filter: 'grayscale(1)' }}
+          />
+        </div>
+
+        {/* Document header with logo */}
+        <div className="relative z-10 bg-primary px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img src="/logo-icon.png" alt="2MC" className="h-12 w-12 object-contain bg-white rounded-full p-1.5 shadow" />
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest opacity-70">Proje</p>
-              <p className="text-lg font-black">{name}</p>
+              <img src="/logo-werbung.png" alt="2MC Werbung" className="h-7 object-contain brightness-0 invert" />
+              <p className="text-white/70 text-[10px] mt-0.5">Professionelle Großküchentechnik</p>
             </div>
-            <div className="text-right">
-              <p className="text-xs font-bold uppercase tracking-widest opacity-70">Tarih</p>
-              <p className="font-bold">{new Date().toLocaleDateString('tr-TR')}</p>
-            </div>
+          </div>
+          <div className="text-right text-white">
+            <p className="text-[10px] uppercase tracking-widest opacity-70 font-bold">Teklif No</p>
+            <p className="font-black text-lg font-mono">{quoteNo}</p>
+            <p className="text-[10px] opacity-70 mt-0.5">{new Date().toLocaleDateString('tr-TR')}</p>
           </div>
         </div>
 
-        {/* Product rows */}
+        {/* Client info bar */}
+        <div className="relative z-10 bg-slate-50 border-b border-slate-200 px-6 py-3 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+          <div>
+            <span className="font-bold text-slate-400 uppercase text-[9px] tracking-wider block">Müşteri</span>
+            <span className="font-bold text-slate-700">{clientName || '—'}</span>
+          </div>
+          <div>
+            <span className="font-bold text-slate-400 uppercase text-[9px] tracking-wider block">Proje</span>
+            <span className="font-bold text-slate-700">{name}</span>
+          </div>
+          <div>
+            <span className="font-bold text-slate-400 uppercase text-[9px] tracking-wider block">Teklif Tarihi</span>
+            <span className="font-bold text-slate-700">{new Date().toLocaleDateString('tr-TR')}</span>
+          </div>
+          <div>
+            <span className="font-bold text-slate-400 uppercase text-[9px] tracking-wider block">Geçerlilik</span>
+            <span className="font-bold text-slate-700">30 Gün</span>
+          </div>
+        </div>
+
+        {/* Product list */}
         {products.length === 0 ? (
-          <div className="py-16 text-center">
+          <div className="relative z-10 py-20 text-center">
             <Package size={40} className="mx-auto text-slate-200 mb-3" />
             <p className="text-slate-400 font-medium">Teklif için ürün ekleyin</p>
             <Link to={`/projects/${project.id}/products/add`} className="text-primary text-sm font-bold hover:underline mt-2 inline-block">
@@ -103,96 +224,114 @@ function QuoteTab({ project }: { project: import('../../stores/projectStore').Pr
             </Link>
           </div>
         ) : (
-          <div className="divide-y divide-outline-variant/10">
-            {/* Table header — hidden on mobile */}
-            <div className="hidden sm:grid grid-cols-12 gap-2 px-6 py-3 bg-surface-container text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
-              <div className="col-span-1"></div>
-              <div className="col-span-4">Ürün</div>
-              <div className="col-span-3">Açıklama</div>
-              <div className="col-span-1 text-center">Adet</div>
-              <div className="col-span-3 text-right">Fiyat</div>
+          <div className="relative z-10">
+            {/* Table header */}
+            <div className="hidden sm:grid px-6 py-2.5 bg-primary/5 border-b border-slate-200 text-[9px] font-black uppercase tracking-widest text-primary" style={{ gridTemplateColumns: '64px 1fr 80px 90px 60px 90px' }}>
+              <div>Görsel</div>
+              <div>Ürün Bilgileri</div>
+              <div>Ölçü (cm)</div>
+              <div>Güç / Tip</div>
+              <div className="text-center">Adet</div>
+              <div className="text-right">Fiyat</div>
             </div>
 
-            {products.map((prod, idx) => {
-              const Icon = ICON_MAP[prod.icon] || Package;
-              return (
-                <div key={prod.id} className={`px-4 sm:px-6 py-4 ${idx % 2 === 0 ? '' : 'bg-surface-container/30'}`}>
-                  {/* Mobile layout */}
-                  <div className="flex items-start gap-4 sm:hidden">
-                    {prod.imageData ? (
-                      <img src={prod.imageData} alt={prod.name} className="w-14 h-14 object-contain rounded-lg border border-outline-variant/20 bg-white p-1 flex-shrink-0" />
-                    ) : (
-                      <div className="w-14 h-14 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
-                        <Icon size={20} style={{ color: CATEGORY_COLORS[prod.category] }} />
+            <div className="divide-y divide-slate-100">
+              {products.map((prod, idx) => {
+                const Icon = ICON_MAP[prod.icon] || Package;
+                return (
+                  <div key={prod.id} className={`px-4 sm:px-6 py-4 ${idx % 2 !== 0 ? 'bg-slate-50/50' : ''}`}>
+                    {/* Mobile */}
+                    <div className="flex items-start gap-4 sm:hidden">
+                      <div className="w-16 h-16 rounded-xl border border-slate-200 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+                        {prod.imageData ? (
+                          <img src={prod.imageData} alt={prod.name} className="w-full h-full object-contain p-1" />
+                        ) : (
+                          <Icon size={24} style={{ color: CATEGORY_COLORS[prod.category] }} />
+                        )}
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-on-surface">{prod.name}</p>
-                      <p className="text-[10px] font-mono text-on-surface-variant mt-0.5">{prod.code}</p>
-                      {prod.description && <p className="text-xs text-slate-400 mt-1">{prod.description}</p>}
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="font-bold text-sm text-primary">{prod.price > 0 ? fmt(prod.price) : '—'}</p>
-                      <p className="text-[10px] text-slate-400">Adet: 1</p>
-                    </div>
-                  </div>
-
-                  {/* Desktop layout */}
-                  <div className="hidden sm:grid grid-cols-12 gap-2 items-center">
-                    <div className="col-span-1">
-                      {prod.imageData ? (
-                        <img src={prod.imageData} alt={prod.name} className="w-12 h-12 object-contain rounded-lg border border-outline-variant/20 bg-white p-1" />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center">
-                          <Icon size={18} style={{ color: CATEGORY_COLORS[prod.category] }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-sm text-slate-800">{prod.name}</p>
+                        <p className="text-[10px] font-mono text-slate-400 mt-0.5">{prod.code}</p>
+                        {prod.brand && <p className="text-[10px] text-slate-400">{prod.brand}</p>}
+                        {prod.description && <p className="text-xs text-slate-400 mt-1 line-clamp-2">{prod.description}</p>}
+                        <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400">
+                          <span className="font-bold">{prod.dimensions.width}×{prod.dimensions.height}cm</span>
+                          {prod.kw > 0 && <><span>·</span><span>{prod.kw}kW</span></>}
                         </div>
-                      )}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-black text-base text-primary">{prod.price > 0 ? fmt(prod.price) : '—'}</p>
+                        <p className="text-[9px] text-slate-400">Adet: 1</p>
+                      </div>
                     </div>
-                    <div className="col-span-4">
-                      <p className="font-bold text-sm text-on-surface">{prod.name}</p>
-                      <p className="text-[10px] font-mono text-on-surface-variant mt-0.5">{prod.code}</p>
-                      {prod.brand && <p className="text-[10px] text-slate-400">{prod.brand}</p>}
-                    </div>
-                    <div className="col-span-3">
-                      <p className="text-xs text-on-surface-variant">{prod.description || '—'}</p>
-                      {prod.kw > 0 && <p className="text-[10px] text-slate-400 mt-0.5">{prod.kw} kW · {prod.powerType}</p>}
-                    </div>
-                    <div className="col-span-1 text-center">
-                      <span className="font-black text-primary text-lg">1</span>
-                    </div>
-                    <div className="col-span-3 text-right">
-                      {prod.price > 0 ? (
-                        <span className="font-bold text-sm text-primary">{fmt(prod.price)}</span>
-                      ) : (
-                        <span className="text-slate-300 text-sm">—</span>
-                      )}
+
+                    {/* Desktop */}
+                    <div className="hidden sm:grid items-center gap-4" style={{ gridTemplateColumns: '64px 1fr 80px 90px 60px 90px' }}>
+                      <div className="w-14 h-14 rounded-lg border border-slate-200 bg-white flex items-center justify-center overflow-hidden shadow-sm">
+                        {prod.imageData ? (
+                          <img src={prod.imageData} alt={prod.name} className="w-full h-full object-contain p-1" />
+                        ) : (
+                          <Icon size={20} style={{ color: CATEGORY_COLORS[prod.category] }} />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-black text-sm text-slate-800">{prod.name}</p>
+                        <p className="text-[10px] font-mono text-slate-400 mt-0.5">{prod.code}{prod.brand ? ` · ${prod.brand}` : ''}</p>
+                        {prod.description && <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">{prod.description}</p>}
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        <span className="font-medium">{prod.dimensions.width}×{prod.dimensions.height}</span>
+                        {prod.dimensions.depth > 0 && <span className="text-[10px] text-slate-400">×{prod.dimensions.depth}</span>}
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        {prod.kw > 0 ? <><span className="font-medium">{prod.kw} kW</span><span className="text-[10px] text-slate-400 block">{prod.powerType}</span></> : <span className="text-slate-300">—</span>}
+                      </div>
+                      <div className="text-center">
+                        <span className="font-black text-primary text-lg">1</span>
+                      </div>
+                      <div className="text-right">
+                        {prod.price > 0 ? (
+                          <span className="font-black text-sm text-primary">{fmt(prod.price)}</span>
+                        ) : (
+                          <span className="text-slate-300 text-sm">—</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
 
-        {/* Totals */}
-        {products.length > 0 && (
-          <div className="px-6 py-5 bg-surface-container border-t border-outline-variant/10">
-            <div className="max-w-xs ml-auto space-y-2">
-              <div className="flex justify-between text-sm text-on-surface-variant">
-                <span>Ara Toplam</span>
-                <span className="font-bold">{fmt(subtotal)}</span>
-              </div>
-              <div className="flex justify-between text-sm text-on-surface-variant">
-                <span>KDV (19%)</span>
-                <span className="font-bold">{fmt(vat)}</span>
-              </div>
-              <div className="flex justify-between items-center border-t border-outline-variant/20 pt-3">
-                <span className="font-black text-base text-on-surface uppercase tracking-wide">Genel Toplam</span>
-                <span className="font-black text-xl text-primary">{fmt(total)}</span>
+            {/* Totals */}
+            <div className="px-6 py-5 bg-slate-50 border-t border-slate-200">
+              <div className="max-w-xs ml-auto space-y-2">
+                <div className="flex justify-between text-sm text-slate-600">
+                  <span>Ara Toplam</span>
+                  <span className="font-bold">{fmt(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-slate-600">
+                  <span>KDV (%19)</span>
+                  <span className="font-bold">{fmt(vat)}</span>
+                </div>
+                <div className="flex justify-between items-center bg-primary rounded-xl px-4 py-3 mt-3">
+                  <span className="font-black text-sm text-white uppercase tracking-wide">Genel Toplam</span>
+                  <span className="font-black text-2xl text-white">{fmt(total)}</span>
+                </div>
               </div>
             </div>
           </div>
         )}
+
+        {/* Footer with logo */}
+        <div className="relative z-10 px-6 py-4 border-t border-slate-200 flex items-center justify-between bg-white">
+          <div className="flex items-center gap-3">
+            <img src="/logo-icon.png" alt="2MC" className="h-7 w-7 object-contain opacity-60" />
+            <span className="text-[10px] text-slate-400">2MC Gastro · info@2mcgastro.com</span>
+          </div>
+          <div className="text-[10px] text-slate-400 text-right">
+            Bu teklif 30 gün geçerlidir.<br />Fiyatlara KDV dahil değildir.
+          </div>
+        </div>
       </div>
 
       {/* Notes */}

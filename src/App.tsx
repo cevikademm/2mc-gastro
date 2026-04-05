@@ -9,6 +9,7 @@ import Dashboard from './components/Dashboard';
 import Catalog from './components/Catalog';
 import DesignStudio from './components/DesignStudio';
 import BOM from './components/BOM';
+import Cart from './components/Cart';
 import ProjectListPage from './pages/projects/ProjectListPage';
 import NewProjectPage from './pages/projects/NewProjectPage';
 import ProjectDetailPage from './pages/projects/ProjectDetailPage';
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="design" element={<DesignStudio />} />
           <Route path="bom" element={<BOM />} />
           <Route path="bom/:id" element={<BOM />} />
+          <Route path="cart" element={<Cart />} />
           <Route path="projects" element={<ProjectListPage />} />
           <Route path="projects/new" element={<NewProjectPage />} />
           <Route path="projects/:id" element={<ProjectDetailPage />} />

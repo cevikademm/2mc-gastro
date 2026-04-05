@@ -3,10 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useEquipmentStore, CATEGORIES, type EquipmentItem } from '../stores/equipmentStore';
 import { useProjectStore } from '../stores/projectStore';
+import { useCartStore } from '../stores/cartStore';
 import {
   Search, X, ChevronLeft, ChevronRight, Grid3X3, List,
   Refrigerator, Flame, Droplets, Microwave, Waves, Table,
-  Zap, Ruler, Euro, Package, ExternalLink, Heart, MapPin, CheckCircle2, Clock
+  Zap, Ruler, Euro, Package, ExternalLink, Heart, MapPin, CheckCircle2, Clock,
+  ShoppingCart
 } from 'lucide-react';
 
 const iconMap: Record<string, any> = {
@@ -54,6 +56,7 @@ export default function Catalog() {
   const navigate = useNavigate();
   const store = useEquipmentStore();
   const { projects } = useProjectStore();
+  const { addItem: addToCart, isInCart } = useCartStore();
   const {
     selectedCategory, selectedSubrange, searchQuery, currentPage,
     setCategory, setSubrange, setSearch, setPage,
@@ -244,6 +247,13 @@ export default function Catalog() {
                 >
                   <MapPin size={12} />
                 </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); addToCart(item); }}
+                  className={`p-1.5 rounded-full shadow-sm transition-all ${isInCart(item.id) ? 'bg-emerald-50 text-emerald-600' : 'bg-white/90 text-on-surface-variant/40 hover:text-emerald-600 hover:bg-emerald-50'}`}
+                  title="Sepete ekle"
+                >
+                  <ShoppingCart size={12} />
+                </button>
               </div>
               {/* Favorite indicator (always visible when favorited) */}
               {isFav && (
@@ -325,6 +335,13 @@ export default function Catalog() {
                         title="Kat planina ekle"
                       >
                         <MapPin size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); addToCart(item); }}
+                        className={`p-1.5 rounded-lg transition-all ${isInCart(item.id) ? 'text-emerald-600 bg-emerald-50' : 'text-on-surface-variant/30 hover:text-emerald-600 hover:bg-emerald-50'}`}
+                        title="Sepete ekle"
+                      >
+                        <ShoppingCart size={14} />
                       </button>
                     </div>
                   </td>
@@ -454,12 +471,22 @@ export default function Catalog() {
               )}
 
               {/* Action buttons */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-2 flex-wrap">
+                <button
+                  onClick={() => { addToCart(detailItem); }}
+                  className={`flex-1 py-2.5 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all ${
+                    isInCart(detailItem.id)
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                  }`}
+                >
+                  <ShoppingCart size={16} /> {isInCart(detailItem.id) ? 'Sepette' : 'Sepete Ekle'}
+                </button>
                 <button
                   onClick={() => { setDetailItem(null); handleShowOnFloorPlan(detailItem.id); }}
                   className="flex-1 py-2.5 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg flex items-center justify-center gap-2 transition-all"
                 >
-                  <MapPin size={16} /> Kat Planina Ekle
+                  <MapPin size={16} /> Kat Planına Ekle
                 </button>
                 <button
                   onClick={() => toggleFavorite(detailItem.id)}
@@ -470,7 +497,6 @@ export default function Catalog() {
                   }`}
                 >
                   <Heart size={16} fill={favorites.includes(detailItem.id) ? 'currentColor' : 'none'} />
-                  {favorites.includes(detailItem.id) ? 'Favori' : 'Favori'}
                 </button>
               </div>
 
