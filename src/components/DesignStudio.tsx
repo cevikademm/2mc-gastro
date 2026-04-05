@@ -252,7 +252,21 @@ function WallLabel({ a, b, zoom, wallIndex, onLengthChange }: {
   );
 }
 
-export default function DesignStudio() {
+interface RoomProps {
+  name: string;
+  height: string;
+  floor: string;
+  wallMaterial: string;
+  floorMaterial: string;
+  usageType: string;
+  fireZone: string;
+}
+
+const DEFAULT_ROOM_PROPS: RoomProps = {
+  name: '', height: '280', floor: '1', wallMaterial: '', floorMaterial: '', usageType: '', fireZone: '',
+};
+
+export default function DesignStudio({ manualMode = false }: { manualMode?: boolean }) {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -312,7 +326,7 @@ export default function DesignStudio() {
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // Right panel
-  const [rightPanelTab, setRightPanelTab] = useState<'catalog' | 'properties' | 'notes' | 'info'>('catalog');
+  const [rightPanelTab, setRightPanelTab] = useState<'catalog' | 'properties' | 'notes' | 'info' | 'room'>(manualMode ? 'room' : 'catalog');
   const [catalogSearch, setCatalogSearch] = useState('');
   const [catalogCategory, setCatalogCategory] = useState('');
   const [trayDragItem, setTrayDragItem] = useState<any>(null);
@@ -322,6 +336,7 @@ export default function DesignStudio() {
   const [showMobileProps, setShowMobileProps] = useState(false);
   const [selectedVertex, setSelectedVertex] = useState<number | null>(null);
   const [notes, setNotes] = useState<string>(saved?.notes || '');
+  const [roomProps, setRoomProps] = useState<RoomProps>(saved?.roomProps || DEFAULT_ROOM_PROPS);
   const [description, setDescription] = useState<string>(saved?.description || '');
   const [pricePerM2, setPricePerM2] = useState<number>(saved?.pricePerM2 || 0);
   const [tasks, setTasks] = useState<Task[]>(saved?.tasks || []);
@@ -370,12 +385,13 @@ export default function DesignStudio() {
         roomPolygon,
         wallOpenings,
         notes,
+        roomProps,
         description,
         pricePerM2,
         tasks,
       }));
     } catch {}
-  }, [placedItems, roomWidthCm, roomHeightCm, roomShape, roomPolygon, wallOpenings, notes, description, pricePerM2, tasks, storageKey]);
+  }, [placedItems, roomWidthCm, roomHeightCm, roomShape, roomPolygon, wallOpenings, notes, roomProps, description, pricePerM2, tasks, storageKey]);
 
   // Catalog items
   const getCatalogItems = useCallback(() => {
@@ -1414,13 +1430,168 @@ export default function DesignStudio() {
       {/* Right Panel */}
       <aside className="w-72 xl:w-80 bg-white border-l border-slate-200 flex flex-col shrink-0 hidden lg:flex" style={{ height: 'calc(100vh - 3.5rem)' }}>
         <div className="flex border-b border-slate-200 shrink-0">
-          <button onClick={() => setRightPanelTab('catalog')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'catalog' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Ekipman</button>
-          <button onClick={() => setRightPanelTab('properties')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'properties' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Özellik</button>
-          <button onClick={() => setRightPanelTab('info')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'info' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Görevler</button>
-          <button onClick={() => setRightPanelTab('notes')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'notes' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Notlar</button>
+          {manualMode ? (
+            <>
+              <button onClick={() => setRightPanelTab('room')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'room' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Oda</button>
+              <button onClick={() => setRightPanelTab('info')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'info' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Görevler</button>
+              <button onClick={() => setRightPanelTab('notes')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'notes' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Notlar</button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setRightPanelTab('catalog')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'catalog' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Ekipman</button>
+              <button onClick={() => setRightPanelTab('properties')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'properties' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Özellik</button>
+              <button onClick={() => setRightPanelTab('info')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'info' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Görevler</button>
+              <button onClick={() => setRightPanelTab('notes')} className={`flex-1 py-2.5 text-[10px] font-bold text-center transition-all ${rightPanelTab === 'notes' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Notlar</button>
+            </>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto">
+          {rightPanelTab === 'room' && (
+            <div className="p-3 space-y-4">
+              {/* Room stats */}
+              <div className="bg-slate-50 rounded-xl p-3 space-y-2 border border-slate-200">
+                <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Alan Bilgileri</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white rounded-lg p-2.5 text-center border border-slate-200">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Alan</div>
+                    <div className="text-lg font-black text-primary">{roomAreaM2}<span className="text-[10px] ml-0.5">m²</span></div>
+                  </div>
+                  <div className="bg-white rounded-lg p-2.5 text-center border border-slate-200">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Çevre</div>
+                    <div className="text-lg font-black text-slate-700">{roomPerimeterM}<span className="text-[10px] ml-0.5">m</span></div>
+                  </div>
+                </div>
+                {roomPolygon.length >= 3 && (
+                  <div className="text-[9px] text-slate-400 text-center">{roomPolygon.length} köşe nokta</div>
+                )}
+                <button onClick={startDrawingRoom} className="w-full py-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg flex items-center justify-center gap-1 transition-all">
+                  <RotateCcw size={11} /> {roomPolygon.length >= 3 ? 'Yeniden Çiz' : 'Çizmeye Başla'}
+                </button>
+              </div>
+
+              {/* Room properties */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Mimari Özellikler</h4>
+
+                <div>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase">Oda / Alan Adı</label>
+                  <input type="text" value={roomProps.name} onChange={e => setRoomProps(p => ({ ...p, name: e.target.value }))}
+                    placeholder="örn. Ana Mutfak" className="w-full mt-0.5 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary outline-none" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase">Kat</label>
+                    <select value={roomProps.floor} onChange={e => setRoomProps(p => ({ ...p, floor: e.target.value }))}
+                      className="w-full mt-0.5 px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-primary">
+                      <option value="-2">-2. Bodrum</option>
+                      <option value="-1">-1. Bodrum</option>
+                      <option value="0">Zemin Kat</option>
+                      <option value="1">1. Kat</option>
+                      <option value="2">2. Kat</option>
+                      <option value="3">3. Kat</option>
+                      <option value="4">4. Kat</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase">Tavan Yüks. (cm)</label>
+                    <input type="number" value={roomProps.height} onChange={e => setRoomProps(p => ({ ...p, height: e.target.value }))}
+                      placeholder="280" className="w-full mt-0.5 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary outline-none" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase">Kullanım Türü</label>
+                  <select value={roomProps.usageType} onChange={e => setRoomProps(p => ({ ...p, usageType: e.target.value }))}
+                    className="w-full mt-0.5 px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-primary">
+                    <option value="">Seçin...</option>
+                    <option value="sicak-mutfak">Sıcak Mutfak</option>
+                    <option value="soguk-mutfak">Soğuk Mutfak</option>
+                    <option value="hazirlik">Hazırlık Alanı</option>
+                    <option value="bulaşıkhane">Bulaşıkhane</option>
+                    <option value="depo">Depo</option>
+                    <option value="soguk-oda">Soğuk Oda</option>
+                    <option value="servis">Servis Alanı</option>
+                    <option value="ofis">Ofis</option>
+                    <option value="wc-soyunma">WC / Soyunma</option>
+                    <option value="diger">Diğer</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase">Duvar Kaplama</label>
+                    <input type="text" value={roomProps.wallMaterial} onChange={e => setRoomProps(p => ({ ...p, wallMaterial: e.target.value }))}
+                      placeholder="örn. Fayans" className="w-full mt-0.5 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase">Zemin Kaplama</label>
+                    <input type="text" value={roomProps.floorMaterial} onChange={e => setRoomProps(p => ({ ...p, floorMaterial: e.target.value }))}
+                      placeholder="örn. Epoksi" className="w-full mt-0.5 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary outline-none" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase">Yangın Bölgesi</label>
+                  <input type="text" value={roomProps.fireZone} onChange={e => setRoomProps(p => ({ ...p, fireZone: e.target.value }))}
+                    placeholder="örn. Z-1" className="w-full mt-0.5 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary outline-none" />
+                </div>
+              </div>
+
+              {/* Wall openings */}
+              <div className="space-y-2 border-t border-slate-200 pt-3">
+                <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Açıklıklar (Kapı / Pencere)</h4>
+                {roomPolygon.length >= 3 && (
+                  <div className="flex gap-1 mb-2">
+                    <button onClick={() => { setAddOpeningMode(addOpeningMode === 'door' ? null : 'door'); setActiveTool('select'); }}
+                      className={`flex-1 py-1 text-[9px] font-bold rounded flex items-center justify-center gap-0.5 transition-all ${addOpeningMode === 'door' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                      <DoorOpen size={10} /> Kapı</button>
+                    <button onClick={() => { setAddOpeningMode(addOpeningMode === 'double-door' ? null : 'double-door'); setActiveTool('select'); }}
+                      className={`flex-1 py-1 text-[9px] font-bold rounded flex items-center justify-center gap-0.5 transition-all ${addOpeningMode === 'double-door' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                      <DoorOpen size={10} /> Çift</button>
+                    <button onClick={() => { setAddOpeningMode(addOpeningMode === 'window' ? null : 'window'); setActiveTool('select'); }}
+                      className={`flex-1 py-1 text-[9px] font-bold rounded flex items-center justify-center gap-0.5 transition-all ${addOpeningMode === 'window' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                      <AppWindow size={10} /> Pencere</button>
+                  </div>
+                )}
+                {wallOpenings.length > 0 ? (
+                  <div className="space-y-1">
+                    {wallOpenings.map(op => (
+                      <div key={op.id} className={`flex items-center gap-1.5 px-2 py-1 rounded text-[9px] cursor-pointer ${selectedOpeningId === op.id ? 'bg-blue-100 text-blue-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                        onClick={() => setSelectedOpeningId(selectedOpeningId === op.id ? null : op.id)}>
+                        {op.type === 'window' ? <AppWindow size={10} /> : <DoorOpen size={10} />}
+                        <span className="flex-1 font-bold">{op.type === 'door' ? 'Kapı' : op.type === 'double-door' ? 'Çift Kanat' : 'Pencere'} — {op.widthCm}cm</span>
+                        <button onClick={(e) => { e.stopPropagation(); setWallOpenings(prev => prev.filter(o => o.id !== op.id)); if (selectedOpeningId === op.id) setSelectedOpeningId(null); }} className="text-red-300 hover:text-red-500"><X size={10} /></button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[9px] text-slate-400">Duvar üzerine tıklayarak kapı/pencere ekleyin.</p>
+                )}
+              </div>
+
+              {/* m² price */}
+              <div className="border-t border-slate-200 pt-3 space-y-1.5">
+                <label className="text-[9px] font-black uppercase text-slate-400">m² Birim Fiyatı (€)</label>
+                <input type="number" value={pricePerM2 || ''} onChange={e => setPricePerM2(Number(e.target.value))}
+                  placeholder="0" className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary outline-none" />
+                {pricePerM2 > 0 && (
+                  <div className="flex justify-between text-[10px] font-bold text-primary bg-primary/5 rounded-lg px-2.5 py-1.5">
+                    <span>Tahmini Toplam</span>
+                    <span>€{(pricePerM2 * Number(roomAreaM2)).toLocaleString('de-DE', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* PDF */}
+              <button onClick={exportFloorPlanPDF} disabled={pdfExporting}
+                className="w-full py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary/90 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-60 shadow-sm">
+                {pdfExporting ? <><Loader2 size={14} className="animate-spin" /> Hazırlanıyor...</> : <><FileDown size={14} /> PDF İndir</>}
+              </button>
+            </div>
+          )}
+
           {rightPanelTab === 'catalog' && (
             <div className="p-3 space-y-3">
               {/* Room shape controls — architectural (polygon) mode only */}

@@ -7,7 +7,7 @@ import NotificationPanel from './NotificationPanel';
 import {
   Bell, Settings, LayoutDashboard, Ruler, Refrigerator,
   SlidersHorizontal, HelpCircle, BookOpen, PlusCircle,
-  Menu, X, LogOut, User, Globe, CreditCard, FolderOpen, ShoppingCart, PenLine
+  Menu, X, LogOut, User, Globe, CreditCard, FolderOpen, ShoppingCart, PenLine, Pencil
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -20,6 +20,7 @@ const SIDE_ITEMS = [
   { path: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, id: 'dashboard' },
   { path: '/projects', labelKey: 'nav.project', icon: FolderOpen, id: 'projects' },
   { path: '/design', labelKey: 'nav.floorPlan', icon: Ruler, id: 'design' },
+  { path: '/manual', labelKey: 'nav.manual', icon: Pencil, id: 'manual' },
   { path: '/catalog', labelKey: 'nav.equipment', icon: Refrigerator, id: 'inventory' },
   { path: '/cart', labelKey: 'nav.cart', icon: ShoppingCart, id: 'cart' },
   { path: '/sketch', labelKey: 'nav.sketch', icon: PenLine, id: 'sketch' },
@@ -46,7 +47,7 @@ export default function Layout() {
   const cartCount = cartItems.reduce((sum, i) => sum + i.quantity, 0);
 
   // Design sayfaları: tam ekran canvas gerektirir
-  const isDesign = ['/design', '/sketch'].some(p =>
+  const isDesign = ['/design', '/sketch', '/manual'].some(p =>
     location.pathname === p || location.pathname.endsWith(p)
   );
 

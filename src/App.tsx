@@ -38,6 +38,7 @@ export default function App() {
           <Route path="catalog" element={<Catalog />} />
           <Route path="catalog/:id" element={<Catalog />} />
           <Route path="design" element={<DesignStudio />} />
+          <Route path="manual" element={<DesignStudio manualMode />} />
           <Route path="bom" element={<BOM />} />
           <Route path="bom/:id" element={<BOM />} />
           <Route path="cart" element={<Cart />} />
