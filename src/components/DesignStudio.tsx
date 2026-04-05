@@ -106,6 +106,23 @@ function distancePP(a: Point, b: Point): number {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
 
+/* ─── Clamp item position inside room bounds ─── */
+function clampToRoom(
+  x: number, y: number, itemW: number, itemH: number,
+  roomShape: RoomShape, roomWidthCm: number, roomHeightCm: number,
+  bounds: { minX: number; minY: number; maxX: number; maxY: number }
+): { x: number; y: number } {
+  if (roomShape === 'polygon') {
+    const clamped_x = Math.max(bounds.minX, Math.min(bounds.maxX - itemW, x));
+    const clamped_y = Math.max(bounds.minY, Math.min(bounds.maxY - itemH, y));
+    return { x: clamped_x, y: clamped_y };
+  }
+  return {
+    x: Math.max(0, Math.min(roomWidthCm - itemW, x)),
+    y: Math.max(0, Math.min(roomHeightCm - itemH, y)),
+  };
+}
+
 /* ─── Product Image Component ─── */
 function ProductImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [error, setError] = useState(false);
@@ -253,6 +270,7 @@ export default function DesignStudio() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [popupItem, setPopupItem] = useState<PlacedItem | null>(null);
   const [showMobilePanel, setShowMobilePanel] = useState(false);
+  const [showMobileProps, setShowMobileProps] = useState(false);
 
   const selectedItem = placedItems.find(i => i.id === selectedId) || null;
 
@@ -537,7 +555,11 @@ export default function DesignStudio() {
       let newX = coords.x - dragOffset.x;
       let newY = coords.y - dragOffset.y;
       if (snapToGrid) { newX = snapVal(newX, gridSize); newY = snapVal(newY, gridSize); }
-      setPlacedItems(prev => prev.map(i => i.id === draggingId ? { ...i, x: newX, y: newY } : i));
+      setPlacedItems(prev => prev.map(i => {
+        if (i.id !== draggingId) return i;
+        const clamped = clampToRoom(newX, newY, i.width, i.height, roomShape, roomWidthCm, roomHeightCm, bounds);
+        return { ...i, x: clamped.x, y: clamped.y };
+      }));
     }
   };
 
@@ -549,11 +571,13 @@ export default function DesignStudio() {
 
   const handleItemMouseDown = (e: React.MouseEvent, item: PlacedItem) => {
     e.stopPropagation();
-    if (item.locked) { setSelectedId(item.id); return; }
+    setSelectedId(item.id);
+    // Mobilde seçilen ürün panel'ini aç
+    if (window.innerWidth < 1024) setShowMobileProps(true);
+    if (item.locked) return;
     const coords = getCanvasCoords(e);
     setDragOffset({ x: coords.x - item.x, y: coords.y - item.y });
     setDraggingId(item.id);
-    setSelectedId(item.id);
   };
 
   const handleItemDoubleClick = (e: React.MouseEvent, item: PlacedItem) => {
@@ -599,6 +623,8 @@ export default function DesignStudio() {
     let x = coords.x - widthCm / 2;
     let y = coords.y - heightCm / 2;
     if (snapToGrid) { x = snapVal(x, gridSize); y = snapVal(y, gridSize); }
+    const clamped = clampToRoom(x, y, widthCm, heightCm, roomShape, roomWidthCm, roomHeightCm, bounds);
+    x = clamped.x; y = clamped.y;
 
     const catKey = trayDragItem.cat || trayDragItem.category || 'neutral';
     const newItem: PlacedItem = {
@@ -1218,6 +1244,65 @@ export default function DesignStudio() {
           </div>
         );
       })()}
+
+      {/* Mobile Properties Bottom Sheet */}
+      {showMobileProps && selectedItem && (
+        <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowMobileProps(false)} />
+          <div className="relative bg-white rounded-t-2xl shadow-2xl max-h-[70vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
+              <h3 className="font-bold text-sm text-slate-800 truncate pr-4">{selectedItem.name}</h3>
+              <button onClick={() => setShowMobileProps(false)} className="p-1.5 text-slate-400 rounded-full shrink-0">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              {/* Image */}
+              {selectedItem.imageData && (
+                <div className="w-full h-40 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden">
+                  <ProductImage src={selectedItem.imageData} alt={selectedItem.name} className="w-full h-full p-2" />
+                </div>
+              )}
+              {/* Info grid */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase mb-1">Boyutlar</div>
+                  <p className="text-xs font-bold text-slate-700">{selectedItem.width} × {selectedItem.height} cm</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase mb-1">Güç</div>
+                  <p className="text-xs font-bold text-slate-700">{selectedItem.kw > 0 ? `${selectedItem.kw} kW` : 'Yok'}</p>
+                </div>
+                {selectedItem.price && selectedItem.price > 0 && (
+                  <div className="bg-slate-50 rounded-lg p-3">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase mb-1">Fiyat</div>
+                    <p className="text-xs font-bold text-primary">{formatPrice(selectedItem.price)}</p>
+                  </div>
+                )}
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase mb-1">Konum</div>
+                  <p className="text-xs font-bold text-slate-700">X:{Math.round(selectedItem.x)} Y:{Math.round(selectedItem.y)}</p>
+                </div>
+              </div>
+              {/* Actions */}
+              <div className="grid grid-cols-3 gap-2">
+                <button onClick={() => { rotateSelected(); }} className="py-2.5 text-[11px] font-bold text-primary bg-primary/10 rounded-xl flex items-center justify-center gap-1">
+                  <RotateCw size={14} /> Döndür
+                </button>
+                <button onClick={() => { duplicateSelected(); setShowMobileProps(false); }} className="py-2.5 text-[11px] font-bold text-slate-600 bg-slate-100 rounded-xl flex items-center justify-center gap-1">
+                  <Copy size={14} /> Kopyala
+                </button>
+                <button onClick={() => { deleteSelected(); setShowMobileProps(false); }} className="py-2.5 text-[11px] font-bold text-red-500 bg-red-50 rounded-xl flex items-center justify-center gap-1">
+                  <Trash2 size={14} /> Sil
+                </button>
+              </div>
+              <button onClick={() => { toggleLockSelected(); }} className={`w-full py-2.5 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 ${selectedItem.locked ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>
+                {selectedItem.locked ? <><Lock size={13} /> Kilidi Aç</> : <><Unlock size={13} /> Kilitle</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Equipment Bottom Sheet */}
       {showMobilePanel && (
