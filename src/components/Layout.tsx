@@ -33,7 +33,7 @@ const SIDE_ITEMS = [
 const BOTTOM_NAV = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Ana Sayfa' },
   { path: '/catalog', icon: Refrigerator, label: 'Katalog' },
-  { path: '/sketch', icon: PenLine, label: 'Eskiz' },
+  { path: '/sketch', icon: PenLine, label: 'Kat Planı' },
   { path: '/design', icon: Ruler, label: 'Çizim' },
   { path: '/bom', icon: ClipboardList, label: 'BOM' },
 ];

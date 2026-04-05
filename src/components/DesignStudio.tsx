@@ -10,8 +10,9 @@ import {
   MousePointer2, Hand, Plus, Minus, Lock, Unlock,
   Package, ArrowLeft, Search, X, Heart, Zap,
   Ruler, Euro, ExternalLink, Pen, RotateCcw,
-  DoorOpen, AppWindow
+  DoorOpen, AppWindow, FileDown, StickyNote, Loader2
 } from 'lucide-react';
+import html2canvas from 'html2canvas';
 
 /* ─── Types ─── */
 interface Point { x: number; y: number; }
@@ -303,7 +304,7 @@ export default function DesignStudio() {
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // Right panel
-  const [rightPanelTab, setRightPanelTab] = useState<'catalog' | 'properties'>('catalog');
+  const [rightPanelTab, setRightPanelTab] = useState<'catalog' | 'properties' | 'notes'>('catalog');
   const [catalogSearch, setCatalogSearch] = useState('');
   const [catalogCategory, setCatalogCategory] = useState('');
   const [trayDragItem, setTrayDragItem] = useState<any>(null);
@@ -311,6 +312,10 @@ export default function DesignStudio() {
   const [popupItem, setPopupItem] = useState<PlacedItem | null>(null);
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [showMobileProps, setShowMobileProps] = useState(false);
+  const [selectedVertex, setSelectedVertex] = useState<number | null>(null);
+  const [notes, setNotes] = useState<string>(saved?.notes || '');
+  const [pdfExporting, setPdfExporting] = useState(false);
+  const canvasWrapRef = useRef<HTMLDivElement>(null);
 
   const selectedItem = placedItems.find(i => i.id === selectedId) || null;
 
@@ -351,9 +356,10 @@ export default function DesignStudio() {
         roomShape,
         roomPolygon,
         wallOpenings,
+        notes,
       }));
     } catch {}
-  }, [placedItems, roomWidthCm, roomHeightCm, roomShape, roomPolygon, wallOpenings, storageKey]);
+  }, [placedItems, roomWidthCm, roomHeightCm, roomShape, roomPolygon, wallOpenings, notes, storageKey]);
 
   // Catalog items
   const getCatalogItems = useCallback(() => {
@@ -587,16 +593,35 @@ export default function DesignStudio() {
       return;
     }
 
-    // Check if clicking a polygon vertex (for dragging)
+    // Check if clicking a polygon vertex (for dragging/selecting)
     if (roomShape === 'polygon' && roomPolygon.length >= 3 && activeTool === 'select') {
       const coords = getCanvasCoords(e);
       for (let i = 0; i < roomPolygon.length; i++) {
-        if (distancePP(coords, roomPolygon[i]) < 12 / zoom) {
+        if (distancePP(coords, roomPolygon[i]) < 14 / zoom) {
           setDraggingVertex(i);
+          setSelectedVertex(i);
           e.preventDefault();
           return;
         }
       }
+      // Right-click on edge → insert vertex
+      if (e.button === 2) {
+        for (let i = 0; i < roomPolygon.length; i++) {
+          const a = roomPolygon[i];
+          const b = roomPolygon[(i + 1) % roomPolygon.length];
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const lenSq = dx * dx + dy * dy;
+          if (lenSq < 1) continue;
+          const t = Math.max(0, Math.min(1, ((coords.x - a.x) * dx + (coords.y - a.y) * dy) / lenSq));
+          const fx = a.x + t * dx, fy = a.y + t * dy;
+          if (Math.sqrt((coords.x - fx) ** 2 + (coords.y - fy) ** 2) < 12 / zoom) {
+            insertVertex(i);
+            e.preventDefault();
+            return;
+          }
+        }
+      }
+      setSelectedVertex(null);
     }
 
     // Check if clicking near an opening handle
@@ -794,6 +819,71 @@ export default function DesignStudio() {
     return () => { clearTimeout(t); window.removeEventListener('resize', zoomFit); };
   }, []);
 
+  /* ─── Vertex operations ─── */
+  const deleteVertex = useCallback((idx: number) => {
+    if (roomPolygon.length <= 3) return; // minimum 3 vertices
+    const newPts = roomPolygon.filter((_, i) => i !== idx);
+    setRoomPolygon(newPts);
+    setSelectedVertex(null);
+  }, [roomPolygon]);
+
+  // Insert a new vertex on the edge between idx and idx+1
+  const insertVertex = useCallback((edgeIdx: number) => {
+    const a = roomPolygon[edgeIdx];
+    const b = roomPolygon[(edgeIdx + 1) % roomPolygon.length];
+    const mid = { x: Math.round((a.x + b.x) / 2), y: Math.round((a.y + b.y) / 2) };
+    const newPts = [...roomPolygon];
+    newPts.splice(edgeIdx + 1, 0, mid);
+    setRoomPolygon(newPts);
+    setSelectedVertex(edgeIdx + 1);
+  }, [roomPolygon]);
+
+  /* ─── PDF export ─── */
+  const exportFloorPlanPDF = useCallback(async () => {
+    if (!canvasWrapRef.current) return;
+    setPdfExporting(true);
+    try {
+      const { jsPDF } = await import('jspdf');
+      const canvas = await html2canvas(canvasWrapRef.current, {
+        scale: 1.5,
+        useCORS: true,
+        backgroundColor: '#f1f5f9',
+        logging: false,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      // Header
+      doc.setFillColor(30, 64, 175);
+      doc.rect(0, 0, pageW, 12, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`2MC Gastro — Kat Planı${project ? ': ' + project.name : ''}`, 8, 8);
+      doc.text(new Date().toLocaleDateString('tr-TR'), pageW - 8, 8, { align: 'right' });
+      // Canvas image
+      const imgH = (canvas.height * (pageW - 16)) / canvas.width;
+      const startY = 14;
+      doc.addImage(imgData, 'PNG', 8, startY, pageW - 16, Math.min(imgH, pageH - startY - 16));
+      // Footer info
+      const footerY = pageH - 8;
+      doc.setFillColor(248, 250, 252);
+      doc.rect(0, footerY - 5, pageW, 13, 'F');
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Alan: ${roomAreaM2}m²  |  Çevre: ${roomPerimeterM}m  |  Ekipman: ${totalItems}  |  Güç: ${totalKW.toFixed(1)}kW${totalPrice > 0 ? '  |  Toplam: €' + totalPrice.toLocaleString('de-DE', { minimumFractionDigits: 2 }) : ''}`, 8, footerY);
+      if (notes) {
+        const noteText = notes.length > 120 ? notes.substring(0, 120) + '...' : notes;
+        doc.text(`Not: ${noteText}`, 8, footerY + 4);
+      }
+      doc.save(`KatPlani_${project?.name || 'Plan'}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } finally {
+      setPdfExporting(false);
+    }
+  }, [project, roomAreaM2, roomPerimeterM, totalItems, totalKW, totalPrice, notes]);
+
   // Listen for floorPlanItemId from catalog
   useEffect(() => {
     const itemId = equipmentStore.floorPlanItemId;
@@ -904,16 +994,27 @@ export default function DesignStudio() {
           <span className="text-[10px] font-mono font-bold text-slate-500 w-10 text-center">{Math.round(zoom * 100)}%</span>
           <button onClick={zoomIn} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-md"><Plus size={15} /></button>
           <button onClick={zoomFit} className="ml-1 px-2 py-1 text-[10px] font-bold text-slate-500 hover:text-primary hover:bg-slate-100 rounded-md">FIT</button>
+          <div className="w-px h-5 bg-slate-200 mx-1" />
+          <button
+            onClick={exportFloorPlanPDF}
+            disabled={pdfExporting}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold text-white bg-primary hover:bg-primary/90 rounded-md disabled:opacity-60 transition-all"
+            title="PDF İndir"
+          >
+            {pdfExporting ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
+            <span className="hidden sm:inline">PDF</span>
+          </button>
           {/* Mobile: ekipman paneli aç */}
           <button
             onClick={() => setShowMobilePanel(true)}
-            className="md:hidden ml-2 px-3 py-1.5 text-[10px] font-bold text-white bg-primary rounded-md flex items-center gap-1"
+            className="md:hidden ml-1 px-3 py-1.5 text-[10px] font-bold text-white bg-primary rounded-md flex items-center gap-1"
           >
             <Plus size={13} /> Ekipman
           </button>
         </div>
 
         {/* Canvas */}
+        <div ref={canvasWrapRef} className="flex-1 overflow-hidden relative flex flex-col">
         <div
           ref={canvasRef}
           className="flex-1 overflow-hidden relative"
@@ -927,6 +1028,7 @@ export default function DesignStudio() {
           onTouchEnd={handleTouchEnd}
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleCanvasDrop}
+          onContextMenu={(e) => e.preventDefault()}
         >
           {/* Drawing guide overlay */}
           {isDrawingRoom && drawingPoints.length === 0 && (
@@ -946,6 +1048,26 @@ export default function DesignStudio() {
                 {addOpeningMode === 'door' ? 'Kapı' : addOpeningMode === 'double-door' ? 'Çift Kanat Kapı' : 'Pencere'} eklemek için bir duvara tıklayın
                 <button className="pointer-events-auto ml-2 text-blue-200 hover:text-white" onClick={() => setAddOpeningMode(null)}><X size={14} /></button>
               </div>
+            </div>
+          )}
+
+          {/* Area info overlay — top-left of canvas */}
+          {roomPolygon.length >= 3 && (
+            <div className="absolute top-3 left-3 z-20 bg-white/90 backdrop-blur-sm rounded-xl shadow-md border border-slate-200 px-3 py-2 flex items-center gap-4 pointer-events-none text-xs font-bold">
+              <div className="flex items-center gap-1.5 text-primary">
+                <Ruler size={13} />
+                <span>{roomAreaM2} m²</span>
+              </div>
+              <div className="w-px h-4 bg-slate-200" />
+              <div className="text-slate-500">Çevre: {roomPerimeterM} m</div>
+              <div className="w-px h-4 bg-slate-200" />
+              <div className="text-slate-500">{roomPolygon.length} köşe</div>
+              {selectedVertex !== null && (
+                <>
+                  <div className="w-px h-4 bg-slate-200" />
+                  <div className="text-blue-600">Nokta {selectedVertex + 1} seçili</div>
+                </>
+              )}
             </div>
           )}
 
@@ -977,18 +1099,50 @@ export default function DesignStudio() {
                     const next = roomPolygon[(i + 1) % roomPolygon.length];
                     return <WallLabel key={`wall-${i}`} a={p} b={next} zoom={zoom} wallIndex={i} onLengthChange={handleWallLengthChange} />;
                   })}
-                  {/* Vertex handles (draggable) */}
-                  {!isDrawingRoom && roomPolygon.map((p, i) => (
-                    <circle
-                      key={`v-${i}`}
-                      cx={p.x} cy={p.y} r={6 / zoom}
-                      fill={draggingVertex === i ? '#1d4ed8' : '#ffffff'}
-                      stroke="#1d4ed8"
-                      strokeWidth={2 / zoom}
-                      style={{ cursor: 'move' }}
-                      onMouseDown={(e) => { e.stopPropagation(); setDraggingVertex(i); }}
-                    />
-                  ))}
+                  {/* Midpoint "+" handles to insert new vertex */}
+                  {!isDrawingRoom && roomPolygon.map((p, i) => {
+                    const next = roomPolygon[(i + 1) % roomPolygon.length];
+                    const mx = (p.x + next.x) / 2;
+                    const my = (p.y + next.y) / 2;
+                    const edgeLen = distancePP(p, next);
+                    if (edgeLen < 60) return null;
+                    return (
+                      <g key={`mp-${i}`} style={{ cursor: 'copy' }} onClick={(e) => { e.stopPropagation(); insertVertex(i); }}>
+                        <circle cx={mx} cy={my} r={5 / zoom} fill="#ffffff" stroke="#10b981" strokeWidth={1.5 / zoom} opacity={0.8} />
+                        <line x1={mx - 3 / zoom} y1={my} x2={mx + 3 / zoom} y2={my} stroke="#10b981" strokeWidth={1.5 / zoom} />
+                        <line x1={mx} y1={my - 3 / zoom} x2={mx} y2={my + 3 / zoom} stroke="#10b981" strokeWidth={1.5 / zoom} />
+                      </g>
+                    );
+                  })}
+                  {/* Vertex handles (draggable, selectable, deletable) */}
+                  {!isDrawingRoom && roomPolygon.map((p, i) => {
+                    const isVSel = selectedVertex === i;
+                    return (
+                      <g key={`v-${i}`}>
+                        <circle
+                          cx={p.x} cy={p.y} r={7 / zoom}
+                          fill={isVSel ? '#1d4ed8' : draggingVertex === i ? '#3b82f6' : '#ffffff'}
+                          stroke={isVSel ? '#1d4ed8' : '#3b82f6'}
+                          strokeWidth={2 / zoom}
+                          style={{ cursor: 'move' }}
+                          onMouseDown={(e) => { e.stopPropagation(); setDraggingVertex(i); setSelectedVertex(i); }}
+                        />
+                        <text cx={p.x} cy={p.y} textAnchor="middle" dominantBaseline="central"
+                          fontSize={6 / zoom} fill={isVSel ? 'white' : '#3b82f6'} fontWeight="bold" style={{ pointerEvents: 'none' }}>
+                          {i + 1}
+                        </text>
+                        {/* Delete button when vertex is selected */}
+                        {isVSel && roomPolygon.length > 3 && (
+                          <g transform={`translate(${p.x + 12 / zoom}, ${p.y - 12 / zoom})`} style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); deleteVertex(i); }}>
+                            <circle r={7 / zoom} fill="#ef4444" stroke="white" strokeWidth={1.5 / zoom} />
+                            <line x1={-3 / zoom} y1={-3 / zoom} x2={3 / zoom} y2={3 / zoom} stroke="white" strokeWidth={1.5 / zoom} />
+                            <line x1={3 / zoom} y1={-3 / zoom} x2={-3 / zoom} y2={3 / zoom} stroke="white" strokeWidth={1.5 / zoom} />
+                          </g>
+                        )}
+                      </g>
+                    );
+                  })}
                 </>
               )}
 
@@ -1198,6 +1352,7 @@ export default function DesignStudio() {
           </div>
         </div>
 
+        </div>{/* end canvasWrapRef */}
         {/* Status bar */}
         <div className="h-7 bg-white border-t border-slate-200 flex items-center px-4 text-[10px] font-mono text-slate-500 gap-4 shrink-0 overflow-x-auto">
           <span className="font-bold text-primary shrink-0">1px = {(1/zoom).toFixed(1)}cm</span>
@@ -1212,8 +1367,9 @@ export default function DesignStudio() {
       {/* Right Panel */}
       <aside className="w-72 xl:w-80 bg-white border-l border-slate-200 flex flex-col shrink-0 hidden lg:flex" style={{ height: 'calc(100vh - 3.5rem)' }}>
         <div className="flex border-b border-slate-200 shrink-0">
-          <button onClick={() => setRightPanelTab('catalog')} className={`flex-1 py-2.5 text-xs font-bold text-center transition-all ${rightPanelTab === 'catalog' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Ekipman</button>
-          <button onClick={() => setRightPanelTab('properties')} className={`flex-1 py-2.5 text-xs font-bold text-center transition-all ${rightPanelTab === 'properties' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Ozellikler</button>
+          <button onClick={() => setRightPanelTab('catalog')} className={`flex-1 py-2.5 text-[11px] font-bold text-center transition-all ${rightPanelTab === 'catalog' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Ekipman</button>
+          <button onClick={() => setRightPanelTab('properties')} className={`flex-1 py-2.5 text-[11px] font-bold text-center transition-all ${rightPanelTab === 'properties' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Özellikler</button>
+          <button onClick={() => setRightPanelTab('notes')} className={`flex-1 py-2.5 text-[11px] font-bold text-center transition-all ${rightPanelTab === 'notes' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`}>Notlar</button>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -1368,6 +1524,94 @@ export default function DesignStudio() {
               {catalogItems.length === 0 && (
                 <div className="text-center py-8 text-slate-400"><Package size={28} className="mx-auto mb-2 opacity-40" /><p className="text-xs font-medium">Urun bulunamadi</p></div>
               )}
+            </div>
+          )}
+
+          {rightPanelTab === 'notes' && (
+            <div className="p-4 space-y-4">
+              {/* Project summary info */}
+              {project && (
+                <div className="bg-primary/5 rounded-xl p-4 space-y-2 border border-primary/10">
+                  <h4 className="text-[10px] font-black uppercase text-primary tracking-wider">Proje Bilgileri</h4>
+                  <div className="space-y-1.5 text-xs text-slate-600">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-medium">Proje Adı</span>
+                      <span className="font-bold">{project.name}</span>
+                    </div>
+                    {project.clientName && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 font-medium">Müşteri</span>
+                        <span className="font-bold">{project.clientName}</span>
+                      </div>
+                    )}
+                    {project.deadline && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 font-medium">Teslim</span>
+                        <span className="font-bold">{project.deadline}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Room stats */}
+              <div className="bg-slate-50 rounded-xl p-4 space-y-2 border border-slate-200">
+                <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Alan Bilgileri</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white rounded-lg p-2.5 text-center border border-slate-200">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Alan</div>
+                    <div className="text-lg font-black text-primary">{roomAreaM2}<span className="text-[10px] ml-0.5">m²</span></div>
+                  </div>
+                  <div className="bg-white rounded-lg p-2.5 text-center border border-slate-200">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Çevre</div>
+                    <div className="text-lg font-black text-slate-700">{roomPerimeterM}<span className="text-[10px] ml-0.5">m</span></div>
+                  </div>
+                  <div className="bg-white rounded-lg p-2.5 text-center border border-slate-200">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Ekipman</div>
+                    <div className="text-lg font-black text-slate-700">{totalItems}</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-2.5 text-center border border-slate-200">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Güç</div>
+                    <div className="text-lg font-black text-amber-600">{totalKW.toFixed(1)}<span className="text-[10px] ml-0.5">kW</span></div>
+                  </div>
+                </div>
+                {totalPrice > 0 && (
+                  <div className="bg-primary/5 rounded-lg p-2.5 text-center border border-primary/20">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Tahmini Toplam</div>
+                    <div className="text-lg font-black text-primary">€{totalPrice.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</div>
+                  </div>
+                )}
+                {roomPolygon.length >= 3 && (
+                  <div className="text-[9px] text-slate-400 text-center">
+                    {roomPolygon.length} köşe nokta · {Math.round((Number(equipmentAreaM2) / Number(roomAreaM2)) * 100)}% ekipman kapasitesi
+                  </div>
+                )}
+              </div>
+
+              {/* Notes textarea */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <StickyNote size={13} className="text-primary" />
+                  <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Proje Notları</h4>
+                </div>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Proje ile ilgili notlarınızı buraya yazın...&#10;&#10;Örn: Müşteri, havalandırma tarafına dikkat edilmesini istedi. Izgara ekipmanları güneye yerleştirilecek."
+                  rows={10}
+                  className="w-full text-xs border border-slate-200 rounded-xl p-3 resize-none focus:ring-2 focus:ring-primary outline-none text-slate-700 leading-relaxed placeholder:text-slate-300"
+                />
+                <p className="text-[9px] text-slate-400">{notes.length} karakter · Otomatik kaydedilir</p>
+              </div>
+
+              {/* PDF export button */}
+              <button
+                onClick={exportFloorPlanPDF}
+                disabled={pdfExporting}
+                className="w-full py-3 text-xs font-bold text-white bg-primary hover:bg-primary/90 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-60 shadow-sm"
+              >
+                {pdfExporting ? <><Loader2 size={14} className="animate-spin" /> Hazırlanıyor...</> : <><FileDown size={14} /> Kat Planını PDF İndir</>}
+              </button>
             </div>
           )}
 
