@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;700;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-headline: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  --color-primary: #001f65;
+  --color-primary-container: #183585;
+  --color-primary-fixed: #dce1ff;
+  --color-primary-fixed-dim: #b6c4ff;
+  --color-surface: #f7f9fb;
+  --color-surface-container-low: #f2f4f6;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container: #eceef0;
+  --color-surface-container-highest: #e0e3e5;
+  --color-surface-container-high: #e6e8ea;
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #43474c;
+  --color-outline-variant: #c4c6cd;
+  --color-secondary: #515f74;
+  --color-secondary-container: #d5e3fc;
+  --color-on-secondary-container: #57657a;
+  --color-tertiary: #1e2539;
+  --color-tertiary-fixed: #dae2fd;
+  --color-tertiary-fixed-dim: #bec6e0;
+  --color-on-tertiary-fixed: #131b2e;
+  --color-error-container: #ffdad6;
+  --color-error: #ba1a1a;
+}
+
+@layer utilities {
+  .glass-panel {
+    background: rgba(247, 249, 251, 0.8);
+    backdrop-filter: blur(20px);
+  }
+  .brushed-metal {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-container) 100%);
+  }
+  .dot-grid {
+    background-image: radial-gradient(var(--color-outline-variant) 1px, transparent 1px);
+    background-size: 24px 24px;
+    opacity: 0.3;
+  }
+  .ruler-x {
+    background-image: linear-gradient(to right, var(--color-outline-variant) 1px, transparent 1px);
+    background-size: 50px 100%;
+  }
+  .ruler-y {
+    background-image: linear-gradient(to bottom, var(--color-outline-variant) 1px, transparent 1px);
+    background-size: 100% 50px;
+  }
+}
