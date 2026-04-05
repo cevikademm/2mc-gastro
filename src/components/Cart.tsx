@@ -78,7 +78,6 @@ function ProductImage({ src, alt }: { src: string; alt: string }) {
       <img
         src={src}
         alt={alt}
-        crossOrigin="anonymous"
         onError={() => { setErr(true); setLoading(false); }}
         onLoad={() => setLoading(false)}
         className={`w-14 h-14 object-contain rounded-lg bg-white border border-outline-variant/10 p-1 transition-opacity ${loading ? 'opacity-0' : 'opacity-100'}`}
