@@ -124,26 +124,30 @@ export default function Cart() {
       ]);
 
       // ── Helper: draw hologram watermark on current page ──
+      // Pre-render hologram once as base64 with low opacity
+      let holoPageData: string | null = null;
+      if (logoHolo) {
+        holoPageData = await new Promise<string | null>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 794;
+            canvas.height = 1123;
+            const ctx = canvas.getContext('2d')!;
+            const size = Math.min(canvas.width, canvas.height) * 0.92;
+            const x = (canvas.width - size) / 2;
+            const y = (canvas.height - size) / 2;
+            ctx.globalAlpha = 0.055;
+            ctx.drawImage(img, x, y, size, size);
+            resolve(canvas.toDataURL('image/png'));
+          };
+          img.onerror = () => resolve(null);
+          img.src = logoHolo;
+        });
+      }
       const drawHologram = () => {
-        if (!logoHolo) return;
-        // Draw a canvas with very low opacity version
-        const canvas = document.createElement('canvas');
-        // A4 at 96dpi ≈ 794×1123px
-        canvas.width = 794;
-        canvas.height = 1123;
-        const ctx = canvas.getContext('2d')!;
-        const img = new Image();
-        img.src = logoHolo;
-        // Draw centered, covering full page
-        const size = Math.min(canvas.width, canvas.height) * 0.92;
-        const x = (canvas.width - size) / 2;
-        const y = (canvas.height - size) / 2;
-        ctx.globalAlpha = 0.055;
-        // tint cyan-blue
-        ctx.filter = 'hue-rotate(200deg) saturate(3)';
-        ctx.drawImage(img, x, y, size, size);
-        const holoData = canvas.toDataURL('image/png');
-        doc.addImage(holoData, 'PNG', 0, 0, PW, PH);
+        if (!holoPageData) return;
+        doc.addImage(holoPageData, 'PNG', 0, 0, PW, PH);
       };
 
       // ── Helper: decorative diagonal stripe ──
@@ -239,12 +243,20 @@ export default function Cart() {
       let y = 96;
       let pageNum = 1;
 
-      // Pre-load all product images
+      // Pre-load all product images (try url first, then img)
       const imgCache: Record<string, string | null> = {};
-      const uniqueImgs = [...new Set(items.map(i => i.product.img).filter(Boolean))];
+      const imgSources = items.map(i => ({
+        key: i.product.id,
+        urls: [i.product.url, i.product.img].filter(Boolean) as string[],
+      }));
       await Promise.all(
-        uniqueImgs.map(async (src) => {
-          imgCache[src] = await loadImageAsDataURL(src);
+        imgSources.map(async ({ key, urls }) => {
+          for (const src of urls) {
+            if (imgCache[key]) break;
+            const data = await loadImageAsDataURL(src);
+            if (data) { imgCache[key] = data; break; }
+          }
+          if (!imgCache[key]) imgCache[key] = null;
         })
       );
 
@@ -314,7 +326,7 @@ export default function Cart() {
           rowAlt = !rowAlt;
 
           // Product image
-          const imgData = product.img ? imgCache[product.img] : null;
+          const imgData = imgCache[product.id] || null;
           if (imgData) {
             doc.addImage(imgData, 'PNG', 12, y, 14, 14);
           } else {
