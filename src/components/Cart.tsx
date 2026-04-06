@@ -18,14 +18,19 @@ const COMPANY_INFO = {
   tagline: 'Alles rund um deine Marke · Gastronomi Çözümleri',
 };
 
-// Load an image URL → base64 dataURL
-// Uses fetch→FileReader (avoids canvas CORS taint for cross-origin images like S3)
+// Image proxy for cross-origin images (S3 etc.)
+const IMAGE_PROXY = 'https://mnlgbsfarubpvkmqqvff.supabase.co/functions/v1/image-proxy';
+
+// Load an image URL → base64 dataURL (routes cross-origin through proxy)
 async function loadImageAsDataURL(src: string): Promise<string | null> {
   if (!src) return null;
   const url = src.startsWith('http') ? src : window.location.origin + (src.startsWith('/') ? '' : '/') + src;
-  // Try fetch first (works for S3 with CORS headers)
+
+  // For cross-origin URLs, use proxy to avoid CORS issues
+  const fetchUrl = url.startsWith(window.location.origin) ? url : `${IMAGE_PROXY}?url=${encodeURIComponent(url)}`;
+
   try {
-    const res = await fetch(url, { mode: 'cors' });
+    const res = await fetch(fetchUrl);
     if (!res.ok) throw new Error('fetch failed');
     const blob = await res.blob();
     return await new Promise<string | null>((resolve) => {
@@ -35,25 +40,7 @@ async function loadImageAsDataURL(src: string): Promise<string | null> {
       reader.readAsDataURL(blob);
     });
   } catch {
-    // Fallback: canvas (works for same-origin / CORS-enabled images)
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth || 200;
-          canvas.height = img.naturalHeight || 200;
-          const ctx = canvas.getContext('2d')!;
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL('image/png'));
-        } catch {
-          resolve(null);
-        }
-      };
-      img.onerror = () => resolve(null);
-      img.src = url;
-    });
+    return null;
   }
 }
 
