@@ -4,6 +4,7 @@ import {
   ZoomIn, ZoomOut, Maximize2, Info,
   Save, FolderOpen, X, Check, Clock, FileEdit
 } from 'lucide-react';
+import { debouncedSyncSketches, loadSketches as loadSketchesFromDb } from '../../lib/gastroSync';
 
 /* ─── Types ──────────────────────────────────────────────────── */
 interface Pt  { x: number; y: number }          // world coords → cm
@@ -26,8 +27,10 @@ const loadSketches = (): SavedSketch[] => {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
   catch { return []; }
 };
-const saveSketches = (list: SavedSketch[]) =>
+const saveSketches = (list: SavedSketch[]) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  debouncedSyncSketches(list);
+};
 
 /* ─── Helpers ───────────────────────────────────────────────── */
 const snapV = (v: number) => Math.round(v / SNAP) * SNAP;
@@ -121,6 +124,18 @@ export default function SketchPage() {
 
   const colorRef = useRef(COLORS[0]);
   colorRef.current = selColor;
+
+  // Load from Supabase on mount (merge if local is empty)
+  useEffect(() => {
+    loadSketchesFromDb().then((remote) => {
+      if (!remote || remote.length === 0) return;
+      const local = loadSketches();
+      if (local.length === 0) {
+        saveSketches(remote);
+        setSavedList(remote);
+      }
+    });
+  }, []);
 
   const sync = () => {
     setLineCount(st.current.segs.length);

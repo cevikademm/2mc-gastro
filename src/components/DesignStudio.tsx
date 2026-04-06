@@ -13,6 +13,7 @@ import {
   DoorOpen, AppWindow, FileDown, StickyNote, Loader2
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { debouncedSyncFloorPlan, loadFloorPlan } from '../lib/gastroSync';
 
 /* ─── Types ─── */
 interface Point { x: number; y: number; }
@@ -392,6 +393,48 @@ export default function DesignStudio({ manualMode = false }: { manualMode?: bool
       }));
     } catch {}
   }, [placedItems, roomWidthCm, roomHeightCm, roomShape, roomPolygon, wallOpenings, notes, roomProps, description, pricePerM2, tasks, storageKey]);
+
+  // Auto-save to Supabase (debounced 2s)
+  useEffect(() => {
+    const projectId = id || 'global';
+    debouncedSyncFloorPlan(projectId, {
+      roomWidthCm,
+      roomHeightCm,
+      roomShape,
+      roomPolygon,
+      wallLengthsCm: [],
+      placedItems,
+      wallOpenings,
+      roomProps,
+      selectedItemId: selectedId,
+      canvasState: { notes, description, pricePerM2, tasks, zoom, panOffset: { x: panOffset.x, y: panOffset.y } },
+    });
+  }, [placedItems, roomWidthCm, roomHeightCm, roomShape, roomPolygon, wallOpenings, roomProps, notes, description, pricePerM2, tasks, id, selectedId, zoom, panOffset]);
+
+  // Load from Supabase on mount (fallback if localStorage empty)
+  useEffect(() => {
+    const projectId = id || 'global';
+    loadFloorPlan(projectId).then((remote) => {
+      if (!remote) return;
+      // Only restore from Supabase if local has no data
+      const localHasData = placedItems.length > 0 || roomPolygon.length >= 3;
+      if (localHasData) return;
+      if (remote.placedItems?.length > 0) setPlacedItems(remote.placedItems);
+      if (remote.roomPolygon?.length >= 3) {
+        setRoomPolygon(remote.roomPolygon);
+        setIsDrawingRoom(false);
+        setActiveTool('select');
+      }
+      if (remote.roomWidthCm) setRoomWidthCm(remote.roomWidthCm);
+      if (remote.roomHeightCm) setRoomHeightCm(remote.roomHeightCm);
+      if (remote.wallOpenings?.length > 0) setWallOpenings(remote.wallOpenings);
+      if (remote.roomProps) setRoomProps(remote.roomProps);
+      if (remote.canvasState?.notes) setNotes(remote.canvasState.notes);
+      if (remote.canvasState?.description) setDescription(remote.canvasState.description);
+      if (remote.canvasState?.tasks?.length > 0) setTasks(remote.canvasState.tasks);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   // Catalog items
   const getCatalogItems = useCallback(() => {

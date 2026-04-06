@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { EquipmentItem } from './equipmentStore';
+import { debouncedSyncCart, loadCart } from '../lib/gastroSync';
 
 export interface CartItem {
   product: EquipmentItem;
@@ -77,3 +78,16 @@ export const useCartStore = create<CartState>()(
     { name: '2mc-cart' }
   )
 );
+
+// Supabase sync
+useCartStore.subscribe((state) => {
+  debouncedSyncCart(state.items);
+});
+
+loadCart().then((remote) => {
+  if (!remote || remote.length === 0) return;
+  const local = useCartStore.getState().items;
+  if (local.length === 0) {
+    useCartStore.setState({ items: remote });
+  }
+});

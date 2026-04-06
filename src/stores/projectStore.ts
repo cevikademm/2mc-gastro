@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { debouncedSyncProjects, loadProjects } from '../lib/gastroSync';
 
 export interface ProductItem {
   id: string;
@@ -265,3 +266,23 @@ export const useProjectStore = create<ProjectState>()(
     }
   )
 );
+
+// ─── Supabase Sync ───
+// Auto-sync on every state change
+useProjectStore.subscribe((state) => {
+  debouncedSyncProjects(state.projects, state.activities);
+});
+
+// Load from Supabase on startup (merge with localStorage)
+loadProjects().then((remote) => {
+  if (!remote) return;
+  const local = useProjectStore.getState();
+  // If local has only initial demo data and remote has real data, prefer remote
+  const localIds = new Set(local.projects.map((p) => p.id));
+  const newProjects = remote.projects.filter((p) => !localIds.has(p.id));
+  if (newProjects.length > 0) {
+    useProjectStore.setState({
+      projects: [...local.projects, ...newProjects],
+    });
+  }
+});

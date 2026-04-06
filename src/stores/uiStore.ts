@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { debouncedSyncUserPrefs, loadUserPrefs } from '../lib/gastroSync';
 
 interface Notification {
   id: string;
@@ -81,3 +82,19 @@ export const useUIStore = create<UIState>()(
     }
   )
 );
+
+// Sync notifications to Supabase
+useUIStore.subscribe((state) => {
+  debouncedSyncUserPrefs({
+    notifications: state.notifications,
+    cookieConsent: state.cookieConsent,
+  });
+});
+
+loadUserPrefs().then((remote) => {
+  if (!remote) return;
+  const local = useUIStore.getState();
+  if (remote.notifications?.length > local.notifications.length) {
+    useUIStore.setState({ notifications: remote.notifications });
+  }
+});

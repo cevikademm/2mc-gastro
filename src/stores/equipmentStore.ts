@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import productsData from '../data/products.json';
+import { debouncedSyncUserPrefs, loadUserPrefs } from '../lib/gastroSync';
 
 /* ─── Types ─── */
 export interface EquipmentItem {
@@ -166,3 +167,16 @@ export const useEquipmentStore = create<EquipmentState>()(
     }
   )
 );
+
+// Sync favorites to Supabase
+useEquipmentStore.subscribe((state) => {
+  debouncedSyncUserPrefs({ favorites: state.favorites });
+});
+
+loadUserPrefs().then((remote) => {
+  if (!remote || !remote.favorites?.length) return;
+  const local = useEquipmentStore.getState().favorites;
+  if (local.length === 0) {
+    useEquipmentStore.setState({ favorites: remote.favorites });
+  }
+});
