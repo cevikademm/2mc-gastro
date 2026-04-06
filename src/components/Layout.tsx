@@ -7,7 +7,7 @@ import NotificationPanel from './NotificationPanel';
 import {
   Bell, Settings, LayoutDashboard, Ruler, Refrigerator,
   SlidersHorizontal, HelpCircle, BookOpen, PlusCircle,
-  Menu, X, LogOut, User, Globe, CreditCard, FolderOpen, ShoppingCart, PenLine, Pencil
+  Menu, X, LogOut, User, Globe, CreditCard, FolderOpen, ShoppingCart, PenLine, Pencil, Diamond
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -22,6 +22,7 @@ const SIDE_ITEMS = [
   { path: '/design', labelKey: 'nav.floorPlan', icon: Ruler, id: 'design' },
   { path: '/manual', labelKey: 'nav.manual', icon: Pencil, id: 'manual' },
   { path: '/catalog', labelKey: 'nav.equipment', icon: Refrigerator, id: 'inventory' },
+  { path: '/diamond', labelKey: 'Diamond', icon: Diamond, id: 'diamond' },
   { path: '/cart', labelKey: 'nav.cart', icon: ShoppingCart, id: 'cart' },
   { path: '/sketch', labelKey: 'nav.sketch', icon: PenLine, id: 'sketch' },
   { path: '/settings', labelKey: 'nav.settings', icon: SlidersHorizontal, id: 'settings' },

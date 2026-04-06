@@ -20,6 +20,7 @@ import SupportPage from './pages/support/SupportPage';
 import DocsPage from './pages/docs/DocsPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import PaymentPage from './pages/payment/PaymentPage';
+import DiamondPage from './pages/diamond/DiamondPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="manual" element={<DesignStudio manualMode />} />
           <Route path="bom" element={<BOM />} />
           <Route path="bom/:id" element={<BOM />} />
+          <Route path="diamond" element={<DiamondPage />} />
           <Route path="cart" element={<Cart />} />
           <Route path="sketch" element={<SketchPage />} />
           <Route path="projects" element={<ProjectListPage />} />
