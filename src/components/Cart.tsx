@@ -120,7 +120,7 @@ export default function Cart() {
       const [logoFull, logoIcon, logoHolo] = await Promise.all([
         loadImageAsDataURL('/logo-werbung.png'),
         loadImageAsDataURL('/logo-icon.png'),
-        loadImageAsDataURL('/logo-icon.png'),
+        loadImageAsDataURL('https://mnlgbsfarubpvkmqqvff.supabase.co/storage/v1/object/public/2mcwerbung/logo4.png'),
       ]);
 
       // ── Helper: draw hologram watermark on current page ──
@@ -550,9 +550,23 @@ export default function Cart() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm text-on-surface truncate">{product.name}</p>
                         <p className="text-xs font-mono text-on-surface-variant mt-0.5">{product.id}</p>
-                        {product.brand && (
-                          <span className="text-[10px] text-on-surface-variant/60 font-medium">{product.brand}</span>
-                        )}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {product.brand && (
+                            <span className="text-[10px] text-on-surface-variant/60 font-medium">{product.brand}</span>
+                          )}
+                          {product.url && (
+                            <a
+                              href={product.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-[10px] text-primary hover:underline font-medium truncate max-w-[200px]"
+                              title={product.url}
+                            >
+                              Ürün Görseli ↗
+                            </a>
+                          )}
+                        </div>
                       </div>
 
                       <div className="text-right text-xs text-on-surface-variant hidden sm:block w-24">

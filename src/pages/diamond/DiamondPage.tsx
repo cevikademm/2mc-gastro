@@ -171,6 +171,7 @@ export default function DiamondPage() {
     sub: p.product_subfamily_id || '',
     fam: p.product_family_name || '',
     img: p.image_big || p.image_thumb || '',
+    url: p.image_big || p.image_thumb || p.image_full || '',
     brand: 'Diamond',
     l: Number(p.length_mm) || 0,
     w: Number(p.width_mm) || 0,

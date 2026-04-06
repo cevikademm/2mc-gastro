@@ -12,6 +12,7 @@ export interface EquipmentItem {
   sub: string;
   fam: string;
   img: string;
+  url?: string;  // product page URL
   brand: string;
   l: number;  // length mm
   w: number;  // width mm
