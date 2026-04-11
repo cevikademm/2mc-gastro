@@ -8,6 +8,7 @@ import {
   Package, Zap, Ruler, Euro, ExternalLink, ChevronDown
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import { drawPdfHologram } from '../lib/pdfWatermark';
 
 function ProductImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [error, setError] = useState(false);
@@ -64,8 +65,13 @@ export default function BOM() {
     return equipmentStore.allItems.find(i => i.id === itemCode);
   };
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
     const doc = new jsPDF();
+    const pageCount = { current: 1 };
+
+    // Draw hologram on first page
+    await drawPdfHologram(doc);
+
     doc.setFontSize(18);
     doc.text('2MC Gastro - ' + t('bom.title'), 14, 20);
     doc.setFontSize(10);
@@ -83,14 +89,18 @@ export default function BOM() {
     y += 6;
 
     doc.setFont('helvetica', 'normal');
-    filtered.forEach((item) => {
-      if (y > 270) { doc.addPage(); y = 20; }
+    for (const item of filtered) {
+      if (y > 270) {
+        doc.addPage();
+        await drawPdfHologram(doc);
+        y = 20;
+      }
       doc.text(String(item.quantity).padStart(2, '0'), 14, y);
       doc.text(item.code, 35, y);
       doc.text(item.description.substring(0, 50), 80, y);
       doc.text(statusLabels[item.status], 170, y);
       y += 7;
-    });
+    }
 
     doc.save(`BOM_${projectId}_${new Date().toISOString().split('T')[0]}.pdf`);
   };

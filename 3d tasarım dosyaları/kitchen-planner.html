@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<title>2MC Gastro — Endüstriyel Mutfak Planlayıcı</title>
+<style>
+  :root {
+    --bg:#0e1116; --panel:#161b22; --line:#2a3340; --text:#e6edf3; --muted:#8b949e;
+    --accent:#2ea0ff; --warn:#ff5252; --ok:#3fb950;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background:var(--bg); color:var(--text); font-family:system-ui, -apple-system, sans-serif; font-size:13px; overflow:hidden; }
+
+  .app { display:grid; grid-template-columns: 280px 1fr 300px; height:100vh; }
+
+  /* Sidebar */
+  .sidebar { background:var(--panel); border-right:1px solid var(--line); overflow-y:auto; }
+  .sidebar h2 { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin:14px 14px 8px; }
+  .lib-item {
+    display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:grab;
+    border-bottom:1px solid var(--line); user-select:none;
+  }
+  .lib-item:hover { background:#1c232d; }
+  .lib-item .sw { width:32px; height:32px; border:2px solid var(--accent); border-radius:4px; flex-shrink:0; }
+  .lib-item .name { font-weight:600; }
+  .lib-item .dim { color:var(--muted); font-size:11px; }
+
+  /* Center */
+  .center { display:flex; flex-direction:column; min-width:0; }
+  .toolbar {
+    display:flex; gap:8px; align-items:center; padding:10px 14px;
+    background:var(--panel); border-bottom:1px solid var(--line); flex-wrap:wrap;
+  }
+  .toolbar button, .toolbar select, .toolbar input {
+    background:#21262d; color:var(--text); border:1px solid var(--line); border-radius:6px;
+    padding:6px 10px; font-size:12px; cursor:pointer;
+  }
+  .toolbar button:hover { background:#2d333b; }
+  .toolbar button.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .toolbar label { color:var(--muted); }
+  .toolbar input[type=number] { width:70px; }
+  .stage { flex:1; position:relative; background:#0a0d12; overflow:hidden; }
+  #canvas2d { position:absolute; inset:0; cursor:crosshair; }
+  #canvas3d { position:absolute; inset:0; display:none; }
+  .stage.mode-3d #canvas2d { display:none; }
+  .stage.mode-3d #canvas3d { display:block; }
+  .hud {
+    position:absolute; left:12px; bottom:12px; background:rgba(0,0,0,0.6);
+    padding:6px 10px; border-radius:6px; color:var(--muted); font-size:11px;
+    pointer-events:none;
+  }
+
+  /* Right panel */
+  .right { background:var(--panel); border-left:1px solid var(--line); overflow-y:auto; padding:14px; }
+  .right h2 { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin:0 0 10px; }
+  .field { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
+  .field label { font-size:11px; color:var(--muted); }
+  .field input, .field select {
+    background:#21262d; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px 8px;
+  }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .danger { background:var(--warn) !important; border-color:var(--warn) !important; color:#fff !important; }
+  .ok { background:var(--ok) !important; border-color:var(--ok) !important; color:#fff !important; }
+  .msg { padding:8px 10px; border-radius:6px; font-size:12px; margin-bottom:10px; }
+  .msg.warn { background:rgba(255,82,82,0.15); border:1px solid var(--warn); color:#ff8a8a; }
+  .msg.ok { background:rgba(63,185,80,0.12); border:1px solid var(--ok); color:#7ee787; }
+  .placed-list { display:flex; flex-direction:column; gap:4px; }
+  .placed-row { display:flex; justify-content:space-between; padding:6px 8px; background:#1c232d; border-radius:4px; cursor:pointer; }
+  .placed-row.sel { background:var(--accent); color:#fff; }
+  .placed-row .x { color:var(--muted); cursor:pointer; }
+  .placed-row.sel .x { color:#fff; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- LEFT: Status & Selected -->
+  <aside class="sidebar">
+    <h2>2MC Gastro</h2>
+    <div style="padding:0 14px 14px; color:var(--muted); font-size:11px;">Endüstriyel Mutfak Planlayıcı</div>
+
+    <h2>Durum</h2>
+    <div style="padding:0 14px;"><div id="status" class="msg ok">Hazır</div></div>
+
+    <h2>Seçili Ürün</h2>
+    <div style="padding:0 14px;" id="selected-pane">
+      <div style="color:var(--muted); font-size:11px;">Bir ürün seçin</div>
+    </div>
+
+    <h2>Yerleştirilenler (<span id="count">0</span>)</h2>
+    <div style="padding:0 14px 14px;" id="placed-list" class="placed-list"></div>
+  </aside>
+
+  <!-- CENTER -->
+  <section class="center">
+    <div class="toolbar">
+      <button id="mode-2d" class="active">2D Plan</button>
+      <button id="mode-3d">3D Perspektif</button>
+      <span style="flex:1"></span>
+      <label>Oda G:</label><input id="room-w" type="number" value="6000" step="100"/>
+      <label>D:</label><input id="room-d" type="number" value="4500" step="100"/>
+      <label>Y:</label><input id="room-h" type="number" value="2800" step="100"/>
+      <span style="flex:1"></span>
+      <button id="rotate">Döndür (R)</button>
+      <button id="delete">Sil (Del)</button>
+      <button id="save">Kaydet</button>
+      <button id="load">Yükle</button>
+      <button id="clear" class="danger">Temizle</button>
+    </div>
+    <div class="stage" id="stage">
+      <canvas id="canvas2d"></canvas>
+      <canvas id="canvas3d"></canvas>
+      <div class="hud" id="hud">Sürükle-bırak ile ürün ekle • Tekerlek: zoom • Sağ tık+sürükle: pan • R: döndür • Del: sil</div>
+    </div>
+  </section>
+
+  <!-- RIGHT: Library -->
+  <aside class="right">
+    <h2>Ürün Kütüphanesi</h2>
+    <div id="library"></div>
+
+    <h2>Özel Ürün Ekle</h2>
+    <div class="row">
+      <div class="field"><label>Ad</label><input id="cust-name" placeholder="Buzdolabı" /></div>
+      <div class="field"><label>Renk</label><input id="cust-color" type="color" value="#2ea0ff"/></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>G (mm)</label><input id="cust-w" type="number" value="800"/></div>
+      <div class="field"><label>D (mm)</label><input id="cust-d" type="number" value="700"/></div>
+    </div>
+    <div class="field"><label>Y (mm)</label><input id="cust-h" type="number" value="850"/></div>
+    <button id="add-custom" style="width:100%; background:var(--accent); color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer;">Kütüphaneye Ekle</button>
+  </aside>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/examples/jsm/controls/OrbitControls.js": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js" } }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
+// ===== STATE =====
+const state = {
+  room: { w: 6000, d: 4500, h: 2800 }, // mm
+  library: [
+    { name: "Davlumbaz", w: 2000, d: 900, h: 600, color: "#9aa4b2" },
+    { name: "Ocak 6'lı", w: 1200, d: 900, h: 850, color: "#ff8a3d" },
+    { name: "Fritöz", w: 600, d: 700, h: 850, color: "#f5c542" },
+    { name: "Izgara", w: 800, d: 700, h: 850, color: "#cc4444" },
+    { name: "Çalışma Tezgahı", w: 1500, d: 700, h: 850, color: "#c0c8d2" },
+    { name: "Buzdolabı 2K", w: 1400, d: 800, h: 2000, color: "#3aa0ff" },
+    { name: "Bulaşık M.", w: 600, d: 700, h: 850, color: "#62d4a3" },
+    { name: "Evye 2 Göz", w: 1200, d: 700, h: 850, color: "#88c0d0" },
+    { name: "Raf Sistemi", w: 1500, d: 500, h: 1800, color: "#a07aff" },
+  ],
+  placed: [], // {id, libIdx, x, y, rot} mm, x/y = center
+  selected: null,
+  view: { zoom: 0.08, panX: 0, panY: 0 }, // px per mm
+  draggingNew: null,
+  dragging: null,
+  panning: null,
+  mouse: { x: 0, y: 0 },
+};
+
+let nextId = 1;
+
+// ===== LIBRARY UI =====
+function renderLibrary() {
+  const lib = document.getElementById('library');
+  lib.innerHTML = '';
+  state.library.forEach((it, i) => {
+    const el = document.createElement('div');
+    el.className = 'lib-item';
+    el.draggable = true;
+    el.innerHTML = `<div class="sw" style="background:${it.color}33; border-color:${it.color}"></div>
+      <div><div class="name">${it.name}</div><div class="dim">${it.w}×${it.d}×${it.h} mm</div></div>`;
+    el.addEventListener('dragstart', e => {
+      state.draggingNew = i;
+      e.dataTransfer.setData('text/plain', String(i));
+    });
+    lib.appendChild(el);
+  });
+}
+renderLibrary();
+
+document.getElementById('add-custom').onclick = () => {
+  const n = document.getElementById('cust-name').value.trim() || 'Ürün';
+  const w = +document.getElementById('cust-w').value;
+  const d = +document.getElementById('cust-d').value;
+  const h = +document.getElementById('cust-h').value;
+  const color = document.getElementById('cust-color').value;
+  state.library.push({ name: n, w, d, h, color });
+  renderLibrary();
+};
+
+// ===== 2D CANVAS =====
+const cvs = document.getElementById('canvas2d');
+const ctx = cvs.getContext('2d');
+function resize() {
+  const stageEl = document.getElementById('stage');
+  const r = stageEl.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  cvs.width = r.width * devicePixelRatio;
+  cvs.height = r.height * devicePixelRatio;
+  cvs.style.width = r.width + 'px';
+  cvs.style.height = r.height + 'px';
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  // auto-fit zoom on first valid size
+  if (!state.view.fitted) {
+    const zx = (r.width - 80) / state.room.w;
+    const zy = (r.height - 80) / state.room.d;
+    state.view.zoom = Math.min(zx, zy);
+    state.view.fitted = true;
+  }
+  draw();
+  resize3D();
+}
+const ro = new ResizeObserver(() => resize());
+ro.observe(document.getElementById('stage'));
+addEventListener('resize', resize);
+
+function world2screen(x, y) {
+  const r = cvs.getBoundingClientRect();
+  return {
+    x: r.width / 2 + (x - state.room.w / 2) * state.view.zoom + state.view.panX,
+    y: r.height / 2 + (y - state.room.d / 2) * state.view.zoom + state.view.panY,
+  };
+}
+function screen2world(sx, sy) {
+  const r = cvs.getBoundingClientRect();
+  return {
+    x: (sx - r.width / 2 - state.view.panX) / state.view.zoom + state.room.w / 2,
+    y: (sy - r.height / 2 - state.view.panY) / state.view.zoom + state.room.d / 2,
+  };
+}
+
+function draw() {
+  const r = cvs.getBoundingClientRect();
+  ctx.clearRect(0, 0, r.width, r.height);
+
+  // grid 100mm
+  const grid = 100;
+  ctx.strokeStyle = '#1a2230'; ctx.lineWidth = 1;
+  const tl = world2screen(0, 0);
+  const br = world2screen(state.room.w, state.room.d);
+  ctx.beginPath();
+  for (let x = 0; x <= state.room.w; x += grid) {
+    const p = world2screen(x, 0);
+    ctx.moveTo(p.x, tl.y); ctx.lineTo(p.x, br.y);
+  }
+  for (let y = 0; y <= state.room.d; y += grid) {
+    const p = world2screen(0, y);
+    ctx.moveTo(tl.x, p.y); ctx.lineTo(br.x, p.y);
+  }
+  ctx.stroke();
+
+  // major 1000mm
+  ctx.strokeStyle = '#2a3340'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = 0; x <= state.room.w; x += 1000) {
+    const p = world2screen(x, 0);
+    ctx.moveTo(p.x, tl.y); ctx.lineTo(p.x, br.y);
+  }
+  for (let y = 0; y <= state.room.d; y += 1000) {
+    const p = world2screen(0, y);
+    ctx.moveTo(tl.x, p.y); ctx.lineTo(br.x, p.y);
+  }
+  ctx.stroke();
+
+  // room outline
+  ctx.strokeStyle = '#5aa3ff'; ctx.lineWidth = 3;
+  ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+
+  // dimension labels
+  ctx.fillStyle = '#5aa3ff'; ctx.font = '12px system-ui';
+  ctx.fillText(`${state.room.w} mm`, (tl.x + br.x) / 2 - 30, tl.y - 8);
+  ctx.save();
+  ctx.translate(tl.x - 8, (tl.y + br.y) / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText(`${state.room.d} mm`, -30, 0);
+  ctx.restore();
+
+  // placed items
+  state.placed.forEach(it => {
+    const lib = state.library[it.libIdx];
+    const c = world2screen(it.x, it.y);
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(it.rot);
+    const w = lib.w * state.view.zoom;
+    const d = lib.d * state.view.zoom;
+    const sel = state.selected === it.id;
+    ctx.fillStyle = lib.color + (sel ? 'cc' : '88');
+    ctx.strokeStyle = sel ? '#fff' : lib.color;
+    ctx.lineWidth = sel ? 3 : 2;
+    ctx.fillRect(-w / 2, -d / 2, w, d);
+    ctx.strokeRect(-w / 2, -d / 2, w, d);
+    // front edge
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-w / 2, d / 2); ctx.lineTo(w / 2, d / 2); ctx.stroke();
+    // label
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px system-ui';
+    ctx.textAlign = 'center';
+    if (w > 50 && d > 30) ctx.fillText(lib.name, 0, 4);
+    ctx.restore();
+
+    // out of bounds check
+    const half = rotatedHalf(lib.w, lib.d, it.rot);
+    if (it.x - half.w < 0 || it.x + half.w > state.room.w || it.y - half.d < 0 || it.y + half.d > state.room.d) {
+      ctx.strokeStyle = '#ff5252'; ctx.lineWidth = 2;
+      ctx.strokeRect(c.x - half.w * state.view.zoom, c.y - half.d * state.view.zoom, half.w * 2 * state.view.zoom, half.d * 2 * state.view.zoom);
+    }
+  });
+}
+
+function rotatedHalf(w, d, rot) {
+  const c = Math.abs(Math.cos(rot)), s = Math.abs(Math.sin(rot));
+  return { w: (w * c + d * s) / 2, d: (w * s + d * c) / 2 };
+}
+
+// hit test
+function pickAt(sx, sy) {
+  const wp = screen2world(sx, sy);
+  for (let i = state.placed.length - 1; i >= 0; i--) {
+    const it = state.placed[i];
+    const lib = state.library[it.libIdx];
+    const dx = wp.x - it.x, dy = wp.y - it.y;
+    const cs = Math.cos(-it.rot), sn = Math.sin(-it.rot);
+    const lx = dx * cs - dy * sn, ly = dx * sn + dy * cs;
+    if (Math.abs(lx) < lib.w / 2 && Math.abs(ly) < lib.d / 2) return it;
+  }
+  return null;
+}
+
+// ===== INTERACTION =====
+cvs.addEventListener('dragover', e => e.preventDefault());
+cvs.addEventListener('drop', e => {
+  e.preventDefault();
+  const idx = +e.dataTransfer.getData('text/plain');
+  const r = cvs.getBoundingClientRect();
+  const wp = screen2world(e.clientX - r.left, e.clientY - r.top);
+  const item = { id: nextId++, libIdx: idx, x: wp.x, y: wp.y, rot: 0 };
+  state.placed.push(item);
+  state.selected = item.id;
+  refresh();
+});
+
+cvs.addEventListener('mousedown', e => {
+  const r = cvs.getBoundingClientRect();
+  const sx = e.clientX - r.left, sy = e.clientY - r.top;
+  if (e.button === 2) { state.panning = { x: e.clientX, y: e.clientY, px: state.view.panX, py: state.view.panY }; return; }
+  const hit = pickAt(sx, sy);
+  if (hit) {
+    state.selected = hit.id;
+    state.dragging = { id: hit.id, ox: hit.x, oy: hit.y, sx, sy };
+  } else {
+    state.selected = null;
+  }
+  refresh();
+});
+cvs.addEventListener('mousemove', e => {
+  const r = cvs.getBoundingClientRect();
+  const sx = e.clientX - r.left, sy = e.clientY - r.top;
+  state.mouse = { x: sx, y: sy };
+  if (state.panning) {
+    state.view.panX = state.panning.px + (e.clientX - state.panning.x);
+    state.view.panY = state.panning.py + (e.clientY - state.panning.y);
+    draw(); return;
+  }
+  if (state.dragging) {
+    const it = state.placed.find(p => p.id === state.dragging.id);
+    if (it) {
+      it.x = state.dragging.ox + (sx - state.dragging.sx) / state.view.zoom;
+      it.y = state.dragging.oy + (sy - state.dragging.sy) / state.view.zoom;
+      // snap to 50mm
+      it.x = Math.round(it.x / 50) * 50;
+      it.y = Math.round(it.y / 50) * 50;
+      draw();
+      updateSelectedPane();
+    }
+  }
+});
+addEventListener('mouseup', () => { state.dragging = null; state.panning = null; });
+cvs.addEventListener('contextmenu', e => e.preventDefault());
+
+cvs.addEventListener('wheel', e => {
+  e.preventDefault();
+  const f = e.deltaY < 0 ? 1.1 : 0.9;
+  state.view.zoom = Math.max(0.01, Math.min(1, state.view.zoom * f));
+  draw();
+}, { passive: false });
+
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'r' || e.key === 'R') rotateSelected();
+  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+});
+
+function rotateSelected() {
+  const it = state.placed.find(p => p.id === state.selected);
+  if (!it) return;
+  it.rot += Math.PI / 2;
+  refresh();
+}
+function deleteSelected() {
+  state.placed = state.placed.filter(p => p.id !== state.selected);
+  state.selected = null;
+  refresh();
+}
+document.getElementById('rotate').onclick = rotateSelected;
+document.getElementById('delete').onclick = deleteSelected;
+
+// ===== ROOM =====
+['room-w','room-d','room-h'].forEach(id => {
+  document.getElementById(id).addEventListener('input', e => {
+    state.room[id.slice(-1)] = +e.target.value;
+    refresh();
+  });
+});
+
+// ===== SAVE/LOAD =====
+document.getElementById('save').onclick = () => {
+  const blob = new Blob([JSON.stringify({ room: state.room, library: state.library, placed: state.placed }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mutfak-plani.json';
+  a.click();
+};
+document.getElementById('load').onclick = () => {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json';
+  inp.onchange = () => {
+    const f = inp.files[0]; if (!f) return;
+    f.text().then(t => {
+      const d = JSON.parse(t);
+      state.room = d.room; state.library = d.library; state.placed = d.placed;
+      nextId = Math.max(0, ...state.placed.map(p => p.id)) + 1;
+      renderLibrary(); refresh();
+      document.getElementById('room-w').value = state.room.w;
+      document.getElementById('room-d').value = state.room.d;
+      document.getElementById('room-h').value = state.room.h;
+    });
+  };
+  inp.click();
+};
+document.getElementById('clear').onclick = () => {
+  if (confirm('Tüm yerleşim silinsin mi?')) { state.placed = []; state.selected = null; refresh(); }
+};
+
+// ===== RIGHT PANE =====
+function updateSelectedPane() {
+  const pane = document.getElementById('selected-pane');
+  const it = state.placed.find(p => p.id === state.selected);
+  if (!it) { pane.innerHTML = '<div style="color:var(--muted); font-size:11px;">Bir ürün seçin</div>'; return; }
+  const lib = state.library[it.libIdx];
+  pane.innerHTML = `
+    <div style="font-weight:600; margin-bottom:6px;">${lib.name}</div>
+    <div style="color:var(--muted); font-size:11px; margin-bottom:8px;">${lib.w}×${lib.d}×${lib.h} mm</div>
+    <div class="row">
+      <div class="field"><label>X (mm)</label><input id="se-x" type="number" value="${Math.round(it.x)}"/></div>
+      <div class="field"><label>Y (mm)</label><input id="se-y" type="number" value="${Math.round(it.y)}"/></div>
+    </div>
+    <div class="field"><label>Açı (°)</label><input id="se-r" type="number" value="${Math.round(it.rot * 180 / Math.PI)}"/></div>
+  `;
+  document.getElementById('se-x').oninput = e => { it.x = +e.target.value; draw(); };
+  document.getElementById('se-y').oninput = e => { it.y = +e.target.value; draw(); };
+  document.getElementById('se-r').oninput = e => { it.rot = +e.target.value * Math.PI / 180; draw(); };
+}
+
+function updatePlacedList() {
+  const list = document.getElementById('placed-list');
+  list.innerHTML = '';
+  state.placed.forEach(it => {
+    const lib = state.library[it.libIdx];
+    const row = document.createElement('div');
+    row.className = 'placed-row' + (state.selected === it.id ? ' sel' : '');
+    row.innerHTML = `<span>${lib.name}</span><span class="x">✕</span>`;
+    row.onclick = () => { state.selected = it.id; refresh(); };
+    row.querySelector('.x').onclick = e => { e.stopPropagation(); state.placed = state.placed.filter(p => p.id !== it.id); refresh(); };
+    list.appendChild(row);
+  });
+  document.getElementById('count').textContent = state.placed.length;
+}
+
+function updateStatus() {
+  const st = document.getElementById('status');
+  let outs = 0;
+  state.placed.forEach(it => {
+    const lib = state.library[it.libIdx];
+    const half = rotatedHalf(lib.w, lib.d, it.rot);
+    if (it.x - half.w < 0 || it.x + half.w > state.room.w || it.y - half.d < 0 || it.y + half.d > state.room.d) outs++;
+  });
+  if (outs > 0) { st.className = 'msg warn'; st.textContent = `${outs} ürün oda dışında!`; }
+  else { st.className = 'msg ok'; st.textContent = `${state.placed.length} ürün yerleştirildi — tümü oda içinde.`; }
+}
+
+function refresh() {
+  draw();
+  updateSelectedPane();
+  updatePlacedList();
+  updateStatus();
+  if (stage.classList.contains('mode-3d')) build3D();
+}
+
+// ===== 3D PERSPECTIVE SKETCH =====
+const cvs3 = document.getElementById('canvas3d');
+const renderer = new THREE.WebGLRenderer({ canvas: cvs3, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x0a0d12);
+const scene3 = new THREE.Scene();
+const cam3 = new THREE.PerspectiveCamera(50, 1, 10, 100000);
+cam3.position.set(8000, 6000, 8000);
+const controls = new OrbitControls(cam3, cvs3);
+controls.target.set(3000, 0, 2250);
+controls.update();
+scene3.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+dl.position.set(5000, 8000, 5000);
+scene3.add(dl);
+
+let group3 = new THREE.Group();
+scene3.add(group3);
+
+function build3D() {
+  scene3.remove(group3);
+  group3 = new THREE.Group();
+
+  // floor grid
+  const grid = new THREE.GridHelper(Math.max(state.room.w, state.room.d) * 1.2, 30, 0x2a3340, 0x1a2230);
+  grid.position.set(state.room.w / 2, 0, state.room.d / 2);
+  group3.add(grid);
+
+  // room walls (wireframe sketch)
+  const roomGeo = new THREE.BoxGeometry(state.room.w, state.room.h, state.room.d);
+  const wire = new THREE.LineSegments(new THREE.EdgesGeometry(roomGeo), new THREE.LineBasicMaterial({ color: 0x5aa3ff }));
+  wire.position.set(state.room.w / 2, state.room.h / 2, state.room.d / 2);
+  group3.add(wire);
+
+  // products: box + edges (sketch look)
+  state.placed.forEach(it => {
+    const lib = state.library[it.libIdx];
+    const g = new THREE.BoxGeometry(lib.w, lib.h, lib.d);
+    const m = new THREE.MeshLambertMaterial({ color: lib.color, transparent: true, opacity: 0.55 });
+    const mesh = new THREE.Mesh(g, m);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({ color: 0xffffff }));
+    const grp = new THREE.Group();
+    grp.add(mesh); grp.add(edges);
+    grp.position.set(it.x, lib.h / 2, it.y);
+    grp.rotation.y = -it.rot;
+    group3.add(grp);
+  });
+
+  scene3.add(group3);
+}
+
+function resize3D() {
+  const stageEl = document.getElementById('stage');
+  const r = stageEl.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  cvs3.style.width = r.width + 'px';
+  cvs3.style.height = r.height + 'px';
+  renderer.setSize(r.width, r.height, false);
+  cam3.aspect = r.width / r.height;
+  cam3.updateProjectionMatrix();
+}
+
+function loop3() {
+  requestAnimationFrame(loop3);
+  if (stage.classList.contains('mode-3d')) {
+    controls.update();
+    renderer.render(scene3, cam3);
+  }
+}
+loop3();
+
+// ===== MODE SWITCH =====
+const stage = document.getElementById('stage');
+document.getElementById('mode-2d').onclick = () => {
+  stage.classList.remove('mode-3d');
+  document.getElementById('mode-2d').classList.add('active');
+  document.getElementById('mode-3d').classList.remove('active');
+  draw();
+};
+document.getElementById('mode-3d').onclick = () => {
+  stage.classList.add('mode-3d');
+  document.getElementById('mode-3d').classList.add('active');
+  document.getElementById('mode-2d').classList.remove('active');
+  build3D();
+  requestAnimationFrame(() => { resize3D(); renderer.render(scene3, cam3); });
+};
+
+refresh();
+</script>
+</body>
+</html>

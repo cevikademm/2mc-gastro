@@ -17,6 +17,9 @@ export interface User {
   region: string;
   currency: string;
   dateFormat: string;
+  approved: boolean;
+  /** Abonelik planı — premium özellikleri (PDF Teklif vb.) bununla gate'lenir */
+  subscription: 'free' | 'pro';
   notifications: {
     email: boolean;
     push: boolean;
@@ -29,23 +32,17 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  pendingApproval: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; pendingApproval?: boolean; error?: string }>;
   loginWithGoogle: () => Promise<void>;
-  register: (data: Partial<User> & { password: string }) => Promise<boolean>;
+  register: (data: Partial<User> & { password: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
+  checkSession: () => Promise<void>;
 }
 
-const defaultUser: User = {
-  id: '1',
-  email: 'admin@2mcgastro.com',
-  fullName: 'Adem Cevik',
-  company: '2MC Gastro',
-  role: 'Admin',
-  phone: '+49 123 456 789',
-  address: 'Berlin, Deutschland',
-  taxId: 'DE123456789',
-  sector: 'Gastronomi',
+const defaultUserSettings = {
+  role: 'User',
   language: 'tr',
   region: 'EU',
   currency: 'EUR',
@@ -58,70 +55,118 @@ const defaultUser: User = {
   },
 };
 
+async function fetchProfile(userId: string) {
+  if (!supabase) return null;
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  return data;
+}
+
+function buildUser(authUser: { id: string; email?: string | null; user_metadata?: Record<string, unknown> }, profile: Record<string, unknown> | null): User {
+  return {
+    ...defaultUserSettings,
+    id: authUser.id,
+    email: authUser.email || '',
+    fullName: (profile?.full_name as string) || (authUser.user_metadata?.full_name as string) || (authUser.user_metadata?.name as string) || '',
+    role: (profile?.role as string) || 'User',
+    company: (profile?.company as string) || '',
+    avatar: (authUser.user_metadata?.avatar_url as string) || undefined,
+    phone: (profile?.phone as string) || '',
+    taxId: (profile?.tax_id as string) || '',
+    sector: (profile?.sector as string) || '',
+    approved: (profile?.approved as boolean) ?? false,
+    subscription: (profile?.subscription as 'free' | 'pro') || 'free',
+  };
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
-      user: { ...defaultUser },
-      isAuthenticated: true,
+    (set, get) => ({
+      user: null,
+      isAuthenticated: false,
       isLoading: false,
+      pendingApproval: false,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true });
-        // Try Supabase if configured
-        if (supabase) {
-          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-          if (!error && data.user) {
-            const user: User = {
-              ...defaultUser,
-              id: data.user.id,
-              email: data.user.email || email,
-              fullName: data.user.user_metadata?.full_name || defaultUser.fullName,
-              avatar: data.user.user_metadata?.avatar_url,
-            };
-            set({ user, isAuthenticated: true, isLoading: false });
-            return true;
-          }
+        if (!supabase) {
           set({ isLoading: false });
-          return false;
+          return { success: false, error: 'Supabase yapılandırılmamış' };
         }
-        // Fallback mock auth
-        await new Promise((r) => setTimeout(r, 800));
-        if (email) {
-          set({ user: { ...defaultUser, email }, isAuthenticated: true, isLoading: false });
-          return true;
+
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error || !data.user) {
+          set({ isLoading: false });
+          return { success: false, error: 'Geçersiz e-posta veya şifre' };
         }
-        set({ isLoading: false });
-        return false;
+
+        const profile = await fetchProfile(data.user.id);
+        const user = buildUser(data.user, profile);
+
+        if (!user.approved) {
+          await supabase.auth.signOut();
+          set({ isLoading: false, pendingApproval: true });
+          return { success: false, pendingApproval: true };
+        }
+
+        set({ user, isAuthenticated: true, isLoading: false, pendingApproval: false });
+        return { success: true };
       },
 
       loginWithGoogle: async () => {
-        if (!supabase) {
-          // Mock: just authenticate directly
-          set({ user: { ...defaultUser }, isAuthenticated: true });
-          return;
-        }
+        if (!supabase) return;
         await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: `${window.location.origin}/#/dashboard`,
+            redirectTo: `${window.location.origin}${window.location.pathname}`,
           },
         });
       },
 
       register: async (data) => {
         set({ isLoading: true });
-        await new Promise((r) => setTimeout(r, 800));
-        const newUser: User = {
-          ...defaultUser,
-          ...data,
-          id: Date.now().toString(),
-        };
-        set({ user: newUser, isAuthenticated: true, isLoading: false });
-        return true;
+        if (!supabase) {
+          set({ isLoading: false });
+          return { success: false, error: 'Supabase yapılandırılmamış' };
+        }
+
+        const { data: authData, error } = await supabase.auth.signUp({
+          email: data.email || '',
+          password: data.password,
+          options: {
+            data: {
+              full_name: data.fullName || '',
+            },
+          },
+        });
+
+        if (error) {
+          set({ isLoading: false });
+          return { success: false, error: error.message };
+        }
+
+        // Update profile with extra fields
+        if (authData.user) {
+          await supabase.from('profiles').update({
+            full_name: data.fullName,
+            company: data.company,
+            tax_id: data.taxId,
+            sector: data.sector,
+          }).eq('id', authData.user.id);
+        }
+
+        // Sign out - user must wait for approval
+        await supabase.auth.signOut();
+        set({ isLoading: false, pendingApproval: true });
+        return { success: true };
       },
 
       logout: () => {
-        set({ user: null, isAuthenticated: false });
+        if (supabase) supabase.auth.signOut();
+        set({ user: null, isAuthenticated: false, pendingApproval: false });
       },
 
       updateProfile: (data) => {
@@ -129,10 +174,33 @@ export const useAuthStore = create<AuthState>()(
           user: state.user ? { ...state.user, ...data } : null,
         }));
       },
+
+      // Called on app load to check OAuth callback & existing session
+      checkSession: async () => {
+        if (!supabase) return;
+        set({ isLoading: true });
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          set({ isLoading: false });
+          return;
+        }
+
+        const profile = await fetchProfile(session.user.id);
+        const user = buildUser(session.user, profile);
+
+        if (!user.approved) {
+          await supabase.auth.signOut();
+          set({ isLoading: false, pendingApproval: true, isAuthenticated: false, user: null });
+          return;
+        }
+
+        set({ user, isAuthenticated: true, isLoading: false, pendingApproval: false });
+      },
     }),
     {
       name: '2mc-gastro-auth',
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

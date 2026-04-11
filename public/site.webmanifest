@@ -1,0 +1,28 @@
+{
+  "name": "2MC Gastro — Profesyonel Mutfak Planlama",
+  "short_name": "2MC Gastro",
+  "description": "Profesyonel endüstriyel mutfak planlama, 3D tasarım ve ekipman yönetim platformu",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#020817",
+  "theme_color": "#020817",
+  "lang": "tr-TR",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "shopping"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

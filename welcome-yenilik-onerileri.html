@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2mc Gastro — Karşılama Ekranı Yenilik Önerileri</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --navy: #0F172A;
+    --navy2: #1E293B;
+    --gold: #C9A227;
+    --blue: #3B82F6;
+    --teal: #0D9488;
+    --red: #DC2626;
+    --orange: #EA580C;
+    --grey-50: #F8FAFC;
+    --grey-100: #F1F5F9;
+    --grey-200: #E2E8F0;
+    --grey-400: #94A3B8;
+    --grey-500: #64748B;
+    --grey-700: #334155;
+    --grey-900: #0F172A;
+  }
+  body { font-family:'Inter',sans-serif; background:var(--grey-50); color:var(--grey-900); }
+
+  /* ===== NAV ===== */
+  .topbar { position:fixed; top:0; left:0; right:0; z-index:100; background:white; border-bottom:1px solid var(--grey-200); display:flex; align-items:center; justify-content:space-between; padding:0 24px; height:56px; }
+  .topbar h1 { font-size:14px; font-weight:800; color:var(--navy); letter-spacing:0.05em; }
+  .topbar .tabs { display:flex; gap:4px; }
+  .topbar .tab { padding:8px 16px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; background:transparent; color:var(--grey-500); transition:all 0.2s; }
+  .topbar .tab.active { background:var(--navy); color:white; }
+  .topbar .tab:hover:not(.active) { background:var(--grey-100); }
+
+  /* ===== LAYOUT ===== */
+  .container { max-width:1100px; margin:0 auto; padding:80px 24px 60px; }
+
+  /* ===== SECTIONS ===== */
+  .section { display:none; }
+  .section.active { display:block; }
+
+  /* ===== OVERVIEW SECTION ===== */
+  .hero-card { background:linear-gradient(135deg, var(--navy) 0%, #1E3A5F 100%); border-radius:20px; padding:48px; color:white; margin-bottom:32px; position:relative; overflow:hidden; }
+  .hero-card::after { content:''; position:absolute; top:-60px; right:-60px; width:200px; height:200px; border-radius:50%; background:rgba(201,162,39,0.15); }
+  .hero-card h2 { font-size:32px; font-weight:900; margin-bottom:12px; }
+  .hero-card p { font-size:16px; opacity:0.85; max-width:600px; line-height:1.7; }
+
+  .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:40px; }
+  .kpi { background:white; border-radius:16px; padding:24px; text-align:center; border:1px solid var(--grey-200); }
+  .kpi .num { font-size:28px; font-weight:900; color:var(--navy); }
+  .kpi .lbl { font-size:12px; color:var(--grey-500); margin-top:4px; font-weight:600; }
+  .kpi .tag { display:inline-block; margin-top:8px; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+  .kpi .tag.bad { background:#FEF2F2; color:var(--red); }
+  .kpi .tag.ok { background:#FFFBEB; color:var(--orange); }
+  .kpi .tag.good { background:#ECFDF5; color:var(--teal); }
+
+  /* ===== PROPOSAL CARDS ===== */
+  .proposals { display:grid; gap:20px; }
+  .proposal { background:white; border-radius:16px; border:1px solid var(--grey-200); overflow:hidden; transition:box-shadow 0.3s; }
+  .proposal:hover { box-shadow:0 8px 30px rgba(0,0,0,0.08); }
+  .proposal-header { display:flex; align-items:center; gap:16px; padding:24px 28px; cursor:pointer; user-select:none; }
+  .proposal-header .icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+  .proposal-header .title-wrap h3 { font-size:16px; font-weight:800; color:var(--navy); }
+  .proposal-header .title-wrap p { font-size:13px; color:var(--grey-500); margin-top:2px; }
+  .proposal-header .badge { margin-left:auto; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; flex-shrink:0; }
+  .proposal-header .arrow { margin-left:8px; font-size:18px; color:var(--grey-400); transition:transform 0.3s; flex-shrink:0; }
+  .proposal.open .arrow { transform:rotate(180deg); }
+  .proposal-body { padding:0 28px 28px; display:none; }
+  .proposal.open .proposal-body { display:block; }
+
+  .compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+  .compare-box { border-radius:12px; padding:20px; }
+  .compare-box.before { background:#FEF2F2; border:1px solid #FECACA; }
+  .compare-box.after { background:#ECFDF5; border:1px solid #A7F3D0; }
+  .compare-box .tag { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px; display:block; }
+  .compare-box.before .tag { color:var(--red); }
+  .compare-box.after .tag { color:var(--teal); }
+  .compare-box ul { list-style:none; padding:0; }
+  .compare-box ul li { font-size:13px; line-height:1.8; color:var(--grey-700); padding-left:18px; position:relative; }
+  .compare-box ul li::before { content:''; position:absolute; left:0; top:9px; width:8px; height:8px; border-radius:50%; }
+  .compare-box.before ul li::before { background:#FECACA; }
+  .compare-box.after ul li::before { background:#A7F3D0; }
+  .detail-text { font-size:13px; color:var(--grey-700); line-height:1.8; margin-top:12px; }
+
+  /* ===== MOCKUP SECTION ===== */
+  .mockup-frame { background:var(--navy); border-radius:20px; padding:4px; margin:20px auto; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.2); }
+  .mockup-inner { background:var(--grey-50); border-radius:17px; overflow:hidden; position:relative; min-height:700px; display:flex; flex-direction:column; }
+
+  /* Mockup: Hero */
+  .mk-hero { background:linear-gradient(180deg, #0A0E1A 0%, #1E293B 100%); padding:32px 24px; text-align:center; position:relative; overflow:hidden; }
+  .mk-hero .mk-particles { position:absolute; inset:0; background:radial-gradient(circle at 20% 80%, rgba(201,162,39,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(59,130,246,0.08) 0%, transparent 40%); }
+  .mk-hero .mk-badge-row { display:flex; justify-content:center; gap:8px; margin-bottom:16px; position:relative; z-index:1; }
+  .mk-hero .mk-badge { padding:4px 12px; border-radius:20px; font-size:10px; font-weight:700; background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.7); border:1px solid rgba(255,255,255,0.1); }
+  .mk-hero .mk-badge.gold { background:rgba(201,162,39,0.15); color:var(--gold); border-color:rgba(201,162,39,0.3); }
+  .mk-hero h2 { color:white; font-size:28px; font-weight:900; letter-spacing:0.04em; position:relative; z-index:1; }
+  .mk-hero .mk-sub { color:rgba(255,255,255,0.6); font-size:13px; margin-top:8px; position:relative; z-index:1; }
+
+  /* Mockup: Search */
+  .mk-search { padding:0 20px; margin-top:-20px; position:relative; z-index:2; }
+  .mk-search-bar { background:white; border-radius:14px; padding:14px 16px; display:flex; align-items:center; gap:10px; box-shadow:0 4px 20px rgba(0,0,0,0.08); border:1px solid var(--grey-200); }
+  .mk-search-bar .dot { width:18px; height:18px; border-radius:50%; background:var(--grey-200); }
+  .mk-search-bar span { font-size:13px; color:var(--grey-400); }
+
+  /* Mockup: Stats */
+  .mk-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; padding:20px; }
+  .mk-stat { background:white; border-radius:12px; padding:14px 10px; text-align:center; border:1px solid var(--grey-200); }
+  .mk-stat .v { font-size:18px; font-weight:900; color:var(--navy); }
+  .mk-stat .l { font-size:9px; color:var(--grey-500); font-weight:600; margin-top:2px; }
+
+  /* Mockup: Quick Actions */
+  .mk-actions { padding:0 20px 16px; }
+  .mk-actions-title { font-size:12px; font-weight:700; color:var(--grey-500); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
+  .mk-actions-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .mk-action { text-align:center; }
+  .mk-action .circle { width:48px; height:48px; border-radius:14px; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .mk-action .circle.c1 { background:linear-gradient(135deg,#1E3A5F,#3B82F6); }
+  .mk-action .circle.c2 { background:linear-gradient(135deg,#0D9488,#34D399); }
+  .mk-action .circle.c3 { background:linear-gradient(135deg,#C9A227,#F59E0B); }
+  .mk-action .circle.c4 { background:linear-gradient(135deg,#7C3AED,#A78BFA); }
+  .mk-action span { font-size:10px; font-weight:700; color:var(--grey-700); }
+
+  /* Mockup: Featured categories */
+  .mk-cats { padding:0 20px 16px; }
+  .mk-cats-title { font-size:12px; font-weight:700; color:var(--grey-500); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
+  .mk-cat-scroll { display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
+  .mk-cat-card { flex-shrink:0; width:120px; height:80px; border-radius:12px; display:flex; align-items:flex-end; padding:8px; font-size:11px; font-weight:700; color:white; background-size:cover; background-position:center; }
+  .mk-cat-card.cc1 { background:linear-gradient(180deg, transparent 40%, rgba(15,23,42,0.85) 100%), linear-gradient(135deg, #1E3A5F, #334155); }
+  .mk-cat-card.cc2 { background:linear-gradient(180deg, transparent 40%, rgba(15,23,42,0.85) 100%), linear-gradient(135deg, #0D9488, #134E4A); }
+  .mk-cat-card.cc3 { background:linear-gradient(180deg, transparent 40%, rgba(15,23,42,0.85) 100%), linear-gradient(135deg, #C9A227, #92400E); }
+  .mk-cat-card.cc4 { background:linear-gradient(180deg, transparent 40%, rgba(15,23,42,0.85) 100%), linear-gradient(135deg, #7C3AED, #4C1D95); }
+  .mk-cat-card.cc5 { background:linear-gradient(180deg, transparent 40%, rgba(15,23,42,0.85) 100%), linear-gradient(135deg, #DC2626, #7F1D1D); }
+
+  /* Mockup: Trust bar */
+  .mk-trust { display:flex; justify-content:center; gap:16px; padding:12px 20px; }
+  .mk-trust-item { display:flex; align-items:center; gap:4px; font-size:10px; font-weight:600; color:var(--grey-500); }
+  .mk-trust-item .tdot { width:6px; height:6px; border-radius:50%; background:var(--teal); }
+
+  /* Mockup: CTA */
+  .mk-cta { padding:8px 20px 20px; }
+  .mk-cta-btn { width:100%; padding:16px; border-radius:14px; background:linear-gradient(135deg, var(--navy), #1E3A5F); color:white; font-size:15px; font-weight:800; text-align:center; border:none; letter-spacing:0.03em; box-shadow:0 4px 16px rgba(15,23,42,0.3); cursor:pointer; }
+
+  /* ===== ROADMAP ===== */
+  .roadmap-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:24px; }
+  .rm-card { background:white; border-radius:16px; padding:24px; border:1px solid var(--grey-200); }
+  .rm-card .rm-phase { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; }
+  .rm-card h4 { font-size:14px; font-weight:800; color:var(--navy); margin-bottom:8px; }
+  .rm-card ul { list-style:none; padding:0; }
+  .rm-card ul li { font-size:13px; color:var(--grey-700); line-height:1.8; padding-left:16px; position:relative; }
+  .rm-card ul li::before { content:'→'; position:absolute; left:0; color:var(--grey-400); }
+
+  .phase-1 .rm-phase { color:var(--red); }
+  .phase-2 .rm-phase { color:var(--orange); }
+  .phase-3 .rm-phase { color:var(--blue); }
+  .phase-4 .rm-phase { color:var(--teal); }
+
+  @media(max-width:768px) {
+    .kpi-row { grid-template-columns:repeat(2,1fr); }
+    .compare-grid { grid-template-columns:1fr; }
+    .roadmap-grid { grid-template-columns:1fr; }
+    .topbar .tabs { gap:2px; }
+    .topbar .tab { padding:6px 10px; font-size:12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>2MC GASTRO — WELCOME PAGE YENİLİKLER</h1>
+  <div class="tabs">
+    <button class="tab active" onclick="showSection('overview')">Genel Bakış</button>
+    <button class="tab" onclick="showSection('mockup')">Prototip</button>
+    <button class="tab" onclick="showSection('roadmap')">Yol Haritası</button>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ===== OVERVIEW ===== -->
+<div id="overview" class="section active">
+  <div class="hero-card">
+    <h2>Karşılama Ekranı Neden Yetersiz?</h2>
+    <p>Mevcut WelcomePage, 3 adımlı bir onboarding wizard'ı: logo → özellikler → başla butonu. Rakipler ise ana sayfayı bir "satış makinesi" olarak kullanıyor. GGM Gastro ana sayfasında 17+ kategori, kampanya banner, güven sinyalleri ve arama barı var. BigGastro fiyat odaklı tile'lar sunuyor. Bizim karşılama ekranımız ise "giriş kapısı" olmaktan çıkıp bir <strong>değer merkezi</strong> haline gelmeli.</p>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="num">3</div>
+      <div class="lbl">Mevcut adım sayısı</div>
+      <div class="tag ok">Yetersiz içerik</div>
+    </div>
+    <div class="kpi">
+      <div class="num">0</div>
+      <div class="lbl">Kategori erişimi</div>
+      <div class="tag bad">Kritik eksik</div>
+    </div>
+    <div class="kpi">
+      <div class="num">0</div>
+      <div class="lbl">Arama barı</div>
+      <div class="tag bad">Kritik eksik</div>
+    </div>
+    <div class="kpi">
+      <div class="num">4</div>
+      <div class="lbl">Quick action</div>
+      <div class="tag good">İyi, derinleştirilmeli</div>
+    </div>
+  </div>
+
+  <h2 style="font-size:22px; font-weight:900; margin-bottom:20px; color:var(--navy);">7 Yenilik Önerisi — Rakiplerden İlham, Bizden İnovasyon</h2>
+
+  <div class="proposals">
+
+    <!-- 1 -->
+    <div class="proposal" onclick="toggleProposal(this)">
+      <div class="proposal-header">
+        <div class="icon" style="background:#EFF6FF;">🔍</div>
+        <div class="title-wrap">
+          <h3>1. Akıllı Arama Barı — Hero'nun Altına</h3>
+          <p>GGM Gastro'nun en güçlü silahı: her sayfada sabit arama çubuğu</p>
+        </div>
+        <div class="badge" style="background:#FEF2F2; color:var(--red);">P0</div>
+        <div class="arrow">▼</div>
+      </div>
+      <div class="proposal-body">
+        <div class="compare-grid">
+          <div class="compare-box before">
+            <span class="tag">Şu an</span>
+            <ul>
+              <li>WelcomePage'de arama yok</li>
+              <li>Kullanıcı ürüne ulaşmak için 3–4 tıklama yapıyor</li>
+              <li>Rakiplerin arama çubuğu hero'dan bile belirgin</li>
+            </ul>
+          </div>
+          <div class="compare-box after">
+            <span class="tag">Önerilen</span>
+            <ul>
+              <li>Hero bölümünün hemen altında büyük bir arama barı</li>
+              <li>Autocomplete: ürün adı, kategori, model numarası</li>
+              <li>Popüler aramalar baloncuk olarak altında</li>
+              <li>Arama sonuçları anlık (debounced, 300ms)</li>
+            </ul>
+          </div>
+        </div>
+        <p class="detail-text"><strong>Neden kritik:</strong> GGM Gastro'da kullanıcıların %60'ından fazlası arama üzerinden ürüne ulaşıyor. BigGastro'da da arama barı her zaman header'da sabit. Bizim sitenin en büyük UX eksikliği, ürüne hızlı erişim sunmaması. Bu tek değişiklik bile bounce rate'i %20 düşürebilir.</p>
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="proposal" onclick="toggleProposal(this)">
+      <div class="proposal-header">
+        <div class="icon" style="background:#FFF7ED;">📦</div>
+        <div class="title-wrap">
+          <h3>2. Kategori Karusel — Hızlı Erişim</h3>
+          <p>GGM Gastro'daki 17 kategorili karusel, BigGastro'daki tile'lar</p>
+        </div>
+        <div class="badge" style="background:#FEF2F2; color:var(--red);">P0</div>
+        <div class="arrow">▼</div>
+      </div>
+      <div class="proposal-body">
+        <div class="compare-grid">
+          <div class="compare-box before">
+            <span class="tag">Şu an</span>
+            <ul>
+              <li>Karşılama ekranında hiçbir kategori linki yok</li>
+              <li>Kullanıcı ürünlere nasıl ulaşacağını bilmiyor</li>
+              <li>17 kategori var ama keşfedilemez durumda</li>
+            </ul>
+          </div>
+          <div class="compare-box after">
+            <span class="tag">Önerilen</span>
+            <ul>
+              <li>Yatay kaydırılabilir kategori kartları</li>
+              <li>Her kart: ikon + isim + SKU sayısı</li>
+              <li>Gradient arka planlarla marka renklerine uyum</li>
+              <li>Tıklayınca doğrudan filtrelenmiş kataloğa git</li>
+            </ul>
+          </div>
+        </div>
+        <p class="detail-text"><strong>Referans:</strong> GGM Gastro ana sayfasında mega menünün yanı sıra karusel ile de kategorileri sunuyor. BigGastro ise büyük tile'lar kullanıyor. Bizim avantajımız: gradient arka plan + ikon + SKU sayısı ile hem görsel hem bilgi odaklı bir deneyim sunmak.</p>
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <div class="proposal" onclick="toggleProposal(this)">
+      <div class="proposal-header">
+        <div class="icon" style="background:#F0FDF4;">📊</div>
+        <div class="title-wrap">
+          <h3>3. Canlı İstatistik Bandı</h3>
+          <p>Güven sinyali: toplam ürün, proje sayısı, kullanıcı</p>
+        </div>
+        <div class="badge" style="background:#FFFBEB; color:var(--orange);">P1</div>
+        <div class="arrow">▼</div>
+      </div>
+      <div class="proposal-body">
+        <div class="compare-grid">
+          <div class="compare-box before">
+            <span class="tag">Şu an</span>
+            <ul>
+              <li>Sayısal güven sinyali yok</li>
+              <li>Yeni gelen kullanıcı platformun büyüklüğünü ölçemiyor</li>
+            </ul>
+          </div>
+          <div class="compare-box after">
+            <span class="tag">Önerilen</span>
+            <ul>
+              <li>"6.316+ Ürün • 800+ Proje • 3 Marka" istatistik bandı</li>
+              <li>Arama barının hemen altında, gri arka planlı</li>
+              <li>Sayılar CountUp animasyonu ile yüklenir</li>
+            </ul>
+          </div>
+        </div>
+        <p class="detail-text"><strong>Referans:</strong> GGM Gastro "80.000+ ürün, 220.000 m² depo" gibi rakamları header servis bandında gösteriyor. Bu sosyal kanıt tekniği, ilk izlenim güvenini %35'e kadar artırır.</p>
+      </div>
+    </div>
+
+    <!-- 4 -->
+    <div class="proposal" onclick="toggleProposal(this)">
+      <div class="proposal-header">
+        <div class="icon" style="background:#FAF5FF;">⚡</div>
+        <div class="title-wrap">
+          <h3>4. Hızlı Erişim Grid — 4'lü Aksiyon Kutuları</h3>
+          <p>Mevcut özellik kartlarını aksiyon odaklı dönüştürme</p>
+        </div>
+        <div class="badge" style="background:#FFFBEB; color:var(--orange);">P1</div>
+        <div class="arrow">▼</div>
+      </div>
+      <div class="proposal-body">
+        <div class="compare-grid">
+          <div class="compare-box before">
+            <span class="tag">Şu an</span>
+            <ul>
+              <li>Özellik kartları bilgilendirme amaçlı (tıklanamıyor)</li>
+              <li>Equipment, Design, BOM, Smart — ama link vermiyor</li>
+              <li>Bilgi verip eyleme dönüştürmüyor</li>
+            </ul>
+          </div>
+          <div class="compare-box after">
+            <span class="tag">Önerilen</span>
+            <ul>
+              <li>4'lü grid: Katalog, Mutfak Tasarla, Proje Oluştur, Teknik Destek</li>
+              <li>Her kutu tıklanabilir — doğrudan ilgili sayfaya yönlendir</li>
+              <li>Gradient ikonlar + kısa açıklama</li>
+              <li>Hover'da hafif scale + gölge animasyonu</li>
+            </ul>
+          </div>
+        </div>
+        <p class="detail-text"><strong>Fark:</strong> Mevcut kartlar "ne yapabilirsiniz" anlatıyor ama eyleme geçirmiyor. Yeni tasarım her kartı bir "giriş noktası" yapar. Kullanıcı tek tıkla işe koyulur.</p>
+      </div>
+    </div>
+
+    <!-- 5 -->
+    <div class="proposal" onclick="toggleProposal(this)">
+      <div class="proposal-header">
+        <div class="icon" style="background:#ECFDF5;">🛡️</div>
+        <div class="title-wrap">
+          <h3>5. Güven Bandı (Trust Bar)</h3>
+          <p>GGM'in "24h Hotline • Hızlı Kargo • Leasing" servis bandı</p>
+        </div>
+        <div class="badge" style="background:#EFF6FF; color:var(--blue);">P2</div>
+        <div class="arrow">▼</div>
+      </div>
+      <div class="proposal-body">
+        <div class="compare-grid">
+          <div class="compare-box before">
+            <span class="tag">Şu an</span>
+            <ul>
+              <li>Kargo, garanti, destek bilgisi hiçbir yerde belirtilmiyor</li>
+              <li>Yeni kullanıcı güven duymuyor</li>
+            </ul>
+          </div>
+          <div class="compare-box after">
+            <span class="tag">Önerilen</span>
+            <ul>
+              <li>CTA butonunun üstünde: "✓ Ücretsiz Kargo • ✓ Proje Desteği • ✓ 3D Tasarım • ✓ Diamond Garantisi"</li>
+              <li>Küçük, gri tonlu, sade — ama her zaman görünür</li>
+            </ul>
+          </div>
+        </div>
+        <p class="detail-text"><strong>Referans:</strong> GGM Gastro'nun header'ındaki servis bandı ilk izlenimde "burada profesyonel hizmet var" mesajını verir. BigGastro da "80€ üstü ücretsiz kargo" vurgusunu belirgin yapıyor. Bizim de benzer ama daha şık bir güven bandımız olmalı.</p>
+      </div>
+    </div>
+
+    <!-- 6 -->
+    <div class="proposal" onclick="toggleProposal(this)">
+      <div class="proposal-header">
+        <div class="icon" style="background:#FEF2F2;">🏷️</div>
+        <div class="title-wrap">
+          <h3>6. Kampanya / Duyuru Banner Alanı</h3>
+          <p>GGM'in kayan hero banner'ları, BigGastro'nun fırsat tile'ları</p>
+        </div>
+        <div class="badge" style="background:#EFF6FF; color:var(--blue);">P2</div>
+        <div class="arrow">▼</div>
+      </div>
+      <div class="proposal-body">
+        <div class="compare-grid">
+          <div class="compare-box before">
+            <span class="tag">Şu an</span>
+            <ul>
+              <li>Kampanya gösterimi yok</li>
+              <li>Yeni ürün, fuar, indirim duyurusu yapılamıyor</li>
+            </ul>
+          </div>
+          <div class="compare-box after">
+            <span class="tag">Önerilen</span>
+            <ul>
+              <li>Hero ile arama arasında tek satırlık duyuru bandı</li>
+              <li>Altın zemin üstüne lacivert yazı: "🆕 Yeni CombiSteel serisi şimdi kataloğumuzda!"</li>
+              <li>Tıklanabilir, kapatılabilir (X butonu)</li>
+              <li>Admin panelinden yönetilebilir</li>
+            </ul>
+          </div>
+        </div>
+        <p class="detail-text"><strong>Etki:</strong> Kampanya banner'ları doğrudan satışa dönüşür. GGM Gastro'da kayan 3–4 banner ile haftalık fırsatlar gösterilir. Bizim için başlangıçta tek satırlık "announcement bar" yeterli.</p>
+      </div>
+    </div>
+
+    <!-- 7 -->
+    <div class="proposal" onclick="toggleProposal(this)">
+      <div class="proposal-header">
+        <div class="icon" style="background:#F0FDF4;">🧊</div>
+        <div class="title-wrap">
+          <h3>7. 3D Model Vitrin — Rakipte Olmayan Silah</h3>
+          <p>3D model viewer'ı karşılama ekranına taşıyarak "wow" etkisi</p>
+        </div>
+        <div class="badge" style="background:#ECFDF5; color:var(--teal);">P3</div>
+        <div class="arrow">▼</div>
+      </div>
+      <div class="proposal-body">
+        <div class="compare-grid">
+          <div class="compare-box before">
+            <span class="tag">Şu an</span>
+            <ul>
+              <li>3D viewer sadece ürün detay sayfasında</li>
+              <li>Karşılama ekranında bu güçlü özellik gizli kalıyor</li>
+              <li>Rakiplerin hiçbirinde 3D yok</li>
+            </ul>
+          </div>
+          <div class="compare-box after">
+            <span class="tag">Önerilen</span>
+            <ul>
+              <li>Hero'da hafif dönen küçük bir 3D model (idle rotate)</li>
+              <li>Ya da "Haftanın Ürünü" kartında interaktif 3D embed</li>
+              <li>Dokunarak / sürükleyerek döndürülebilir</li>
+              <li>Alt yazı: "3D modeli keşfet →" tıklama daveti</li>
+            </ul>
+          </div>
+        </div>
+        <p class="detail-text"><strong>Neden önemli:</strong> Bu, hiçbir rakibin sunamadığı bir deneyim. Karşılama ekranında 3D model göstermek hem "wow" etkisi yaratır hem de Design Studio'ya organik trafik çeker. Apple'ın ürün sayfalarındaki 3D deneyim modelini düşünün.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== MOCKUP ===== -->
+<div id="mockup" class="section">
+  <div style="text-align:center; margin-bottom:24px;">
+    <h2 style="font-size:24px; font-weight:900; color:var(--navy);">Yeni Karşılama Ekranı — İnteraktif Prototip</h2>
+    <p style="font-size:14px; color:var(--grey-500); margin-top:8px;">Tüm 7 önerinin birleştirilmiş hali (mobil görünüm)</p>
+  </div>
+
+  <div class="mockup-frame">
+    <div class="mockup-inner">
+
+      <!-- Announcement bar -->
+      <div style="background:var(--gold); padding:8px 16px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:11px; font-weight:700; color:var(--navy);">🆕 Yeni CombiSteel serisi kataloğumuzda!</span>
+        <span style="font-size:14px; color:var(--navy); cursor:pointer; opacity:0.6;">✕</span>
+      </div>
+
+      <!-- Hero -->
+      <div class="mk-hero">
+        <div class="mk-particles"></div>
+        <div class="mk-badge-row">
+          <div class="mk-badge gold">DIAMOND</div>
+          <div class="mk-badge">COMBISTEEL</div>
+          <div class="mk-badge">DIVERSO</div>
+        </div>
+        <h2>2MC Gastro</h2>
+        <div class="mk-sub">Profesyonel gastronomi ekipmanı platformu</div>
+      </div>
+
+      <!-- Search -->
+      <div class="mk-search">
+        <div class="mk-search-bar">
+          <div class="dot"></div>
+          <span>Ürün, kategori veya model ara...</span>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="mk-stats">
+        <div class="mk-stat"><div class="v">6.316</div><div class="l">ÜRÜN</div></div>
+        <div class="mk-stat"><div class="v">800+</div><div class="l">PROJE</div></div>
+        <div class="mk-stat"><div class="v">6</div><div class="l">MARKA</div></div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="mk-actions">
+        <div class="mk-actions-title">Hızlı Erişim</div>
+        <div class="mk-actions-grid">
+          <div class="mk-action"><div class="circle c1">📋</div><span>Katalog</span></div>
+          <div class="mk-action"><div class="circle c2">📐</div><span>Tasarla</span></div>
+          <div class="mk-action"><div class="circle c3">📁</div><span>Projeler</span></div>
+          <div class="mk-action"><div class="circle c4">🛠️</div><span>Destek</span></div>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div class="mk-cats">
+        <div class="mk-cats-title">Kategoriler</div>
+        <div class="mk-cat-scroll">
+          <div class="mk-cat-card cc1">Soğutma</div>
+          <div class="mk-cat-card cc2">Pişirme</div>
+          <div class="mk-cat-card cc3">Pizza</div>
+          <div class="mk-cat-card cc4">Bulaşık</div>
+          <div class="mk-cat-card cc5">Self-Service</div>
+        </div>
+      </div>
+
+      <!-- Trust -->
+      <div class="mk-trust">
+        <div class="mk-trust-item"><div class="tdot"></div>Ücretsiz Kargo</div>
+        <div class="mk-trust-item"><div class="tdot"></div>3D Tasarım</div>
+        <div class="mk-trust-item"><div class="tdot"></div>Diamond Garanti</div>
+      </div>
+
+      <!-- CTA -->
+      <div class="mk-cta">
+        <button class="mk-cta-btn">Keşfetmeye Başla →</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="max-width:420px; margin:20px auto 0; padding:0 12px;">
+    <p style="font-size:12px; color:var(--grey-500); text-align:center; line-height:1.7;">
+      <strong>Not:</strong> Bu prototip mobil görünümü temsil eder. Desktop'ta arama barı daha geniş,
+      kategori kartları 2 satırlı grid, stats bandı yatay olacaktır. 3D model vitrin (P3) bu prototipte
+      yer almamaktadır, ayrı bir iterasyonda eklenecektir.
+    </p>
+  </div>
+</div>
+
+<!-- ===== ROADMAP ===== -->
+<div id="roadmap" class="section">
+  <div class="hero-card" style="background:linear-gradient(135deg, #0D9488 0%, #134E4A 100%);">
+    <h2>Uygulama Yol Haritası</h2>
+    <p>7 yeniliğin 4 haftalık sprint planına dağılımı. Her fazda mevcut WelcomePage.tsx bileşenine ekleme yapılacak; tasarım dili (koyu tema, gradient, motion/react animasyonlar) korunacak.</p>
+  </div>
+
+  <div class="roadmap-grid">
+    <div class="rm-card phase-1">
+      <div class="rm-phase">Hafta 1 — Temel Erişim</div>
+      <h4>Arama + Kategori Karusel</h4>
+      <ul>
+        <li>Hero altına arama barı bileşeni</li>
+        <li>Autocomplete: products.json'dan fuzzy search</li>
+        <li>Yatay kaydırmalı kategori kartları</li>
+        <li>Her kategori kartı: /dashboard?cat=cooling linki</li>
+      </ul>
+    </div>
+    <div class="rm-card phase-2">
+      <div class="rm-phase">Hafta 2 — Aksiyon + İstatistik</div>
+      <h4>Quick Actions + Stats + Trust Bar</h4>
+      <ul>
+        <li>4'lü grid: Katalog, Tasarla, Projeler, Destek</li>
+        <li>CountUp animasyonlu stat bandı</li>
+        <li>Güven bandı (ücretsiz kargo, garanti vb.)</li>
+        <li>Mevcut 3-adım wizard kaldır, tek sayfa yap</li>
+      </ul>
+    </div>
+    <div class="rm-card phase-3">
+      <div class="rm-phase">Hafta 3 — Ticari</div>
+      <h4>Kampanya Banner + CTA Optimizasyonu</h4>
+      <ul>
+        <li>Announcement bar bileşeni (kapatılabilir)</li>
+        <li>Supabase'den dinamik duyuru çekme</li>
+        <li>CTA butonunu "Keşfetmeye Başla" olarak güncelle</li>
+        <li>A/B test altyapısı kur (2 CTA varyantı)</li>
+      </ul>
+    </div>
+    <div class="rm-card phase-4">
+      <div class="rm-phase">Hafta 4+ — İnovasyon</div>
+      <h4>3D Model Vitrin + Polish</h4>
+      <ul>
+        <li>Hero'ya küçük 3D model embed (SafeModelViewer)</li>
+        <li>"Haftanın ürünü" kartı + 3D rotate</li>
+        <li>Performance optimization (lazy load)</li>
+        <li>Desktop responsive grid ayarları</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="margin-top:32px; background:white; border-radius:16px; border:1px solid var(--grey-200); padding:28px;">
+    <h3 style="font-size:16px; font-weight:800; color:var(--navy); margin-bottom:12px;">Teknik Notlar</h3>
+    <ul style="list-style:none; padding:0;">
+      <li style="font-size:13px; color:var(--grey-700); line-height:2; padding-left:20px; position:relative;">
+        <span style="position:absolute; left:0;">→</span>
+        <strong>Dosya:</strong> src/pages/WelcomePage.tsx — mevcut 3 adımlı wizard yerine tek sayfa scroll layout
+      </li>
+      <li style="font-size:13px; color:var(--grey-700); line-height:2; padding-left:20px; position:relative;">
+        <span style="position:absolute; left:0;">→</span>
+        <strong>Arama:</strong> products.json üzerinde client-side fuzzy search (fuse.js), 300ms debounce
+      </li>
+      <li style="font-size:13px; color:var(--grey-700); line-height:2; padding-left:20px; position:relative;">
+        <span style="position:absolute; left:0;">→</span>
+        <strong>Animasyon:</strong> motion/react zaten mevcut, CountUp + stagger reveal eklenecek
+      </li>
+      <li style="font-size:13px; color:var(--grey-700); line-height:2; padding-left:20px; position:relative;">
+        <span style="position:absolute; left:0;">→</span>
+        <strong>Duyuru verisi:</strong> Supabase announcements tablosu (title, cta_url, active, expires_at)
+      </li>
+      <li style="font-size:13px; color:var(--grey-700); line-height:2; padding-left:20px; position:relative;">
+        <span style="position:absolute; left:0;">→</span>
+        <strong>3D model:</strong> Mevcut SafeModelViewer bileşeni, hero'ya inline embed (width:200, height:200)
+      </li>
+    </ul>
+  </div>
+</div>
+
+</div>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function toggleProposal(el) {
+  // Don't toggle if clicked on arrow
+  el.classList.toggle('open');
+}
+</script>
+
+</body>
+</html>

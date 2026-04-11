@@ -959,6 +959,9 @@ export default function DesignStudio({ manualMode = false }: { manualMode?: bool
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
+      // Hologram watermark
+      const { drawPdfHologram } = await import('../lib/pdfWatermark');
+      await drawPdfHologram(doc, pageW, pageH);
       // Header
       doc.setFillColor(30, 64, 175);
       doc.rect(0, 0, pageW, 12, 'F');
@@ -1024,7 +1027,7 @@ export default function DesignStudio({ manualMode = false }: { manualMode?: bool
   return (
     <div className="flex-1 flex overflow-hidden" style={{ height: 'calc(100vh - 3.5rem)' }}>
       {/* Canvas Area */}
-      <div className="flex-1 flex flex-col bg-slate-100 min-w-0">
+      <div className="flex-1 flex flex-col bg-[#f0f3ff] min-w-0">
         {/* Toolbar */}
         <div className="h-11 bg-white border-b border-slate-200 flex items-center px-3 gap-1 shrink-0">
           {isProjectMode && (
@@ -1122,8 +1125,12 @@ export default function DesignStudio({ manualMode = false }: { manualMode?: bool
         <div ref={canvasWrapRef} className="flex-1 overflow-hidden relative flex flex-col">
         <div
           ref={canvasRef}
-          className="flex-1 overflow-hidden relative"
-          style={{ cursor: isDrawingRoom ? 'crosshair' : activeTool === 'pan' || isPanning ? 'grab' : draggingVertex !== null ? 'move' : 'default' }}
+          className="flex-1 overflow-hidden relative bg-white"
+          style={{
+            cursor: isDrawingRoom ? 'crosshair' : activeTool === 'pan' || isPanning ? 'grab' : draggingVertex !== null ? 'move' : 'default',
+            backgroundImage: 'radial-gradient(circle, #c4c6cf 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+          }}
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleCanvasMouseMove}
           onMouseUp={handleCanvasMouseUp}

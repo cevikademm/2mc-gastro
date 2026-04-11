@@ -1,0 +1,172 @@
+/* ============================================================
+   2mcwerbung.com (WoodMart) tarzı tema — Welcome ekranı için
+   Metropolis font + açık zemin + mavi aksan + uppercase başlıklar
+   ============================================================ */
+
+@font-face {
+  font-family: "Metropolis";
+  src: url("https://www.2mcwerbung.com/wp-content/uploads/2021/10/Metropolis-Regular.woff2") format("woff2"),
+       url("https://www.2mcwerbung.com/wp-content/uploads/2021/10/Metropolis-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Metropolis";
+  src: url("https://www.2mcwerbung.com/wp-content/uploads/2021/10/Metropolis-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+.welcome-2mc {
+  /* WoodMart kit değişkenleri */
+  --wd-primary-color: rgb(40, 120, 191);
+  --wd-alternative-color: #fbbc34;
+  --wd-text-color: #777777;
+  --wd-title-color: #242424;
+  --wd-link-color: #333333;
+  --wd-link-color-hover: #242424;
+  --wd-text-font: "Metropolis", Arial, Helvetica, sans-serif;
+  --wd-title-font: "Metropolis", Arial, Helvetica, sans-serif;
+  --wd-text-font-size: 14px;
+  --wd-text-line-height: 1.6;
+  --btn-default-bgcolor: #f7f7f7;
+  --btn-default-bgcolor-hover: #efefef;
+  --btn-accented-bgcolor: rgba(13, 108, 191, 0.9);
+  --btn-accented-bgcolor-hover: rgb(1, 84, 178);
+  --wd-container-w: 1350px;
+  --wd-brd-radius: 0px;
+
+  background-color: #ffffff !important;
+  color: var(--wd-text-color) !important;
+  font-family: var(--wd-text-font) !important;
+  font-size: var(--wd-text-font-size);
+  line-height: var(--wd-text-line-height);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tüm metin rengini açık tema için override et */
+.welcome-2mc * {
+  font-family: var(--wd-text-font);
+}
+
+.welcome-2mc h1,
+.welcome-2mc h2,
+.welcome-2mc h3,
+.welcome-2mc h4,
+.welcome-2mc h5 {
+  font-family: var(--wd-title-font) !important;
+  color: var(--wd-title-color) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.welcome-2mc h2 {
+  text-transform: none;
+}
+
+/* Beyaz/açık tonlu metinleri koyu temaya çevir */
+.welcome-2mc .text-white,
+.welcome-2mc [class*="text-white"]:not([class*="text-white/"]) {
+  color: var(--wd-title-color) !important;
+}
+
+.welcome-2mc [class*="text-white/"] {
+  color: var(--wd-text-color) !important;
+}
+
+/* Mavi/sky aksanları WoodMart mavisine çevir */
+.welcome-2mc .text-sky-300,
+.welcome-2mc .text-sky-400,
+.welcome-2mc .text-blue-300,
+.welcome-2mc .text-blue-400,
+.welcome-2mc [class*="text-sky-"],
+.welcome-2mc [class*="text-blue-"] {
+  color: var(--wd-primary-color) !important;
+}
+
+.welcome-2mc .text-amber-300,
+.welcome-2mc .text-amber-400 {
+  color: var(--wd-alternative-color) !important;
+}
+
+/* Gradient text → düz mavi */
+.welcome-2mc .bg-clip-text.text-transparent {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  color: var(--wd-primary-color) !important;
+  -webkit-text-fill-color: var(--wd-primary-color) !important;
+}
+
+/* Border'lar açık */
+.welcome-2mc [class*="border-white/"] {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Beyaz buton (Enter Platform) → WoodMart accented */
+.welcome-2mc button.bg-white {
+  background-color: var(--btn-accented-bgcolor) !important;
+  color: #ffffff !important;
+  text-transform: uppercase !important;
+  font-weight: 600 !important;
+  border-radius: 0 !important;
+  letter-spacing: 0.5px;
+  transition: background-color 0.2s ease;
+}
+.welcome-2mc button.bg-white:hover {
+  background-color: var(--btn-accented-bgcolor-hover) !important;
+}
+
+/* İkincil buton (Login/Register) → WoodMart default */
+.welcome-2mc button.border.border-white\/15,
+.welcome-2mc button[class*="border-white/"] {
+  background-color: var(--btn-default-bgcolor) !important;
+  color: #333333 !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 0 !important;
+  text-transform: uppercase !important;
+  font-weight: 600 !important;
+}
+.welcome-2mc button[class*="border-white/"]:hover {
+  background-color: var(--btn-default-bgcolor-hover) !important;
+}
+
+/* Kart / panel arka planları */
+.welcome-2mc [class*="bg-white/"],
+.welcome-2mc [class*="from-white/"],
+.welcome-2mc [class*="to-white/"] {
+  background: #f7f7f7 !important;
+}
+
+.welcome-2mc [class*="from-blue-500/"],
+.welcome-2mc [class*="from-indigo-500/"],
+.welcome-2mc [class*="from-amber-500/"] {
+  background: #f7f7f7 !important;
+}
+
+/* Rounded köşeleri sıfırla — WoodMart tarzı */
+.welcome-2mc .rounded-2xl,
+.welcome-2mc .rounded-3xl,
+.welcome-2mc .rounded-xl {
+  border-radius: 0 !important;
+}
+
+/* Banner ve bölme çizgileri */
+.welcome-2mc .divide-white\/\[0\.06\] > * + *,
+.welcome-2mc [class*="divide-white/"] > * + * {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Banner alt fade — açık tema */
+.welcome-2mc .bg-gradient-to-t.from-\[\#020817\] {
+  background: linear-gradient(to top, #ffffff, transparent) !important;
+}
+
+/* Stat kart hover */
+.welcome-2mc .group:hover .group-hover\:text-sky-300 {
+  color: var(--wd-primary-color) !important;
+}

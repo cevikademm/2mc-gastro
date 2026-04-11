@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../stores/authStore';
-import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Eye, EyeOff, LogIn, Refrigerator, Ruler, BarChart3, Shield } from 'lucide-react';
+import LanguageSelector from '../../components/LanguageSelector';
+import { GradientDots } from '../../components/GradientDots';
+import './welcome-2mc.css';
 
 function GoogleIcon() {
   return (
@@ -14,6 +18,13 @@ function GoogleIcon() {
     </svg>
   );
 }
+
+const FEATURES_KEYS = [
+  { icon: Refrigerator, titleKey: 'welcome.featureEquipment', descKey: 'welcome.featureEquipmentDesc' },
+  { icon: Ruler, titleKey: 'welcome.featureFloorPlan', descKey: 'welcome.featureFloorPlanDesc' },
+  { icon: BarChart3, titleKey: 'welcome.featureQuote', descKey: 'welcome.featureQuoteDesc' },
+  { icon: Shield, titleKey: 'welcome.featureHACCP', descKey: 'welcome.featureHACCPDesc' },
+];
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -28,121 +39,227 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     if (!email || !password) {
-      setError('Lütfen tüm alanları doldurun');
+      setError(t('auth.fillAllFields'));
       return;
     }
-    const success = await login(email, password);
-    if (success) {
+    const result = await login(email, password);
+    if (result.success) {
       navigate('/dashboard');
+    } else if (result.pendingApproval) {
+      navigate('/pending-approval');
     } else {
-      setError('Geçersiz e-posta veya şifre');
+      setError(result.error || t('auth.invalidCredentials'));
     }
   };
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-black text-primary uppercase tracking-wider font-headline">2MC Gastro</h1>
-          <p className="text-on-surface-variant mt-2 font-medium">{t('brand.tagline')}</p>
+    <div className="welcome-2mc min-h-screen relative overflow-hidden">
+      <GradientDots className="z-0 pointer-events-none opacity-30" backgroundColor="#ffffff" />
+
+      {/* Language switcher */}
+      <div className="absolute top-5 right-5 z-30">
+        <LanguageSelector variant="light" />
+      </div>
+
+      <div className="relative z-10 min-h-screen flex flex-col lg:flex-row items-stretch">
+        {/* ── LEFT: Editorial brand panel ── */}
+        <div className="lg:w-[55%] flex flex-col justify-between px-6 sm:px-10 lg:px-16 pt-10 pb-8 border-b lg:border-b-0 lg:border-r border-black/[0.06]">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex items-center gap-4 mb-10"
+          >
+            <img src="/logo-2mc-gastro.jpeg" alt="2MC Gastro" className="h-14 object-contain" />
+          </motion.div>
+
+          {/* Top meta bar */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.25em] border-b border-black/[0.06] pb-3 mb-8"
+          >
+            <span>// 2MC—GASTRO / LOGIN_001</span>
+            <span className="hidden md:block">EST. 2010 · ANTALYA / TR</span>
+            <span className="text-[rgb(40,120,191)]">● ONLINE</span>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="flex-1"
+          >
+            <div className="flex items-center gap-3 mb-5 text-[10px] font-mono uppercase tracking-[0.3em] text-[rgb(40,120,191)]">
+              <span className="w-8 h-px bg-[rgb(40,120,191)]/50" />
+              <span>{t('welcome.heroEyebrow', 'Manifesto · Vol. I')}</span>
+            </div>
+
+            <h2 className="font-black leading-[0.92] tracking-[-0.03em] text-[8vw] md:text-[5rem] lg:text-[5.5rem] break-words">
+              {t('welcome.headline', 'Endüstriyel Mutfağın')}
+              <br />
+              <span className="italic text-[rgb(40,120,191)]">
+                {t('welcome.headlineSub', 'Komuta Merkezi')}.
+              </span>
+            </h2>
+
+            <p className="mt-6 text-base lg:text-lg max-w-lg leading-relaxed">
+              {t('welcome.subtitle')}
+            </p>
+
+            {/* Features grid */}
+            <div className="hidden lg:grid grid-cols-2 gap-px bg-black/[0.06] mt-12 max-w-2xl">
+              {FEATURES_KEYS.map((f, i) => {
+                const Icon = f.icon;
+                const num = String(i + 1).padStart(2, '0');
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 + i * 0.08 }}
+                    className="group bg-white p-5 hover:bg-[#fafafa] transition-all"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="text-[10px] font-mono text-[rgb(40,120,191)] pt-1">[{num}]</div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Icon size={18} className="text-[rgb(40,120,191)]" />
+                          <h4 className="font-bold text-sm tracking-tight">{t(f.titleKey)}</h4>
+                        </div>
+                        <p className="text-xs leading-relaxed">{t(f.descKey)}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+
+          <div className="pt-8 mt-8 border-t border-black/[0.06] text-[10px] font-mono uppercase tracking-[0.2em]">
+            {t('welcome.copyright')}
+          </div>
         </div>
 
-        <div className="bg-surface-container-lowest rounded-2xl shadow-lg p-8 border border-outline-variant/10">
-          <h2 className="text-xl font-headline font-bold text-on-surface mb-6">{t('auth.login')}</h2>
-
-          {error && (
-            <div className="bg-error-container text-error px-4 py-3 rounded-lg mb-4 text-sm font-medium">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">
-                {t('common.email')}
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('auth.emailPlaceholder')}
-                className="w-full bg-surface-container-highest border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary outline-none"
-              />
+        {/* ── RIGHT: Form ── */}
+        <div className="lg:w-[45%] flex items-center justify-center p-6 lg:p-12">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="w-full max-w-md bg-white border border-black/[0.06] p-8 lg:p-10"
+          >
+            <div className="mb-8">
+              <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-[rgb(40,120,191)] mb-3">
+                // ACCESS_TERMINAL
+              </div>
+              <h2 className="text-3xl font-black tracking-tight">
+                {t('auth.login')}
+              </h2>
+              <p className="mt-2 text-sm">
+                {t('auth.loginSubtitle')}
+              </p>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">
-                {t('common.password')}
-              </label>
-              <div className="relative">
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-red-50 text-red-600 border border-red-200 px-4 py-3 mb-5 text-sm font-medium"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.2em] mb-2">
+                  {t('common.email')}
+                </label>
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t('auth.passwordPlaceholder')}
-                  className="w-full bg-surface-container-highest border-none rounded-lg py-3 px-4 pr-12 text-sm focus:ring-2 focus:ring-primary outline-none"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t('auth.emailPlaceholder')}
+                  className="w-full bg-[#fafafa] border border-black/[0.08] py-3.5 px-4 text-sm focus:border-[rgb(40,120,191)] outline-none transition-all"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.2em] mb-2">
+                  {t('common.password')}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={t('auth.passwordPlaceholder')}
+                    className="w-full bg-[#fafafa] border border-black/[0.08] py-3.5 px-4 pr-12 text-sm focus:border-[rgb(40,120,191)] outline-none transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777] hover:text-[rgb(40,120,191)] transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" className="w-4 h-4 accent-[rgb(40,120,191)]" />
+                  <span className="text-sm">{t('auth.rememberMe')}</span>
+                </label>
+                <Link to="/forgot-password" className="text-sm text-[rgb(40,120,191)] font-semibold hover:underline">
+                  {t('auth.forgotPassword')}
+                </Link>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-[rgb(40,120,191)] hover:bg-[rgb(1,84,178)] text-white py-3.5 font-bold uppercase tracking-[0.1em] flex items-center justify-center gap-2 transition-all disabled:opacity-50 text-sm"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <LogIn size={18} />
+                    {t('auth.login')}
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-black/[0.08]" />
+              </div>
+              <div className="relative flex justify-center text-[10px] font-mono uppercase tracking-[0.25em]">
+                <span className="bg-white px-3">{t('common.or')}</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="rounded text-primary focus:ring-primary w-4 h-4" />
-                <span className="text-sm text-on-surface-variant">{t('auth.rememberMe')}</span>
-              </label>
-              <Link to="/forgot-password" className="text-sm text-primary font-medium hover:underline">
-                {t('auth.forgotPassword')}
-              </Link>
-            </div>
-
             <button
-              type="submit"
+              type="button"
+              onClick={() => loginWithGoogle().then(() => navigate('/dashboard'))}
               disabled={isLoading}
-              className="w-full brushed-metal text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 shadow-lg hover:opacity-90 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-3 border border-black/[0.08] bg-[#f7f7f7] hover:bg-[#efefef] text-[#333] py-3.5 font-semibold uppercase tracking-[0.1em] text-xs transition-all disabled:opacity-50"
             >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <LogIn size={18} />
-                  {t('auth.login')}
-                </>
-              )}
+              <GoogleIcon />
+              {t('auth.googleLogin')}
             </button>
-          </form>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-outline-variant/20" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-surface-container-lowest px-3 text-on-surface-variant font-medium">ya da</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => loginWithGoogle().then(() => navigate('/dashboard'))}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 border border-outline-variant/30 bg-white hover:bg-slate-50 text-slate-700 py-3 rounded-lg font-semibold text-sm transition-all shadow-sm disabled:opacity-50"
-          >
-            <GoogleIcon />
-            Google ile Giriş Yap
-          </button>
-
-          <p className="text-center mt-6 text-sm text-on-surface-variant">
-            {t('auth.noAccount')}{' '}
-            <Link to="/register" className="text-primary font-bold hover:underline">
-              {t('auth.register')}
-            </Link>
-          </p>
+            <p className="text-center mt-8 text-sm">
+              {t('auth.noAccount')}{' '}
+              <Link to="/register" className="text-[rgb(40,120,191)] font-bold hover:underline">
+                {t('auth.register')}
+              </Link>
+            </p>
+          </motion.div>
         </div>
       </div>
     </div>

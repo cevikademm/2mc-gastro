@@ -7,7 +7,7 @@ import { UserPlus } from 'lucide-react';
 export default function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { register, isLoading } = useAuthStore();
+  const { register, loginWithGoogle, isLoading } = useAuthStore();
   const [form, setForm] = useState({
     fullName: '',
     email: '',
@@ -27,19 +27,23 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
     if (!form.fullName || !form.email || !form.password || !form.company) {
-      setError('Lütfen zorunlu alanları doldurun');
+      setError(t('auth.fillRequiredFields'));
       return;
     }
     if (form.password !== form.confirmPassword) {
-      setError('Şifreler eşleşmiyor');
+      setError(t('auth.passwordMismatch'));
       return;
     }
     if (form.password.length < 6) {
-      setError('Şifre en az 6 karakter olmalıdır');
+      setError(t('auth.passwordMinLength'));
       return;
     }
-    const success = await register(form);
-    if (success) navigate('/dashboard');
+    const result = await register(form);
+    if (result.success) {
+      navigate('/pending-approval');
+    } else if (result.error) {
+      setError(result.error);
+    }
   };
 
   return (
@@ -82,12 +86,12 @@ export default function RegisterPage() {
               <div>
                 <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">{t('auth.sector')}</label>
                 <select name="sector" value={form.sector} onChange={handleChange} className="w-full bg-surface-container-highest border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary outline-none">
-                  <option value="">Seçiniz</option>
-                  <option value="restaurant">Restoran</option>
-                  <option value="hotel">Otel</option>
-                  <option value="catering">Catering</option>
-                  <option value="hospital">Hastane</option>
-                  <option value="other">Diğer</option>
+                  <option value="">{t('auth.selectSector')}</option>
+                  <option value="restaurant">{t('auth.sectorRestaurant')}</option>
+                  <option value="hotel">{t('auth.sectorHotel')}</option>
+                  <option value="catering">{t('auth.sectorCatering')}</option>
+                  <option value="hospital">{t('auth.sectorHospital')}</option>
+                  <option value="other">{t('auth.sectorOther')}</option>
                 </select>
               </div>
             </div>
@@ -118,6 +122,25 @@ export default function RegisterPage() {
               )}
             </button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-outline-variant/20" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-surface-container-lowest px-3 text-on-surface-variant font-medium">{t('common.or')}</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => loginWithGoogle()}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-3 border border-outline-variant/30 bg-white hover:bg-slate-50 text-slate-700 py-3 rounded-lg font-semibold text-sm transition-all shadow-sm disabled:opacity-50"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+            {t('auth.googleRegister')}
+          </button>
 
           <p className="text-center mt-6 text-sm text-on-surface-variant">
             {t('auth.hasAccount')}{' '}

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore, type Project } from '../../stores/projectStore';
 import { Plus, Search, Filter, ChevronRight, Trash2 } from 'lucide-react';
 
 export default function ProjectListPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { projects, deleteProject } = useProjectStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -83,7 +84,7 @@ export default function ProjectListPage() {
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
               {filtered.map((project) => (
-                <tr key={project.id} className="group hover:bg-surface-container-high transition-colors">
+                <tr key={project.id} className="group hover:bg-surface-container-high transition-colors cursor-pointer" onDoubleClick={() => navigate(`/projects/${project.id}`)}>
                   <td className="px-6 py-5">
                     <Link to={`/projects/${project.id}`} className="block">
                       <div className="font-bold text-on-surface hover:text-primary transition-colors">{project.name}</div>

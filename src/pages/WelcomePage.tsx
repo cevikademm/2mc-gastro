@@ -6,7 +6,8 @@ import { motion } from 'motion/react';
 import { AnimatePresence } from 'motion/react';
 import {
   ChefHat, Ruler, ClipboardList, Refrigerator,
-  ArrowRight, ArrowLeft, Sparkles, Globe
+  ArrowRight, ArrowLeft, Sparkles, Globe,
+  ShieldCheck, BadgeCheck, Languages, Play
 } from 'lucide-react';
 
 const FEATURES = [
@@ -16,12 +17,23 @@ const FEATURES = [
   { icon: Sparkles, key: 'smart' },
 ];
 
+const CATEGORIES = [
+  { emoji: '❄️', nameKey: 'welcome.cat_cooling', count: 1775 },
+  { emoji: '🔥', nameKey: 'welcome.cat_cooking', count: 1439 },
+  { emoji: '🧹', nameKey: 'welcome.cat_prep', count: 615 },
+  { emoji: '🍕', nameKey: 'welcome.cat_pizza', count: 401 },
+  { emoji: '🍽️', nameKey: 'welcome.cat_selfservice', count: 499 },
+  { emoji: '⚡', nameKey: 'welcome.cat_dynamic', count: 359 },
+  { emoji: '🧊', nameKey: 'welcome.cat_icecream', count: 82 },
+  { emoji: '☕', nameKey: 'welcome.cat_coffee', count: 95 },
+];
+
 export default function WelcomePage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
 
-  const totalSteps = 3;
+  const totalSteps = 4;
 
   const handleStart = () => {
     navigate('/login');
@@ -74,48 +86,131 @@ export default function WelcomePage() {
               transition={{ duration: 0.4, ease: 'easeOut' }}
               className="flex flex-col items-center text-center"
             >
+              {/* Tagline */}
               <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.15, duration: 0.5, ease: 'easeOut' }}
-                className="w-24 h-24 rounded-3xl brushed-metal flex items-center justify-center shadow-xl mb-8"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-xs font-bold text-primary tracking-[4px] uppercase mb-6 pb-3 border-b border-primary/20"
               >
-                <ChefHat size={48} className="text-white" />
+                {t('welcome.tagline')}
               </motion.div>
 
+              {/* Main heading */}
               <motion.h1
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="font-headline text-5xl font-black text-primary uppercase tracking-wider"
+                transition={{ delay: 0.25 }}
+                className="font-headline text-4xl md:text-5xl font-black text-primary leading-tight"
               >
-                2MC Gastro
+                {t('welcome.heroTitle')}
               </motion.h1>
 
+              {/* Description */}
               <motion.p
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.45 }}
-                className="text-on-surface-variant font-medium mt-4 text-lg leading-relaxed max-w-md"
+                transition={{ delay: 0.4 }}
+                className="text-on-surface-variant font-medium mt-5 text-base leading-relaxed max-w-md"
               >
-                {t('welcome.subtitle')}
+                {t('welcome.heroDesc')}
               </motion.p>
 
-              <motion.p
+              {/* CTA Buttons */}
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="text-on-surface-variant/70 mt-3 text-sm max-w-sm"
+                transition={{ delay: 0.55 }}
+                className="flex gap-3 mt-8"
               >
-                {t('welcome.intro')}
-              </motion.p>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleStart}
+                  className="brushed-metal text-white px-7 py-3.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 transition-all hover:opacity-90"
+                >
+                  {t('welcome.ctaStart')}
+                  <ArrowRight size={18} />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={nextStep}
+                  className="bg-surface-container-lowest text-on-surface px-7 py-3.5 rounded-xl font-bold text-sm border border-outline-variant/20 flex items-center gap-2 transition-all hover:border-primary/30"
+                >
+                  <Play size={16} />
+                  {t('welcome.ctaDemo')}
+                </motion.button>
+              </motion.div>
+
+              {/* Trust Bar */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                className="flex items-center gap-5 mt-10 pt-6 border-t border-outline-variant/15"
+              >
+                <div className="flex items-center gap-1.5 text-on-surface-variant/60">
+                  <ShieldCheck size={16} className="text-primary/60" />
+                  <span className="text-xs font-medium">{t('welcome.trustSSL')}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-on-surface-variant/60">
+                  <BadgeCheck size={16} className="text-primary/60" />
+                  <span className="text-xs font-medium">{t('welcome.trustAuth')}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-on-surface-variant/60">
+                  <Languages size={16} className="text-primary/60" />
+                  <span className="text-xs font-medium">TR / EN / DE</span>
+                </div>
+              </motion.div>
             </motion.div>
           )}
 
-          {/* Step 1: Features */}
+          {/* Step 1: Categories */}
           {step === 1 && (
             <motion.div
               key="step1"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="flex flex-col items-center"
+            >
+              <h2 className="font-headline text-2xl font-bold text-on-surface mb-2 text-center">
+                {t('welcome.categoriesTitle')}
+              </h2>
+              <p className="text-on-surface-variant text-sm mb-6 text-center">
+                {t('welcome.categoriesSubtitle')}
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 w-full">
+                {CATEGORIES.map((cat, i) => (
+                  <motion.div
+                    key={cat.nameKey}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.05 + i * 0.05 }}
+                    className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10 shadow-sm flex items-center gap-3 cursor-pointer hover:border-primary/30 hover:shadow-md transition-all group"
+                  >
+                    <span className="text-2xl">{cat.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-headline text-sm font-bold text-on-surface truncate group-hover:text-primary transition-colors">
+                        {t(cat.nameKey)}
+                      </h3>
+                      <p className="text-xs text-on-surface-variant">
+                        {cat.count.toLocaleString('tr-TR')} {t('welcome.products')}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 2: Features */}
+          {step === 2 && (
+            <motion.div
+              key="step2"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
@@ -156,10 +251,10 @@ export default function WelcomePage() {
             </motion.div>
           )}
 
-          {/* Step 2: Ready to start */}
-          {step === 2 && (
+          {/* Step 3: Ready to start */}
+          {step === 3 && (
             <motion.div
-              key="step2"
+              key="step3"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}

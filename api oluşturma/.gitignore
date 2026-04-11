@@ -1,0 +1,16 @@
+# Gizli bilgiler — ASLA commit etme
+.env
+.env.local
+.env.production
+
+# Veritabanı
+*.db
+*.db-journal
+*.db-wal
+
+# Ham veri
+products_raw.json
+
+# Python
+__pycache__/
+*.pyc

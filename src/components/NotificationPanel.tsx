@@ -27,11 +27,11 @@ export default function NotificationPanel() {
       <div className="absolute top-14 right-0 w-80 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant/20 z-50 overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-outline-variant/10">
           <h3 className="font-headline font-bold text-sm text-primary flex items-center gap-2">
-            <Bell size={16} /> Bildirimler
+            <Bell size={16} /> {t('notifications.title')}
           </h3>
           <div className="flex items-center gap-2">
             <button onClick={markAllRead} className="text-xs text-primary hover:underline flex items-center gap-1">
-              <CheckCheck size={14} /> Tümünü oku
+              <CheckCheck size={14} /> {t('notifications.markAllRead')}
             </button>
             <button onClick={toggleNotificationPanel} className="p-1 hover:bg-surface-container-high rounded-full">
               <X size={16} />
@@ -40,7 +40,7 @@ export default function NotificationPanel() {
         </div>
         <div className="max-h-80 overflow-y-auto">
           {notifications.length === 0 ? (
-            <div className="p-6 text-center text-sm text-on-surface-variant">Bildirim yok</div>
+            <div className="p-6 text-center text-sm text-on-surface-variant">{t('notifications.noNotifications')}</div>
           ) : (
             notifications.map((n) => {
               const Icon = typeIcons[n.type];

@@ -21,6 +21,9 @@ export default defineConfig({
     },
     assetsInlineLimit: 100000,
   },
+  optimizeDeps: {
+    entries: ['index.html', 'src/main.tsx'],
+  },
   server: {
     port: 3000,
     host: '0.0.0.0',

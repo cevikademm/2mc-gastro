@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<title>2MC Gastro — Quantum Flux Logo</title>
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, sans-serif; color:#fff; }
+  #app { position:fixed; inset:0; }
+  #info {
+    position:fixed; left:20px; bottom:20px; z-index:10;
+    background:rgba(0,0,0,0.45); backdrop-filter: blur(8px);
+    padding:14px 18px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);
+    max-width:340px; line-height:1.4;
+  }
+  #info h1 { margin:0 0 6px; font-size:16px; font-weight:600; letter-spacing:0.5px; }
+  #info p { margin:0; font-size:12px; opacity:0.75; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/examples/jsm/postprocessing/EffectComposer.js": "https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js",
+    "three/examples/jsm/postprocessing/RenderPass.js": "https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/RenderPass.js",
+    "three/examples/jsm/postprocessing/UnrealBloomPass.js": "https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js",
+    "three/examples/jsm/shaders/CopyShader.js": "https://unpkg.com/three@0.160.0/examples/jsm/shaders/CopyShader.js",
+    "three/examples/jsm/shaders/LuminosityHighPassShader.js": "https://unpkg.com/three@0.160.0/examples/jsm/shaders/LuminosityHighPassShader.js",
+    "three/examples/jsm/postprocessing/ShaderPass.js": "https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/ShaderPass.js",
+    "three/examples/jsm/postprocessing/Pass.js": "https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/Pass.js"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="info">
+  <h1 id="title">2MC Gastro</h1>
+  <p id="desc">Quantum flux → text formation → dispersion. Looping.</p>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+
+// --- Sample "2MC Gastro" text into 3D point targets ---
+function sampleTextPoints(text, count) {
+  const cvs = document.createElement('canvas');
+  const W = 1400, H = 300;
+  cvs.width = W; cvs.height = H;
+  const ctx = cvs.getContext('2d');
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#fff';
+  // auto-fit font size to canvas width
+  let fontSize = 200;
+  ctx.font = `bold ${fontSize}px system-ui, Arial, sans-serif`;
+  while (ctx.measureText(text).width > W - 60 && fontSize > 20) {
+    fontSize -= 5;
+    ctx.font = `bold ${fontSize}px system-ui, Arial, sans-serif`;
+  }
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, W / 2, H / 2);
+
+  const data = ctx.getImageData(0, 0, W, H).data;
+  const pts = [];
+  for (let y = 0; y < H; y += 2) {
+    for (let x = 0; x < W; x += 2) {
+      if (data[(y * W + x) * 4] > 128) pts.push([x, y]);
+    }
+  }
+
+  // map to centered 3D coords
+  const scaleX = 0.13, scaleY = 0.13;
+  const targets = [];
+  for (let i = 0; i < count; i++) {
+    const p = pts[Math.floor(Math.random() * pts.length)];
+    const x = (p[0] - W / 2) * scaleX;
+    const y = -(p[1] - H / 2) * scaleY;
+    const z = (Math.random() - 0.5) * 4;
+    targets.push(new THREE.Vector3(x, y, z));
+  }
+  return targets;
+}
+
+class ParticlesSwarm {
+  constructor(container, count = 10000) {
+    this.count = count;
+    this.container = container;
+    this.speedMult = 0.4;
+
+    this.scene = new THREE.Scene();
+    this.scene.fog = new THREE.FogExp2(0x000000, 0.008);
+    this.camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 2000);
+    this.camera.position.set(0, 0, 180);
+
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    this.renderer.setSize(innerWidth, innerHeight);
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    container.appendChild(this.renderer.domElement);
+
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.6, 0.5, 0.0));
+
+    this.dummy = new THREE.Object3D();
+    this.target = new THREE.Vector3();
+    this.pColor = new THREE.Color();
+
+    this.geometry = new THREE.ConeGeometry(0.1, 0.5, 4).rotateX(Math.PI / 2);
+    this.material = new THREE.MeshBasicMaterial({ color: 0x00aaff });
+    this.mesh = new THREE.InstancedMesh(this.geometry, this.material, this.count);
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.scene.add(this.mesh);
+
+    this.positions = [];
+    const c = new THREE.Color();
+    for (let i = 0; i < this.count; i++) {
+      this.positions.push(new THREE.Vector3((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100));
+      this.mesh.setColorAt(i, c.setHex(0x00ff88));
+    }
+
+    this.texts = ['2MC Gastro', 'Para Mı ver !', 'Euro Olarak Ama', 'Şaka Şaka'];
+    this.textIndex = 0;
+    this.textTargets = sampleTextPoints(this.texts[0], this.count);
+
+    // Phase machine: flux -> forming -> hold -> dispersing -> flux ...
+    this.phase = 'flux';
+    this.phaseStart = performance.now() / 1000;
+    this.fluxDuration = 3;
+    this.formDuration = 1.5;
+    this.holdDuration = 5;
+    this.disperseDuration = 1.5;
+
+    this.clock = new THREE.Clock();
+    addEventListener('resize', () => this.onResize());
+    this.animate = this.animate.bind(this);
+    this.animate();
+  }
+
+  onResize() {
+    this.camera.aspect = innerWidth / innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(innerWidth, innerHeight);
+    this.composer.setSize(innerWidth, innerHeight);
+  }
+
+  computeFluxTarget(i, time) {
+    const count = this.count;
+    const scale = 60, twist = 3, flow = 1.2, chaos = 0.6;
+    const t = time * flow;
+    const p = i / count;
+    const phi = Math.acos(1.0 - 2.0 * p);
+    const theta = Math.PI * 2.0 * p * Math.sqrt(count);
+    const wave = Math.sin(theta * twist + t) * 0.5 + Math.cos(phi * twist - t) * 0.5;
+    const radius = scale * (1.0 + wave * 0.3);
+    const cx = Math.sin(phi * 6.0 + t * 1.3) * chaos;
+    const cy = Math.cos(theta * 4.0 - t * 1.1) * chaos;
+    const cz = Math.sin(theta * 3.0 + phi * 2.0 + t) * chaos;
+    const x = Math.sin(phi) * Math.cos(theta) * radius + cx * 10.0;
+    const y = Math.sin(phi) * Math.sin(theta) * radius + cy * 10.0;
+    const z = Math.cos(phi) * radius + cz * 10.0;
+    this.target.set(x, y, z);
+    return { wave, p, phi, t };
+  }
+
+  animate() {
+    requestAnimationFrame(this.animate);
+    const time = this.clock.getElapsedTime() * this.speedMult;
+    const now = performance.now() / 1000;
+    const elapsed = now - this.phaseStart;
+
+    // phase transitions
+    if (this.phase === 'flux' && elapsed > this.fluxDuration) {
+      this.phase = 'forming'; this.phaseStart = now;
+    } else if (this.phase === 'forming' && elapsed > this.formDuration) {
+      this.phase = 'hold'; this.phaseStart = now;
+    } else if (this.phase === 'hold' && elapsed > this.holdDuration) {
+      this.phase = 'dispersing'; this.phaseStart = now;
+    } else if (this.phase === 'dispersing' && elapsed > this.disperseDuration) {
+      this.phase = 'flux'; this.phaseStart = now;
+      this.textIndex = (this.textIndex + 1) % this.texts.length;
+      this.textTargets = sampleTextPoints(this.texts[this.textIndex], this.count);
+    }
+
+    // blend factor: 0 = flux, 1 = text
+    let blend = 0;
+    const e = now - this.phaseStart;
+    if (this.phase === 'flux') blend = 0;
+    else if (this.phase === 'forming') blend = Math.min(1, e / this.formDuration);
+    else if (this.phase === 'hold') blend = 1;
+    else if (this.phase === 'dispersing') blend = Math.max(0, 1 - e / this.disperseDuration);
+    const eb = blend * blend * (3 - 2 * blend);
+    const lerpSpeed = (this.phase === 'forming' || this.phase === 'dispersing') ? 0.18 : 0.12;
+
+    for (let i = 0; i < this.count; i++) {
+      const info = this.computeFluxTarget(i, time);
+      if (eb > 0.001) this.target.lerp(this.textTargets[i], eb);
+
+      // color
+      const hue = (info.p + info.t * 0.05 + info.wave * 0.1) % 1.0;
+      const sat = 0.7 + 0.3 * Math.sin(info.phi * 2.0 + info.t);
+      const light = 0.5 + 0.25 * info.wave;
+      this.pColor.setHSL(hue, sat, light);
+
+      this.positions[i].lerp(this.target, lerpSpeed);
+      this.dummy.position.copy(this.positions[i]);
+      this.dummy.updateMatrix();
+      this.mesh.setMatrixAt(i, this.dummy.matrix);
+      this.mesh.setColorAt(i, this.pColor);
+    }
+
+    this.mesh.instanceMatrix.needsUpdate = true;
+    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+
+    // continuous rotation
+    this.scene.rotation.y += 0.006;
+
+    this.composer.render();
+  }
+}
+
+new ParticlesSwarm(document.getElementById('app'), 12000);
+</script>
+</body>
+</html>

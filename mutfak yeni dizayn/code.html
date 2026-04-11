@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>2MC GASTRO - Design Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-background": "#121c2c",
+                        "primary-fixed-dim": "#adc7f7",
+                        "primary-fixed": "#d6e3ff",
+                        "on-secondary-container": "#586377",
+                        "on-primary-fixed-variant": "#2d476f",
+                        "on-primary-container": "#86a0cd",
+                        "error-container": "#ffdad6",
+                        "surface": "#f9f9ff",
+                        "on-secondary-fixed": "#111c2c",
+                        "on-tertiary-fixed": "#301400",
+                        "surface-container-highest": "#d9e3f9",
+                        "surface-container-low": "#f0f3ff",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "secondary-fixed": "#d8e3fa",
+                        "tertiary": "#371800",
+                        "secondary-fixed-dim": "#bcc7dd",
+                        "on-tertiary-container": "#e88532",
+                        "surface-container-high": "#dee8ff",
+                        "outline": "#74777f",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#adc7f7",
+                        "surface-dim": "#d0daf0",
+                        "outline-variant": "#c4c6cf",
+                        "on-primary": "#ffffff",
+                        "background": "#f9f9ff",
+                        "primary": "#002045",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#d9e3f9",
+                        "secondary": "#545f72",
+                        "secondary-container": "#d5e0f7",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#ffdcc5",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "primary-container": "#1a365d",
+                        "surface-bright": "#f9f9ff",
+                        "inverse-surface": "#273141",
+                        "surface-container": "#e7eeff",
+                        "on-primary-fixed": "#001b3c",
+                        "on-secondary-fixed-variant": "#3c475a",
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#43474e",
+                        "on-error": "#ffffff",
+                        "on-surface": "#121c2c",
+                        "inverse-on-surface": "#ebf1ff",
+                        "tertiary-container": "#572900",
+                        "surface-tint": "#455f88"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .blueprint-grid {
+            background-size: 20px 20px;
+            background-image: radial-gradient(circle, #c4c6cf 1px, transparent 1px);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface overflow-hidden h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-[#f9f9ff] dark:bg-[#121c2c] border-none shadow-none z-40">
+<div class="flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#1a365d] dark:text-[#f9f9ff]">menu</span>
+<h1 class="text-xl font-black tracking-tighter text-[#1a365d] dark:text-[#f9f9ff]">2MC GASTRO</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-secondary-container text-on-secondary-container px-3 py-1 text-xs font-bold rounded-lg hover:bg-[#f1f1f1] transition-colors active:scale-95 duration-75 uppercase">
+                    Save project
+                </button>
+<div class="w-8 h-8 flex items-center justify-center bg-primary-container text-on-primary-fixed-variant font-bold text-xs rounded-full">
+                    TR
+                </div>
+</div>
+</div>
+</header>
+<!-- Main Workspace Area -->
+<main class="flex-1 relative flex flex-col overflow-hidden">
+<!-- Status Bar & View Toggles -->
+<div class="px-6 py-3 flex justify-between items-center bg-surface-container-low/80 backdrop-blur-md z-10">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Project Status</span>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim shadow-[0_0_8px_#ffb783]"></span>
+<span class="text-sm font-semibold text-primary">In Development - Revision 2</span>
+</div>
+</div>
+<div class="bg-surface-container-high rounded-lg p-1 flex gap-1">
+<button class="px-4 py-1.5 rounded-sm bg-white shadow-sm text-xs font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">layers</span> 2D
+                </button>
+<button class="px-4 py-1.5 rounded-sm text-xs font-bold text-on-surface-variant hover:bg-white/50 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">view_in_ar</span> 3D
+                </button>
+</div>
+</div>
+<!-- Design Canvas -->
+<div class="flex-1 relative bg-surface-container-lowest blueprint-grid overflow-auto">
+<!-- Floor Plan Simulation -->
+<div class="absolute inset-0 flex items-center justify-center p-8">
+<div class="w-full h-full max-w-md bg-white border-[0.5px] border-outline-variant/30 shadow-2xl relative flex flex-col items-center justify-center overflow-hidden">
+<!-- Technical Image Overlay -->
+<img alt="Technical 2D floor plan" class="absolute inset-0 w-full h-full object-cover opacity-80" data-alt="Technical blueprint of a professional kitchen layout with top-down 2D architectural lines and appliance silhouettes on white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPzpf3CLR_x1hAcsr2VWf5OJ1spKFtIA0yajL1ujVzdws6MGEoGp-1EJeESDT_bkSp99BlIYnx46Ng-_bYeb_ZDyNC6fL631BXCqAGcLVJlF7KzP0UCtEYOgvjdOk2E-eE_q5OGX1G82qlF4gqWl56gYwrxMq_IYIJPDe2RG9yPu6ACAF8jzixx8LJxDrJaymn-3iKov0HJaakRgLFIoTDGge8RJyhA-H-qS4x2F9gDC3nX_6QcOC5LUfh7qchDp2vU8PrtZqvMj4"/>
+<!-- Drag/Drop Active Zone Indicator -->
+<div class="z-10 absolute bottom-12 left-12 right-12 py-4 border-2 border-dashed border-tertiary-fixed-dim/40 rounded-xl bg-tertiary-fixed/5 flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-tertiary-fixed-dim mb-1">add_circle</span>
+<p class="text-[10px] font-bold text-on-tertiary-fixed-variant uppercase tracking-tighter">Drag products here to add</p>
+</div>
+<!-- Floating Measurements -->
+<div class="absolute top-1/4 left-4 h-1/2 border-l border-primary/20 flex flex-col justify-between py-2">
+<span class="text-[9px] font-mono text-primary bg-white px-1">8.42m</span>
+<div class="w-2 h-[1px] bg-primary/20"></div>
+<span class="text-[9px] font-mono text-primary bg-white px-1">4.20m</span>
+</div>
+</div>
+</div>
+<!-- Toolbar Overlay (Floating) -->
+<div class="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-20">
+<div class="bg-inverse-surface p-2 rounded-xl flex flex-col gap-4 shadow-2xl">
+<button class="w-10 h-10 rounded-lg bg-tertiary-fixed-dim text-tertiary flex items-center justify-center hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">pan_tool</span>
+</button>
+<button class="w-10 h-10 rounded-lg text-white/70 hover:bg-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined">architecture</span>
+</button>
+<button class="w-10 h-10 rounded-lg text-white/70 hover:bg-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined">square_foot</span>
+</button>
+<div class="h-[1px] bg-white/10 mx-2"></div>
+<button class="w-10 h-10 rounded-lg text-white/70 hover:bg-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Catalog Quick Add (Bottom Sheet-like) -->
+<div class="absolute bottom-20 left-4 right-4 bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-outline-variant/10 p-4 z-30">
+<div class="flex justify-between items-center mb-3">
+<span class="text-[10px] font-bold text-primary uppercase tracking-widest">Active Studio Catalog</span>
+<span class="material-symbols-outlined text-sm text-on-surface-variant">keyboard_arrow_up</span>
+</div>
+<div class="flex gap-4 overflow-x-auto pb-2">
+<!-- Product Item 1 -->
+<div class="min-w-[100px] bg-surface-container-low rounded-lg p-2 flex flex-col gap-1 active:scale-95 transition-transform">
+<div class="aspect-square bg-white rounded-md mb-1 relative overflow-hidden">
+<img class="w-full h-full object-contain" data-alt="Professional grade stainless steel commercial stove with six burners and oven below, clean studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiW0z5tddLd7POcqkoBnDVvpUXKFxQ8K1Pk5MdNQE7AiaKGFHVJ3-OfgX8At44F20G7OAsLlSs26srcUwSsUUVMAUAht7J_YfOUCGdN_EsawdPUG2r4oTUMs_Qe1nsv9HicoEAOWboEpCSoNCHBsWH0pH0IrWJ5jf1pe4MgTdnFVDLihix7X30gj7X_28K_LME1THKvW1N6Nis4MEgcuvY27LZRMmc7jHzgOUwgToyeQe6njVd_Q_ZBR7aNOZn925AGpWDPJWasN8"/>
+</div>
+<p class="text-[9px] font-bold text-primary truncate">Series 900 Stove</p>
+<p class="text-[8px] text-on-surface-variant">€4,290</p>
+</div>
+<!-- Product Item 2 -->
+<div class="min-w-[100px] bg-surface-container-low rounded-lg p-2 flex flex-col gap-1 active:scale-95 transition-transform">
+<div class="aspect-square bg-white rounded-md mb-1 relative overflow-hidden">
+<img class="w-full h-full object-contain" data-alt="Industrial double-door stainless steel commercial refrigerator, sleek vertical design, professional kitchen equipment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCA9G5OdkrIgr1HqVysdx6Xg7BXZTbpb8v4MxI5exLhFhvuHmUnHF9TwACmeOONwA0FG128O7RzgRLo3cdLor89eBZLEii1MX_MZ9fUDgNLV9FRQOQbPOu6DXZI-iMq6Sb5Cjjspv4e8sCILnEjyTGSzATL0T16xvqN8yBExP4Frkyfot8wx2YPSw0mmR1YjT75qWABhFUUgwR2bq6rdbO8aYzkGSwY6ExGN8oM_M-DgukW2ZPZGnaxfHG8VCct0iIoMrmADx4HHJU"/>
+</div>
+<p class="text-[9px] font-bold text-primary truncate">TurboCool 200</p>
+<p class="text-[8px] text-on-surface-variant">€2,850</p>
+</div>
+<!-- Product Item 3 -->
+<div class="min-w-[100px] bg-surface-container-low rounded-lg p-2 flex flex-col gap-1 active:scale-95 transition-transform">
+<div class="aspect-square bg-white rounded-md mb-1 relative overflow-hidden">
+<img class="w-full h-full object-contain" data-alt="Industrial stainless steel dishwasher for commercial use, front loading, heavy duty construction" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0bvBLjov2AByYsjdIZJJH6KeYlylokVI0u29zRKTZAXs78NfpbBkv5LDnb1Yzqj3nct3raeeWfq9FsiqWouyqM7WUOdh75tLS6GTgdHUfWYiiOD7dUENViwg9LQDkiZOT9JTlS7pRTuR02IHF6vQ4nj6i--vpoWKy7H5Kg_cF5jws0CX6RM9NEBQNyGOFL3WcK039n1HFWINid_a3bDSxbfisTUNXWiMoCg5DeaqqDMxnjl44arQQKUBWigfEMVPuFPk1mLduxss"/>
+</div>
+<p class="text-[9px] font-bold text-primary truncate">EcoWash Pro</p>
+<p class="text-[8px] text-on-surface-variant">€1,980</p>
+</div>
+</div>
+</div>
+<!-- Generate 3D Button -->
+<button class="absolute bottom-6 right-6 z-40 bg-primary text-white pl-4 pr-6 py-3 rounded-full flex items-center gap-3 shadow-2xl hover:scale-105 active:scale-95 transition-all">
+<div class="w-8 h-8 bg-tertiary-fixed-dim rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div class="flex flex-col items-start">
+<span class="text-[10px] font-bold uppercase tracking-wider text-white/60 leading-none">Powered by Meshy AI</span>
+<span class="text-sm font-bold">Generate 3D Model</span>
+</div>
+</button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-white/80 dark:bg-[#273141]/80 backdrop-blur-xl border-t border-[#43474e]/15 shadow-[0_-4px_20px_rgba(0,32,69,0.12)]">
+<div class="flex justify-around items-center px-4 pb-4 pt-2">
+<div class="flex flex-col items-center justify-center text-[#43474e] dark:text-slate-300 p-2 hover:text-[#1a365d] dark:hover:text-white transition-transform active:scale-90">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[11px] font-inter font-medium uppercase tracking-wider mt-1">Catalog</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#1a365d] text-[#ffb783] rounded-sm p-2 transition-transform active:scale-90">
+<span class="material-symbols-outlined">architecture</span>
+<span class="text-[11px] font-inter font-medium uppercase tracking-wider mt-1">Studio</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#43474e] dark:text-slate-300 p-2 hover:text-[#1a365d] dark:hover:text-white transition-transform active:scale-90">
+<span class="material-symbols-outlined">assignment</span>
+<span class="text-[11px] font-inter font-medium uppercase tracking-wider mt-1">Projects</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#43474e] dark:text-slate-300 p-2 hover:text-[#1a365d] dark:hover:text-white transition-transform active:scale-90 relative">
+<span class="material-symbols-outlined">shopping_basket</span>
+<span class="text-[11px] font-inter font-medium uppercase tracking-wider mt-1">Basket</span>
+<span class="absolute top-1 right-1 w-4 h-4 bg-tertiary-fixed-dim text-primary text-[10px] font-bold rounded-full flex items-center justify-center">3</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#43474e] dark:text-slate-300 p-2 hover:text-[#1a365d] dark:hover:text-white transition-transform active:scale-90">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[11px] font-inter font-medium uppercase tracking-wider mt-1">Profile</span>
+</div>
+</div>
+</nav>
+</body></html>

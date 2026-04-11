@@ -2,15 +2,20 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useDiamondStore, type DiamondProduct } from '../../stores/diamondStore';
+import { useCompareStore, type CompareItem } from '../../stores/compareStore';
 import { useCartStore } from '../../stores/cartStore';
+import { useUIStore } from '../../stores/uiStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { useEquipmentStore } from '../../stores/equipmentStore';
 import {
   Search, X, ChevronLeft, ChevronRight, Grid3X3, List,
   Zap, Ruler, Euro, Package, MapPin,
   ShoppingCart, Diamond, Tag, Sparkles, Box,
-  Clock, CheckCircle2, Loader2, Columns3
+  Clock, CheckCircle2, Loader2, Columns3,
+  GitCompareArrows, Trash2, SlidersHorizontal, RotateCcw, ChevronDown,
 } from 'lucide-react';
+import CartQuantityButton from '../../components/CartQuantityButton';
+import Model3DViewer, { has3DModel } from '../../components/Model3DViewer';
 
 function ProductImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [error, setError] = useState(false);
@@ -115,6 +120,7 @@ export default function DiamondPage() {
   const navigate = useNavigate();
   const store = useDiamondStore();
   const { addItem: addToCart, isInCart } = useCartStore();
+  const showPromo = useUIStore(s => s.showPromoProducts);
   const { projects } = useProjectStore();
   const { setFloorPlanItem } = useEquipmentStore();
 
@@ -125,10 +131,37 @@ export default function DiamondPage() {
   } = store;
 
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'table'>('grid');
+  const [view3D, setView3D] = useState<DiamondProduct | null>(null);
   const [detailItem, setDetailItem] = useState<DiamondProduct | null>(null);
   const [projectModalItem, setProjectModalItem] = useState<string | null>(null);
   const [visibleCols, setVisibleCols] = useState<string[]>(DEFAULT_VISIBLE);
   const [showColPicker, setShowColPicker] = useState(false);
+  const [showAllFamilies, setShowAllFamilies] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const { toggleItem: toggleCompareGlobal, isComparing } = useCompareStore();
+
+  const toCompareItem = (p: DiamondProduct): CompareItem => ({
+    id: `diamond-${p.id}`,
+    sku: p.id,
+    name: p.name,
+    brand: 'Diamond',
+    image: p.image_big || p.image_thumb || '',
+    price: p.price_catalog,
+    promoPrice: p.price_promo,
+    stock: p.stock,
+    width_mm: p.width_mm ? Number(p.width_mm) : null,
+    height_mm: p.height_mm ? Number(p.height_mm) : null,
+    depth_mm: null,
+    length_mm: p.length_mm ? Number(p.length_mm) : null,
+    weight: p.weight ? Number(p.weight) : null,
+    kw: p.electric_power_kw,
+    connection: p.electric_connection || null,
+    category: p.product_family_name || null,
+    source: 'diamond',
+  });
+  const toggleCompare = (item: DiamondProduct) => toggleCompareGlobal(toCompareItem(item));
+  const isItemComparing = (id: string) => isComparing(`diamond-${id}`);
 
   useEffect(() => {
     fetchProducts();
@@ -196,138 +229,135 @@ export default function DiamondPage() {
 
   const activeColumns = ALL_COLUMNS.filter(c => visibleCols.includes(c.key));
 
+  const visibleFamilies = showAllFamilies ? familyGroups : familyGroups.slice(0, 12);
+  const hasActiveFilters = filters.search || filters.family || filters.promoOnly || filters.newOnly || filters.inStockOnly || filters.minKw > 0 || filters.maxKw > 0;
+
   return (
-    <div className="flex flex-col gap-6 max-w-[1800px] mx-auto w-full">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-100 rounded-xl">
-            <Diamond size={24} className="text-indigo-600" />
+    <div className="flex flex-col gap-5 max-w-[1800px] mx-auto w-full">
+
+      {/* ─── Hero Header ─── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-500 to-purple-500 rounded-2xl p-6 md:p-8">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/3" />
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3">
+              <Diamond size={28} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-headline font-black text-white tracking-tight">Diamond EU Katalog</h1>
+              <p className="text-white/70 text-sm mt-1">
+                <span className="bg-white/20 rounded-full px-2.5 py-0.5 text-white font-bold text-xs mr-2">{totalCount.toLocaleString()}</span>
+                profesyonel mutfak ekipmanı
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-headline font-black text-on-surface tracking-tight">Diamond EU Katalog</h1>
-            <p className="text-on-surface-variant text-sm mt-1">
-              {totalCount.toLocaleString()} ürün
-              {filters.family ? ` — ${filters.family}` : ''}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-          <div className="relative flex-1 md:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={18} />
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50" size={18} />
             <input
               type="text"
               value={filters.search}
               onChange={(e) => setFilter('search', e.target.value)}
-              placeholder="Ürün ara..."
-              className="w-full bg-surface-container-highest border-none rounded-lg py-2.5 pl-10 pr-10 text-sm focus:ring-2 focus:ring-primary outline-none"
+              placeholder="SKU, ürün adı veya açıklama ara..."
+              className="w-full bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl py-3 pl-11 pr-10 text-sm text-white placeholder-white/50 focus:bg-white/25 focus:ring-2 focus:ring-white/30 outline-none transition-all"
             />
             {filters.search && (
-              <button onClick={() => setFilter('search', '')} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary">
-                <X size={16} />
-              </button>
+              <button onClick={() => setFilter('search', '')} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"><X size={16} /></button>
             )}
           </div>
-          <button
-            onClick={() => setFilter('promoOnly', !filters.promoOnly)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-              filters.promoOnly ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
-            }`}
-          >
-            <Tag size={14} /> Promo
-          </button>
-          <button
-            onClick={() => setFilter('newOnly', !filters.newOnly)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-              filters.newOnly ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
-            }`}
-          >
-            <Sparkles size={14} /> Yeni
-          </button>
-          <button
-            onClick={() => setFilter('inStockOnly', !filters.inStockOnly)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-              filters.inStockOnly ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
-            }`}
-          >
-            <Box size={14} /> Stokta
-          </button>
-          <div className="flex bg-surface-container-highest rounded-lg p-0.5">
-            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`} title="Kart Görünümü">
-              <Grid3X3 size={16} />
-            </button>
-            <button onClick={() => setViewMode('list')} className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`} title="Liste Görünümü">
-              <List size={16} />
-            </button>
-            <button onClick={() => setViewMode('table')} className={`p-2 rounded-md transition-colors ${viewMode === 'table' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`} title="Tam Tablo (Tüm Sütunlar)">
-              <Columns3 size={16} />
-            </button>
-          </div>
-          {viewMode === 'table' && (
-            <div className="relative">
-              <button
-                onClick={() => setShowColPicker(!showColPicker)}
-                className="px-3 py-2 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 transition-all"
-              >
-                Sütunlar ({visibleCols.length}/{ALL_COLUMNS.length})
-              </button>
-              {showColPicker && (
-                <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl shadow-2xl border border-slate-200 z-50 p-3">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs font-bold text-slate-700">Görünür Sütunlar</span>
-                    <div className="flex gap-2">
-                      <button onClick={() => setVisibleCols(ALL_COLUMNS.map(c => c.key))} className="text-[10px] text-indigo-600 font-bold hover:underline">Tümü</button>
-                      <button onClick={() => setVisibleCols(DEFAULT_VISIBLE)} className="text-[10px] text-slate-500 font-bold hover:underline">Varsayılan</button>
-                    </div>
-                  </div>
-                  {['Genel', 'Fiyat', 'Stok', 'Boyut', 'Teknik', 'Kategori', 'Durum', 'Medya'].map(group => (
-                    <div key={group} className="mb-2">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{group}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {ALL_COLUMNS.filter(c => c.group === group).map(col => (
-                          <button
-                            key={col.key}
-                            onClick={() => toggleCol(col.key)}
-                            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
-                              visibleCols.includes(col.key)
-                                ? 'bg-indigo-100 text-indigo-700 border border-indigo-200'
-                                : 'bg-slate-50 text-slate-400 border border-slate-100 hover:bg-slate-100'
-                            }`}
-                          >
-                            {col.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Category Bar */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setFilter('family', '')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            !filters.family ? 'bg-indigo-600 text-white shadow-md' : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
-          }`}
-        >
-          Tümü ({totalCount.toLocaleString()})
+      {/* ─── Toolbar ─── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${showFilters || hasActiveFilters ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-200'}`}>
+          <SlidersHorizontal size={14} /> Filtreler {hasActiveFilters && <span className="bg-indigo-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">!</span>}
         </button>
-        {familyGroups.slice(0, 20).map((fam) => (
-          <button
-            key={fam.name}
-            onClick={() => setFilter('family', filters.family === fam.name ? '' : fam.name)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-              filters.family === fam.name ? 'bg-indigo-600 text-white shadow-md' : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
-            }`}
-          >
-            {fam.name || 'Diğer'} ({fam.count})
+        {showPromo && (
+          <button onClick={() => setFilter('promoOnly', !filters.promoOnly)} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${filters.promoOnly ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-white text-slate-600 border-slate-200 hover:border-amber-200'}`}>
+            <Tag size={14} /> Promo
+          </button>
+        )}
+        <button onClick={() => setFilter('newOnly', !filters.newOnly)} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${filters.newOnly ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-200'}`}>
+          <Sparkles size={14} /> Yeni
+        </button>
+        <button onClick={() => setFilter('inStockOnly', !filters.inStockOnly)} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${filters.inStockOnly ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-200'}`}>
+          <Box size={14} /> Stokta
+        </button>
+
+        <div className="flex bg-white rounded-xl border border-slate-200 p-0.5 ml-auto">
+          {([['grid', Grid3X3], ['list', List], ['table', Columns3]] as const).map(([mode, Icon]) => (
+            <button key={mode} onClick={() => setViewMode(mode as any)} className={`p-2 rounded-lg transition-all ${viewMode === mode ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-400 hover:text-indigo-600'}`}><Icon size={16} /></button>
+          ))}
+        </div>
+
+        {viewMode === 'table' && (
+          <div className="relative">
+            <button onClick={() => setShowColPicker(!showColPicker)} className="px-3 py-2 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 transition-all">
+              Sütunlar ({visibleCols.length}/{ALL_COLUMNS.length})
+            </button>
+            {showColPicker && (
+              <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl shadow-2xl border border-slate-200 z-50 p-3">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs font-bold text-slate-700">Görünür Sütunlar</span>
+                  <div className="flex gap-2">
+                    <button onClick={() => setVisibleCols(ALL_COLUMNS.map(c => c.key))} className="text-[10px] text-indigo-600 font-bold hover:underline">Tümü</button>
+                    <button onClick={() => setVisibleCols(DEFAULT_VISIBLE)} className="text-[10px] text-slate-500 font-bold hover:underline">Varsayılan</button>
+                  </div>
+                </div>
+                {['Genel', 'Fiyat', 'Stok', 'Boyut', 'Teknik', 'Kategori', 'Durum', 'Medya'].map(group => (
+                  <div key={group} className="mb-2">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{group}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {ALL_COLUMNS.filter(c => c.group === group).map(col => (
+                        <button key={col.key} onClick={() => toggleCol(col.key)} className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${visibleCols.includes(col.key) ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'bg-slate-50 text-slate-400 border border-slate-100 hover:bg-slate-100'}`}>{col.label}</button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {hasActiveFilters && (
+          <button onClick={resetFilters} className="flex items-center gap-1 px-3 py-2 text-xs text-red-500 hover:text-red-700 font-medium transition-colors"><RotateCcw size={12} /> Temizle</button>
+        )}
+      </div>
+
+      {/* ─── Filter Panel ─── */}
+      {showFilters && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><Zap size={11} className="text-amber-500" /> Elektrik Gücü (kW)</p>
+            <div className="flex items-center gap-2">
+              <input type="number" min={0} step={0.1} value={filters.minKw || ''} onChange={(e) => setFilter('minKw', Number(e.target.value) || 0)} placeholder="Min kW" className="w-28 bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs focus:ring-2 focus:ring-amber-300 outline-none" />
+              <span className="text-slate-300">—</span>
+              <input type="number" min={0} step={0.1} value={filters.maxKw || ''} onChange={(e) => setFilter('maxKw', Number(e.target.value) || 0)} placeholder="Max kW" className="w-28 bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs focus:ring-2 focus:ring-amber-300 outline-none" />
+              {(filters.minKw > 0 || filters.maxKw > 0) && (
+                <button onClick={() => { setFilter('minKw', 0); setFilter('maxKw', 0); }} className="text-[10px] text-red-500 hover:text-red-700 font-bold flex items-center gap-0.5"><X size={12} /> Temizle</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Category Pills ─── */}
+      <div className="flex flex-wrap gap-1.5 items-center">
+        <button onClick={() => setFilter('family', '')} className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${!filters.family ? 'bg-indigo-500 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'}`}>
+          Tümü
+        </button>
+        {visibleFamilies.map(fam => (
+          <button key={fam.name} onClick={() => setFilter('family', filters.family === fam.name ? '' : fam.name)} className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${filters.family === fam.name ? 'bg-indigo-500 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'}`}>
+            {fam.name || 'Diğer'} <span className="opacity-50">({fam.count})</span>
           </button>
         ))}
+        {familyGroups.length > 12 && (
+          <button onClick={() => setShowAllFamilies(!showAllFamilies)} className="flex items-center gap-1 px-3 py-2 text-xs text-indigo-500 font-bold hover:text-indigo-700 transition-colors">
+            <ChevronDown size={14} className={`transition-transform ${showAllFamilies ? 'rotate-180' : ''}`} />
+            {showAllFamilies ? 'Daha az' : `+${familyGroups.length - 12} daha`}
+          </button>
+        )}
       </div>
 
       {/* Loading */}
@@ -348,46 +378,78 @@ export default function DiamondPage() {
 
       {/* ═══════ GRID VIEW ═══════ */}
       {!isLoading && !error && viewMode === 'grid' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {products.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => setDetailItem(item)}
-              className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 overflow-hidden hover:shadow-lg hover:border-primary/20 transition-all cursor-pointer group relative"
-            >
-              <div className="absolute top-2 left-2 z-10 flex gap-1">
-                {item.is_new && <span className="bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">YENİ</span>}
-                {item.is_good_deal && <span className="bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">FIRSAT</span>}
-                {(item.price_promo ?? 0) > 0 && <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">PROMO</span>}
-              </div>
-              <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={(e) => { e.stopPropagation(); handleShowOnFloorPlan(item.id); }} className="p-1.5 rounded-full bg-white/90 text-on-surface-variant/40 hover:text-primary hover:bg-primary/10 shadow-sm transition-all" title="Kat planına ekle"><MapPin size={12} /></button>
-                <button onClick={(e) => { e.stopPropagation(); addToCart(toCartItem(item)); }} className={`p-1.5 rounded-full shadow-sm transition-all ${isInCart(item.id) ? 'bg-emerald-50 text-emerald-600' : 'bg-white/90 text-on-surface-variant/40 hover:text-emerald-600 hover:bg-emerald-50'}`} title="Sepete ekle"><ShoppingCart size={12} /></button>
-              </div>
-              <ProductImage src={item.image_big || item.image_thumb} alt={item.name} className="w-full h-36 bg-white" />
-              <div className="p-3">
-                <h3 className="text-xs font-bold text-on-surface line-clamp-2 leading-tight mb-1 group-hover:text-primary transition-colors">{item.name}</h3>
-                <p className="text-[10px] text-on-surface-variant font-mono mb-2">{item.id}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-on-surface-variant">{item.product_family_name}</span>
-                  {(item.price_promo ?? 0) > 0 ? (
-                    <div className="text-right">
-                      <span className="text-[9px] text-on-surface-variant line-through mr-1">{formatPrice(item.price_catalog)}</span>
-                      <span className="text-xs font-bold text-red-600">{formatPrice(item.price_promo)}</span>
-                    </div>
-                  ) : (
-                    <span className="text-xs font-bold text-primary">{formatPrice(item.price_catalog)}</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          {products.map((item) => {
+            const inCompare = isItemComparing(item.id);
+            const inCart = isInCart(item.id);
+            return (
+              <div
+                key={item.id}
+                onClick={() => setDetailItem(item)}
+                className={`bg-white rounded-2xl border overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group relative ${inCompare ? 'border-violet-300 ring-2 ring-violet-100' : 'border-slate-200/80'}`}
+              >
+                {/* Badges */}
+                <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+                  {item.is_new && <span className="bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">Yeni</span>}
+                  {item.is_good_deal && <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">Fırsat</span>}
+                  {showPromo && (item.price_promo ?? 0) > 0 && <span className="bg-red-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">Promo</span>}
+                </div>
+
+                {/* Compare checkbox */}
+                <button
+                  onClick={e => { e.stopPropagation(); toggleCompare(item); }}
+                  className={`absolute top-2 right-2 z-10 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${inCompare ? 'bg-violet-500 border-violet-500 text-white' : 'bg-white/80 border-slate-300 text-transparent opacity-0 group-hover:opacity-100'}`}
+                >
+                  {inCompare && <GitCompareArrows size={12} />}
+                </button>
+
+                <div className="bg-gradient-to-b from-slate-50/50 to-white p-2 pt-4 relative">
+                  <ProductImage src={item.image_big || item.image_thumb} alt={item.name} className="w-full h-32 group-hover:scale-105 transition-transform duration-300" />
+                  {has3DModel(item.id) && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setView3D(item); }}
+                      className="absolute bottom-1 right-1 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-600 text-white text-[9px] font-black uppercase tracking-wider shadow-md hover:bg-indigo-700 transition-all"
+                      title="3D Görünümü Aç"
+                    >
+                      <Box size={10} /> 3D
+                    </button>
                   )}
                 </div>
-                {Number(item.electric_power_kw) > 0 && (
-                  <div className="flex items-center gap-1 mt-1.5">
-                    <Zap size={10} className="text-amber-500" />
-                    <span className="text-[10px] text-on-surface-variant">{item.electric_power_kw} kW</span>
+                <div className="p-3 pt-2">
+                  <p className="text-[10px] font-mono text-indigo-400 tracking-wide">{item.id}</p>
+                  <h3 className="text-[11px] font-bold text-on-surface mt-0.5 line-clamp-2 leading-snug">{item.name}</h3>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">{item.product_family_name}</p>
+
+                  <div className="flex items-end justify-between mt-2 pt-2 border-t border-slate-100/80">
+                    <div>
+                      {showPromo && (item.price_promo ?? 0) > 0 ? (
+                        <>
+                          <p className="text-[9px] text-slate-400 line-through">{formatPrice(item.price_catalog)}</p>
+                          <p className="text-base font-black text-red-600 tracking-tight">{formatPrice(item.price_promo)}</p>
+                        </>
+                      ) : (
+                        <p className="text-base font-black text-indigo-600 tracking-tight">{formatPrice(item.price_catalog)}</p>
+                      )}
+                    </div>
+                    {Number(item.electric_power_kw) > 0 && (
+                      <span className="flex items-center gap-0.5 text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md"><Zap size={9} />{item.electric_power_kw}kW</span>
+                    )}
                   </div>
-                )}
+
+                  <div className="flex gap-1.5 mt-2.5">
+                    <CartQuantityButton product={toCartItem(item) as any} size="sm" className="flex-1" />
+                    <button
+                      onClick={e => { e.stopPropagation(); handleShowOnFloorPlan(item.id); }}
+                      className="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all"
+                      title="Kat Planına Ekle"
+                    >
+                      <MapPin size={10} />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -433,7 +495,7 @@ export default function DiamondPage() {
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-center gap-1">
                       <button onClick={(e) => { e.stopPropagation(); handleShowOnFloorPlan(item.id); }} className="p-1.5 rounded-lg text-on-surface-variant/30 hover:text-primary hover:bg-primary/10 transition-all"><MapPin size={14} /></button>
-                      <button onClick={(e) => { e.stopPropagation(); addToCart(toCartItem(item)); }} className={`p-1.5 rounded-lg transition-all ${isInCart(item.id) ? 'text-emerald-600 bg-emerald-50' : 'text-on-surface-variant/30 hover:text-emerald-600 hover:bg-emerald-50'}`}><ShoppingCart size={14} /></button>
+                      <CartQuantityButton product={toCartItem(item) as any} size="sm" />
                     </div>
                   </td>
                 </tr>
@@ -463,7 +525,7 @@ export default function DiamondPage() {
                 <tr key={item.id} onClick={() => setDetailItem(item)} className="hover:bg-surface-container-high/50 cursor-pointer transition-colors">
                   <td className="py-2 px-3 sticky left-0 bg-white z-10">
                     <div className="flex items-center gap-0.5">
-                      <button onClick={(e) => { e.stopPropagation(); addToCart(toCartItem(item)); }} className={`p-1 rounded transition-all ${isInCart(item.id) ? 'text-emerald-600 bg-emerald-50' : 'text-slate-300 hover:text-emerald-600'}`} title="Sepete ekle"><ShoppingCart size={13} /></button>
+                      <CartQuantityButton product={toCartItem(item) as any} size="sm" />
                       <button onClick={(e) => { e.stopPropagation(); handleShowOnFloorPlan(item.id); }} className="p-1 rounded text-slate-300 hover:text-primary transition-all" title="Kat planına ekle"><MapPin size={13} /></button>
                     </div>
                   </td>
@@ -476,7 +538,7 @@ export default function DiamondPage() {
                       <td key={col.key} className="py-2 px-3 text-[11px] text-on-surface whitespace-nowrap max-w-[250px] truncate" title={String(val ?? '')}>
                         {col.key === 'name' ? (
                           <span className="font-bold">{val}</span>
-                        ) : col.key === 'price_promo' && (item.price_promo ?? 0) > 0 ? (
+                        ) : col.key === 'price_promo' && showPromo && (item.price_promo ?? 0) > 0 ? (
                           <span className="text-red-600 font-bold">{formatCellValue(col.key, val)}</span>
                         ) : col.key === 'is_new' && val ? (
                           <span className="bg-emerald-100 text-emerald-700 text-[9px] font-bold px-1.5 py-0.5 rounded">Evet</span>
@@ -538,6 +600,14 @@ export default function DiamondPage() {
             <div className="relative">
               <ProductImage src={detailItem.image_big || detailItem.image_thumb} alt={detailItem.name} className="w-full h-64 bg-white" />
               <button onClick={() => setDetailItem(null)} className="absolute top-3 right-3 bg-black/40 text-white rounded-full p-2 hover:bg-black/60 transition-colors"><X size={18} /></button>
+              {has3DModel(detailItem.id) && (
+                <button
+                  onClick={() => setView3D(detailItem)}
+                  className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-black uppercase tracking-wider shadow-lg hover:bg-indigo-700 transition-all"
+                >
+                  <Box size={14} /> 3D Görünüm
+                </button>
+              )}
               <div className="absolute top-3 left-3 flex gap-1.5">
                 <span className="bg-black/40 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">Diamond</span>
                 {detailItem.is_new && <span className="bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">YENİ</span>}
@@ -571,7 +641,7 @@ export default function DiamondPage() {
                 </div>
                 <div className="bg-surface-container-highest rounded-lg p-3">
                   <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1"><Euro size={14} /> Fiyat</div>
-                  {(detailItem.price_promo ?? 0) > 0 ? (
+                  {showPromo && (detailItem.price_promo ?? 0) > 0 ? (
                     <div>
                       <span className="text-xs text-on-surface-variant line-through mr-2">{formatPrice(detailItem.price_catalog)}</span>
                       <span className="font-bold text-red-600 text-sm">{formatPrice(detailItem.price_promo)}</span>
@@ -610,12 +680,7 @@ export default function DiamondPage() {
 
               {/* Actions */}
               <div className="flex gap-3 pt-2 flex-wrap">
-                <button
-                  onClick={() => addToCart(toCartItem(detailItem))}
-                  className={`flex-1 py-2.5 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all ${isInCart(detailItem.id) ? 'bg-emerald-600 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'}`}
-                >
-                  <ShoppingCart size={16} /> {isInCart(detailItem.id) ? 'Sepette' : 'Sepete Ekle'}
-                </button>
+                <CartQuantityButton product={toCartItem(detailItem) as any} size="md" className="flex-1" />
                 <button
                   onClick={() => { setDetailItem(null); handleShowOnFloorPlan(detailItem.id); }}
                   className="flex-1 py-2.5 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg flex items-center justify-center gap-2 transition-all"
@@ -672,6 +737,15 @@ export default function DiamondPage() {
           </div>
         </div>
       )}
+
+      {view3D && (
+        <Model3DViewer
+          productId={view3D.id}
+          productName={view3D.name}
+          onClose={() => setView3D(null)}
+        />
+      )}
+
     </div>
   );
 }

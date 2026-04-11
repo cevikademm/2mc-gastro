@@ -75,6 +75,8 @@ interface DiamondFilters {
   inStockOnly: boolean;
   minPrice: number;
   maxPrice: number;
+  minKw: number;
+  maxKw: number;
   sortBy: 'name' | 'price_catalog' | 'price_promo' | 'stock';
   sortOrder: 'asc' | 'desc';
 }
@@ -109,6 +111,8 @@ const defaultFilters: DiamondFilters = {
   inStockOnly: false,
   minPrice: 0,
   maxPrice: 0,
+  minKw: 0,
+  maxKw: 0,
   sortBy: 'name',
   sortOrder: 'asc',
 };
@@ -171,6 +175,14 @@ export const useDiamondStore = create<DiamondState>((set, get) => ({
 
       if (filters.maxPrice > 0) {
         query = query.lte('price_catalog', filters.maxPrice);
+      }
+
+      if (filters.minKw > 0) {
+        query = query.gte('electric_power_kw', filters.minKw);
+      }
+
+      if (filters.maxKw > 0) {
+        query = query.lte('electric_power_kw', filters.maxKw);
       }
 
       // Sıralama

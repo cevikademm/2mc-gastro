@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2MC Gastro — Welcome Page Tasarım Şablonları</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #001f65;
+  --primary-container: #183585;
+  --primary-light: #dce1ff;
+  --gold: #C9A227;
+  --gold-light: #F5E6B8;
+  --surface: #f7f9fb;
+  --on-surface: #191c1e;
+  --on-surface-variant: #43474c;
+  --outline: #c4c6cd;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #fff; }
+
+/* ===== TAB NAVIGATION ===== */
+.tab-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: rgba(10,10,10,0.95); backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; gap: 0; padding: 0 24px; height: 64px;
+}
+.tab-logo {
+  font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 18px;
+  color: #fff; margin-right: 32px; letter-spacing: 1px;
+}
+.tab-logo span { color: var(--gold); }
+.tab-btn {
+  background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer;
+  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+  padding: 20px 20px; position: relative; transition: color 0.3s;
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+.tab-btn:hover { color: rgba(255,255,255,0.7); }
+.tab-btn.active { color: #fff; }
+.tab-btn.active::after {
+  content: ''; position: absolute; bottom: 0; left: 20px; right: 20px;
+  height: 2px; background: var(--gold); border-radius: 1px;
+}
+.tab-info {
+  margin-left: auto; font-size: 11px; color: rgba(255,255,255,0.3);
+  font-weight: 500;
+}
+
+/* ===== TEMPLATE CONTAINER ===== */
+.template-container { display: none; padding-top: 64px; }
+.template-container.active { display: block; }
+
+/* ===== PHONE MOCKUP ===== */
+.phone-frame {
+  width: 375px; height: 812px; border-radius: 44px;
+  border: 8px solid #1a1a1a; overflow: hidden; position: relative;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+  margin: 60px auto;
+}
+.phone-frame::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 28px; background: #1a1a1a; border-radius: 0 0 16px 16px; z-index: 10;
+}
+
+/* ===== DESKTOP PREVIEW ===== */
+.desktop-frame {
+  width: 100%; max-width: 1200px; margin: 60px auto;
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+/* ===== TEMPLATE HEADER ===== */
+.tmpl-header {
+  text-align: center; padding: 80px 24px 40px;
+}
+.tmpl-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--gold); color: #000; font-size: 11px; font-weight: 700;
+  padding: 6px 14px; border-radius: 20px; margin-bottom: 20px;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.tmpl-header h2 {
+  font-family: 'Space Grotesk', sans-serif; font-size: 42px; font-weight: 900;
+  line-height: 1.1; margin-bottom: 12px;
+}
+.tmpl-header p {
+  color: rgba(255,255,255,0.5); font-size: 15px; max-width: 600px; margin: 0 auto;
+  line-height: 1.6;
+}
+.tmpl-tags { display: flex; gap: 8px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+.tmpl-tag {
+  font-size: 11px; padding: 4px 12px; border-radius: 6px;
+  background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); font-weight: 500;
+}
+
+/* ===== FEATURES LIST ===== */
+.features-strip {
+  display: flex; gap: 16px; padding: 0 24px; max-width: 1200px; margin: 0 auto 60px;
+  flex-wrap: wrap; justify-content: center;
+}
+.feat-card {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px; padding: 20px; flex: 1; min-width: 220px; max-width: 280px;
+}
+.feat-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.feat-card p { font-size: 12px; color: rgba(255,255,255,0.4); line-height: 1.5; }
+
+/* ========================================
+   TEMPLATE A: LUXURY SHOWROOM
+   ======================================== */
+.tpl-a { background: #050508; }
+.tpl-a .hero {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; position: relative;
+  overflow: hidden;
+}
+.tpl-a .hero-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(201,162,39,0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 80%, rgba(0,31,101,0.15) 0%, transparent 50%);
+}
+.tpl-a .hero-grid {
+  position: absolute; inset: 0; opacity: 0.03;
+  background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.tpl-a .hero-content { position: relative; z-index: 2; text-align: center; padding: 40px; }
+.tpl-a .logo-mark {
+  width: 80px; height: 80px; border-radius: 24px; margin: 0 auto 32px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 20px 60px rgba(0,31,101,0.4);
+}
+.tpl-a .logo-mark svg { width: 40px; height: 40px; fill: none; stroke: #fff; stroke-width: 1.5; }
+.tpl-a h1 {
+  font-family: 'Space Grotesk', sans-serif; font-size: 72px; font-weight: 900;
+  letter-spacing: -2px; line-height: 0.95; margin-bottom: 8px;
+  background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.6) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.tpl-a .subtitle {
+  font-size: 14px; color: var(--gold); font-weight: 600; letter-spacing: 6px;
+  text-transform: uppercase; margin-bottom: 32px;
+}
+.tpl-a .hero-desc {
+  font-size: 18px; color: rgba(255,255,255,0.4); max-width: 480px;
+  margin: 0 auto 48px; line-height: 1.7; font-weight: 300;
+}
+.tpl-a .cta-group { display: flex; gap: 16px; justify-content: center; }
+.tpl-a .cta-primary {
+  background: linear-gradient(135deg, var(--gold) 0%, #D4AF37 100%);
+  color: #000; border: none; padding: 16px 40px; border-radius: 12px;
+  font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.tpl-a .cta-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(201,162,39,0.3); }
+.tpl-a .cta-secondary {
+  background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1);
+  padding: 16px 40px; border-radius: 12px; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.tpl-a .cta-secondary:hover { background: rgba(255,255,255,0.1); }
+.tpl-a .stats-bar {
+  display: flex; gap: 48px; justify-content: center; margin-top: 64px;
+  padding-top: 32px; border-top: 1px solid rgba(255,255,255,0.06);
+}
+.tpl-a .stat-item { text-align: center; }
+.tpl-a .stat-num {
+  font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 900;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.tpl-a .stat-label { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 4px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; }
+
+/* A - Category showcase */
+.tpl-a .categories {
+  padding: 80px 40px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  max-width: 1100px; margin: 0 auto;
+}
+.tpl-a .cat-card {
+  aspect-ratio: 1; border-radius: 16px; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: all 0.3s;
+}
+.tpl-a .cat-card:hover { border-color: var(--gold); transform: translateY(-4px); }
+.tpl-a .cat-card .cat-icon { font-size: 48px; position: absolute; top: 20px; left: 20px; opacity: 0.6; }
+.tpl-a .cat-card .cat-name {
+  position: absolute; bottom: 16px; left: 16px; font-size: 13px; font-weight: 700;
+}
+.tpl-a .cat-card .cat-count {
+  position: absolute; bottom: 16px; right: 16px; font-size: 11px;
+  color: var(--gold); font-weight: 600;
+}
+
+/* ========================================
+   TEMPLATE B: SMART DASHBOARD
+   ======================================== */
+.tpl-b { background: var(--surface); color: var(--on-surface); }
+.tpl-b .hero {
+  min-height: 100vh; display: flex; flex-direction: column;
+  padding: 120px 40px 60px; max-width: 1200px; margin: 0 auto;
+}
+.tpl-b .hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 60px; }
+.tpl-b .hero-left { flex: 1; max-width: 560px; }
+.tpl-b .hero-right {
+  flex: 1; max-width: 520px;
+  background: #fff; border-radius: 20px; padding: 32px;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+.tpl-b .brand-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--primary); color: #fff; font-size: 12px; font-weight: 700;
+  padding: 8px 16px; border-radius: 24px; margin-bottom: 24px;
+}
+.tpl-b h1 {
+  font-family: 'Space Grotesk', sans-serif; font-size: 52px; font-weight: 900;
+  color: var(--primary); line-height: 1.05; margin-bottom: 16px; letter-spacing: -1px;
+}
+.tpl-b .hero-desc { font-size: 16px; color: var(--on-surface-variant); line-height: 1.7; margin-bottom: 32px; }
+
+/* B - Search */
+.tpl-b .search-box {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff; border: 2px solid rgba(0,0,0,0.06);
+  border-radius: 16px; padding: 6px 6px 6px 20px; margin-bottom: 24px;
+  transition: border-color 0.3s;
+}
+.tpl-b .search-box:focus-within { border-color: var(--primary); }
+.tpl-b .search-box input {
+  flex: 1; border: none; outline: none; font-size: 15px;
+  font-family: 'Inter', sans-serif; background: transparent; color: var(--on-surface);
+}
+.tpl-b .search-box input::placeholder { color: var(--outline); }
+.tpl-b .search-btn {
+  background: var(--primary); color: #fff; border: none;
+  padding: 12px 24px; border-radius: 12px; font-size: 13px;
+  font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+
+/* B - Quick categories */
+.tpl-b .quick-cats {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 32px;
+}
+.tpl-b .qcat {
+  padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600;
+  background: rgba(0,31,101,0.05); color: var(--primary); cursor: pointer;
+  transition: all 0.2s; border: 1px solid transparent;
+}
+.tpl-b .qcat:hover { background: rgba(0,31,101,0.1); border-color: var(--primary); }
+
+/* B - Stats grid in right panel */
+.tpl-b .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.tpl-b .stat-box {
+  background: var(--surface); border-radius: 12px; padding: 16px; text-align: center;
+}
+.tpl-b .stat-box .num {
+  font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 900;
+  color: var(--primary);
+}
+.tpl-b .stat-box .lbl { font-size: 11px; color: var(--on-surface-variant); margin-top: 4px; font-weight: 600; }
+
+/* B - Feature pills */
+.tpl-b .feat-pills { display: flex; flex-direction: column; gap: 12px; }
+.tpl-b .feat-pill {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border-radius: 12px; padding: 14px 16px;
+  cursor: pointer; transition: all 0.2s;
+}
+.tpl-b .feat-pill:hover { background: rgba(0,31,101,0.05); }
+.tpl-b .feat-pill .fp-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--primary); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.tpl-b .feat-pill .fp-icon svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2; }
+.tpl-b .feat-pill h4 { font-size: 13px; font-weight: 700; color: var(--on-surface); }
+.tpl-b .feat-pill p { font-size: 11px; color: var(--on-surface-variant); margin-top: 2px; }
+
+/* B - Bottom category bar */
+.tpl-b .cat-bar {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;
+  padding: 40px; max-width: 1200px; margin: 0 auto;
+}
+.tpl-b .cat-tile {
+  background: #fff; border-radius: 16px; padding: 24px 16px; text-align: center;
+  border: 1px solid rgba(0,0,0,0.04); cursor: pointer; transition: all 0.2s;
+}
+.tpl-b .cat-tile:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+.tpl-b .cat-tile .ct-icon { font-size: 32px; margin-bottom: 8px; }
+.tpl-b .cat-tile .ct-name { font-size: 12px; font-weight: 700; color: var(--on-surface); }
+.tpl-b .cat-tile .ct-count { font-size: 11px; color: var(--on-surface-variant); margin-top: 2px; }
+
+/* ========================================
+   TEMPLATE C: INTERACTIVE CATALOG
+   ======================================== */
+.tpl-c { background: #0c0f1a; }
+.tpl-c .hero {
+  min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr;
+  max-width: 1200px; margin: 0 auto; padding: 100px 40px; gap: 60px; align-items: center;
+}
+.tpl-c .hero-left { }
+.tpl-c .hero-right {
+  position: relative; aspect-ratio: 1; border-radius: 24px;
+  background: linear-gradient(135deg, rgba(0,31,101,0.2) 0%, rgba(201,162,39,0.1) 100%);
+  border: 1px solid rgba(255,255,255,0.06); display: flex;
+  align-items: center; justify-content: center; overflow: hidden;
+}
+.tpl-c .model-placeholder {
+  width: 200px; height: 200px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(201,162,39,0.15) 0%, transparent 70%);
+  display: flex; align-items: center; justify-content: center;
+  animation: pulse-c 3s ease-in-out infinite;
+}
+@keyframes pulse-c { 0%,100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } }
+.tpl-c .model-placeholder svg { width: 80px; height: 80px; stroke: var(--gold); fill: none; stroke-width: 1; }
+.tpl-c .model-badge {
+  position: absolute; bottom: 20px; left: 20px; right: 20px;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(10px);
+  border-radius: 12px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+}
+.tpl-c .model-badge span { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 600; }
+.tpl-c .model-badge .rotate-hint { color: var(--gold); font-size: 11px; }
+.tpl-c .tag-line {
+  display: inline-block; font-size: 12px; font-weight: 700; color: var(--gold);
+  letter-spacing: 4px; text-transform: uppercase; margin-bottom: 20px;
+  padding-bottom: 12px; border-bottom: 1px solid rgba(201,162,39,0.3);
+}
+.tpl-c h1 {
+  font-family: 'Space Grotesk', sans-serif; font-size: 56px; font-weight: 900;
+  line-height: 1.05; margin-bottom: 20px; letter-spacing: -1px;
+}
+.tpl-c .hero-desc {
+  font-size: 16px; color: rgba(255,255,255,0.4); line-height: 1.7; margin-bottom: 32px;
+}
+.tpl-c .action-row { display: flex; gap: 12px; margin-bottom: 40px; }
+.tpl-c .btn-gold {
+  background: var(--gold); color: #000; border: none; padding: 14px 32px;
+  border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.tpl-c .btn-outline {
+  background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.15);
+  padding: 14px 32px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+
+/* C - Horizontal scroll categories */
+.tpl-c .hscroll-section { padding: 0 40px 80px; max-width: 1200px; margin: 0 auto; }
+.tpl-c .hscroll-title {
+  font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700;
+  margin-bottom: 24px;
+}
+.tpl-c .hscroll-track {
+  display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.tpl-c .hscroll-card {
+  min-width: 200px; background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06); border-radius: 16px;
+  padding: 24px; cursor: pointer; transition: all 0.3s; flex-shrink: 0;
+}
+.tpl-c .hscroll-card:hover { border-color: var(--gold); background: rgba(201,162,39,0.05); }
+.tpl-c .hscroll-card .hc-icon { font-size: 36px; margin-bottom: 12px; }
+.tpl-c .hscroll-card .hc-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.tpl-c .hscroll-card .hc-count { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+/* C - Trust bar */
+.tpl-c .trust-bar {
+  display: flex; gap: 32px; padding: 24px 0; border-top: 1px solid rgba(255,255,255,0.06);
+}
+.tpl-c .trust-item { display: flex; align-items: center; gap: 8px; }
+.tpl-c .trust-item svg { width: 20px; height: 20px; stroke: var(--gold); fill: none; stroke-width: 2; }
+.tpl-c .trust-item span { font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 500; }
+
+/* ========================================
+   TEMPLATE D: MINIMAL PROFESSIONAL
+   ======================================== */
+.tpl-d { background: #fafbfc; color: #111; }
+.tpl-d .hero {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 120px 40px 80px; position: relative;
+}
+.tpl-d .hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 400px;
+  background: linear-gradient(180deg, rgba(0,31,101,0.03) 0%, transparent 100%);
+}
+.tpl-d .logo-minimal {
+  width: 56px; height: 56px; border-radius: 16px; margin-bottom: 32px;
+  background: var(--primary); display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.tpl-d .logo-minimal svg { width: 28px; height: 28px; stroke: #fff; fill: none; stroke-width: 2; }
+.tpl-d h1 {
+  font-family: 'Space Grotesk', sans-serif; font-size: 64px; font-weight: 900;
+  color: var(--primary); line-height: 1.05; margin-bottom: 16px;
+  letter-spacing: -2px; position: relative;
+}
+.tpl-d .hero-sub {
+  font-size: 18px; color: #666; max-width: 500px; line-height: 1.7;
+  margin-bottom: 40px; font-weight: 400; position: relative;
+}
+.tpl-d .cta-row { display: flex; gap: 12px; position: relative; }
+.tpl-d .btn-solid {
+  background: var(--primary); color: #fff; border: none;
+  padding: 16px 36px; border-radius: 12px; font-size: 14px;
+  font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.tpl-d .btn-solid:hover { background: var(--primary-container); }
+.tpl-d .btn-ghost {
+  background: transparent; color: var(--primary); border: 1.5px solid rgba(0,31,101,0.15);
+  padding: 16px 36px; border-radius: 12px; font-size: 14px;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.tpl-d .btn-ghost:hover { border-color: var(--primary); background: rgba(0,31,101,0.03); }
+
+/* D - Features section */
+.tpl-d .features-section {
+  max-width: 960px; margin: 0 auto; padding: 0 40px 80px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+}
+.tpl-d .feat-box {
+  padding: 32px; border-radius: 16px; background: #fff;
+  border: 1px solid rgba(0,0,0,0.04); transition: all 0.3s;
+}
+.tpl-d .feat-box:hover { border-color: var(--primary); box-shadow: 0 8px 24px rgba(0,31,101,0.06); }
+.tpl-d .feat-box .fb-icon {
+  width: 44px; height: 44px; border-radius: 12px; margin-bottom: 16px;
+  background: var(--primary-light); display: flex; align-items: center; justify-content: center;
+}
+.tpl-d .feat-box .fb-icon svg { width: 22px; height: 22px; stroke: var(--primary); fill: none; stroke-width: 2; }
+.tpl-d .feat-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; color: var(--on-surface); }
+.tpl-d .feat-box p { font-size: 13px; color: #666; line-height: 1.6; }
+
+/* D - Metrics band */
+.tpl-d .metrics-band {
+  max-width: 800px; margin: 0 auto 60px; padding: 32px;
+  background: var(--primary); border-radius: 20px;
+  display: flex; justify-content: space-around; color: #fff;
+}
+.tpl-d .metric { text-align: center; }
+.tpl-d .metric .m-num {
+  font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 900;
+}
+.tpl-d .metric .m-lbl { font-size: 12px; opacity: 0.6; margin-top: 4px; }
+
+/* D - Brands */
+.tpl-d .brands-section {
+  max-width: 600px; margin: 0 auto; padding: 0 40px 80px; text-align: center;
+}
+.tpl-d .brands-title { font-size: 13px; color: #999; font-weight: 600; margin-bottom: 20px; letter-spacing: 2px; text-transform: uppercase; }
+.tpl-d .brand-logos { display: flex; gap: 32px; justify-content: center; align-items: center; }
+.tpl-d .brand-logo {
+  font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 900;
+  color: #ccc; letter-spacing: 1px;
+}
+
+/* ===== COMPARISON TABLE ===== */
+.compare-section {
+  max-width: 1000px; margin: 40px auto; padding: 40px;
+}
+.compare-section h3 {
+  font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700;
+  margin-bottom: 24px; text-align: center;
+}
+.compare-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.compare-table th {
+  text-align: left; padding: 12px 16px; font-weight: 700; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 1px;
+  border-bottom: 2px solid rgba(255,255,255,0.1);
+}
+.compare-table td {
+  padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.compare-table .check { color: #22c55e; font-weight: 700; }
+.compare-table .cross { color: #ef4444; opacity: 0.5; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tpl-a h1 { font-size: 42px; }
+  .tpl-a .stats-bar { flex-direction: column; gap: 24px; }
+  .tpl-a .categories { grid-template-columns: 1fr 1fr; }
+  .tpl-b .hero-top { flex-direction: column; }
+  .tpl-b .cat-bar { grid-template-columns: repeat(3, 1fr); }
+  .tpl-c .hero { grid-template-columns: 1fr; }
+  .tpl-d h1 { font-size: 42px; }
+  .tpl-d .features-section { grid-template-columns: 1fr; }
+  .tpl-d .metrics-band { flex-direction: column; gap: 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <div class="tab-logo">2MC <span>GASTRO</span></div>
+  <button class="tab-btn active" onclick="showTab('a')">A — Luxury Showroom</button>
+  <button class="tab-btn" onclick="showTab('b')">B — Smart Dashboard</button>
+  <button class="tab-btn" onclick="showTab('c')">C — Interactive Catalog</button>
+  <button class="tab-btn" onclick="showTab('d')">D — Minimal Professional</button>
+  <span class="tab-info">Karma birleştirme için favori elementleri not alın</span>
+</div>
+
+<!-- ===================== TEMPLATE A ===================== -->
+<div id="tmpl-a" class="template-container active">
+  <div class="tmpl-header">
+    <div class="tmpl-badge">★ ŞABLON A</div>
+    <h2>Luxury Showroom</h2>
+    <p>Apple/Tesla ilhamıyla premium, karanlık tema, altın aksanlar. Lüks marka deneyimi — rakiplerden tamamen farklı bir segment hissi.</p>
+    <div class="tmpl-tags">
+      <span class="tmpl-tag">Dark Theme</span>
+      <span class="tmpl-tag">Gold Accents</span>
+      <span class="tmpl-tag">Immersive Hero</span>
+      <span class="tmpl-tag">Premium Feel</span>
+    </div>
+  </div>
+  <div class="features-strip">
+    <div class="feat-card"><h4>✦ Full-Screen Hero</h4><p>Karanlık arka plan + radial gradient ile sinematik giriş deneyimi</p></div>
+    <div class="feat-card"><h4>✦ Gold Aksan Renk</h4><p>Altın tonları ile premium marka algısı — BigGastro/GGM'de yok</p></div>
+    <div class="feat-card"><h4>✦ Canlı İstatistikler</h4><p>6.300+ ürün, 17 kategori sayıları animasyonlu sayaçlarla</p></div>
+    <div class="feat-card"><h4>✦ Kategori Grid</h4><p>Hover efektli kart grid ile doğrudan kategoriye erişim</p></div>
+  </div>
+
+  <!-- ACTUAL TEMPLATE PREVIEW -->
+  <div class="desktop-frame">
+    <div class="tpl-a">
+      <div class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-grid"></div>
+        <div class="hero-content">
+          <div class="logo-mark">
+            <svg viewBox="0 0 24 24"><path d="M6 13.87A4 4 0 0 1 7.41 6.6a5.11 5.11 0 0 1 .22-1.94 5 5 0 0 1 9.06 1.1 3.5 3.5 0 0 1 3.58 3.57 3.37 3.37 0 0 1-.32 1.48A4 4 0 0 1 18 17.87V18H6v-.13z"/><line x1="8" y1="21" x2="8" y2="18"/><line x1="12" y1="21" x2="12" y2="18"/><line x1="16" y1="21" x2="16" y2="18"/></svg>
+          </div>
+          <h1>2MC GASTRO</h1>
+          <div class="subtitle">Profesyonel Mutfak Ekipmanları</div>
+          <div class="hero-desc">Endüstriyel mutfak tasarımından ekipman seçimine, tek platformda profesyonel çözümler. 3D modeller, akıllı BOM hesaplayıcı ve proje yönetimi.</div>
+          <div class="cta-group">
+            <button class="cta-primary">Keşfetmeye Başla →</button>
+            <button class="cta-secondary">Katalog İncele</button>
+          </div>
+          <div class="stats-bar">
+            <div class="stat-item">
+              <div class="stat-num">6.316</div>
+              <div class="stat-label">Profesyonel Ürün</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num">17</div>
+              <div class="stat-label">Kategori</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num">3D</div>
+              <div class="stat-label">Model Görüntüleme</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num">3</div>
+              <div class="stat-label">Dil Desteği</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="categories">
+        <div class="cat-card"><div class="cat-icon">❄️</div><div class="cat-name">Soğutma</div><div class="cat-count">1.775</div></div>
+        <div class="cat-card"><div class="cat-icon">🔥</div><div class="cat-name">Pişirme</div><div class="cat-count">1.439</div></div>
+        <div class="cat-card"><div class="cat-icon">🧹</div><div class="cat-name">Hazırlık & Hijyen</div><div class="cat-count">615</div></div>
+        <div class="cat-card"><div class="cat-icon">🍕</div><div class="cat-name">Pizza & Pasta</div><div class="cat-count">401</div></div>
+        <div class="cat-card"><div class="cat-icon">🍽️</div><div class="cat-name">Self Servis</div><div class="cat-count">499</div></div>
+        <div class="cat-card"><div class="cat-icon">⚡</div><div class="cat-name">Dinamik Hazırlık</div><div class="cat-count">359</div></div>
+        <div class="cat-card"><div class="cat-icon">🧊</div><div class="cat-name">Dondurma</div><div class="cat-count">82</div></div>
+        <div class="cat-card"><div class="cat-icon">☕</div><div class="cat-name">Kahve & Çay</div><div class="cat-count">95</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TEMPLATE B ===================== -->
+<div id="tmpl-b" class="template-container">
+  <div class="tmpl-header">
+    <div class="tmpl-badge">★ ŞABLON B</div>
+    <h2>Smart Dashboard</h2>
+    <p>Shopify/Notion ilhamıyla arama öncelikli, veri odaklı, temiz SaaS arayüzü. Kullanıcıyı hemen işe yönlendirir.</p>
+    <div class="tmpl-tags">
+      <span class="tmpl-tag">Light Theme</span>
+      <span class="tmpl-tag">Search-First</span>
+      <span class="tmpl-tag">Data-Driven</span>
+      <span class="tmpl-tag">SaaS Style</span>
+    </div>
+  </div>
+  <div class="features-strip">
+    <div class="feat-card"><h4>✦ Akıllı Arama</h4><p>Hero alanına entegre instant search — kullanıcıyı doğrudan ürüne bağlar</p></div>
+    <div class="feat-card"><h4>✦ Split Layout</h4><p>Sol: mesaj + arama, Sağ: istatistik paneli — bilgi dengesi</p></div>
+    <div class="feat-card"><h4>✦ Hızlı Kategori</h4><p>Pill/chip formatında hızlı kategori erişimi</p></div>
+    <div class="feat-card"><h4>✦ Özellik Kartları</h4><p>3D, Tasarım, BOM özellikleri kompakt kartlarda</p></div>
+  </div>
+
+  <div class="desktop-frame">
+    <div class="tpl-b">
+      <div class="hero">
+        <div class="hero-top">
+          <div class="hero-left">
+            <div class="brand-pill">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 13.87A4 4 0 0 1 7.41 6.6a5.11 5.11 0 0 1 .22-1.94 5 5 0 0 1 9.06 1.1 3.5 3.5 0 0 1 3.58 3.57 3.37 3.37 0 0 1-.32 1.48A4 4 0 0 1 18 17.87V18H6v-.13z"/></svg>
+              2MC GASTRO
+            </div>
+            <h1>Profesyonel Mutfağınızı Tasarlayın</h1>
+            <div class="hero-desc">6.300+ ürün arasından arayın, 3D modellerle görüntüleyin, akıllı BOM ile malzeme listenizi oluşturun.</div>
+            <div class="search-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="Ürün, kategori veya marka ara..." />
+              <button class="search-btn">Ara</button>
+            </div>
+            <div class="quick-cats">
+              <span class="qcat">❄️ Soğutma</span>
+              <span class="qcat">🔥 Pişirme</span>
+              <span class="qcat">🍕 Pizza</span>
+              <span class="qcat">☕ Kahve</span>
+              <span class="qcat">🧹 Hijyen</span>
+              <span class="qcat">🍽️ Self Servis</span>
+            </div>
+          </div>
+          <div class="hero-right">
+            <div class="stat-grid">
+              <div class="stat-box"><div class="num">6.316</div><div class="lbl">Toplam Ürün</div></div>
+              <div class="stat-box"><div class="num">17</div><div class="lbl">Kategori</div></div>
+              <div class="stat-box"><div class="num">5</div><div class="lbl">Marka</div></div>
+              <div class="stat-box"><div class="num">3</div><div class="lbl">Dil</div></div>
+            </div>
+            <div class="feat-pills">
+              <div class="feat-pill">
+                <div class="fp-icon"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+                <div><h4>3D Model Görüntüleme</h4><p>Ürünleri 360° döndürün</p></div>
+              </div>
+              <div class="feat-pill">
+                <div class="fp-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+                <div><h4>Tasarım Stüdyosu</h4><p>Mutfak planı çizin</p></div>
+              </div>
+              <div class="feat-pill">
+                <div class="fp-icon"><svg viewBox="0 0 24 24"><path d="M9 11H3v10h6V11z"/><path d="M21 3h-6v18h6V3z"/><path d="M15 7H9v14h6V7z"/></svg></div>
+                <div><h4>BOM Hesaplayıcı</h4><p>Otomatik malzeme listesi</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cat-bar">
+        <div class="cat-tile"><div class="ct-icon">❄️</div><div class="ct-name">Soğutma</div><div class="ct-count">1.775 ürün</div></div>
+        <div class="cat-tile"><div class="ct-icon">🔥</div><div class="ct-name">Pişirme</div><div class="ct-count">1.439 ürün</div></div>
+        <div class="cat-tile"><div class="ct-icon">🧹</div><div class="ct-name">Hazırlık</div><div class="ct-count">615 ürün</div></div>
+        <div class="cat-tile"><div class="ct-icon">🍕</div><div class="ct-name">Pizza & Pasta</div><div class="ct-count">401 ürün</div></div>
+        <div class="cat-tile"><div class="ct-icon">🍽️</div><div class="ct-name">Self Servis</div><div class="ct-count">499 ürün</div></div>
+        <div class="cat-tile"><div class="ct-icon">☕</div><div class="ct-name">Kahve & Çay</div><div class="ct-count">95 ürün</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TEMPLATE C ===================== -->
+<div id="tmpl-c" class="template-container">
+  <div class="tmpl-header">
+    <div class="tmpl-badge">★ ŞABLON C</div>
+    <h2>Interactive Catalog</h2>
+    <p>3D vitrin odaklı, ürün-öncelikli tasarım. Yatay kaydırmalı kategoriler ve interaktif model gösterimi ile e-ticaret deneyimi.</p>
+    <div class="tmpl-tags">
+      <span class="tmpl-tag">3D Showcase</span>
+      <span class="tmpl-tag">Split Hero</span>
+      <span class="tmpl-tag">Horizontal Scroll</span>
+      <span class="tmpl-tag">Product-First</span>
+    </div>
+  </div>
+  <div class="features-strip">
+    <div class="feat-card"><h4>✦ 3D Model Vitrin</h4><p>Hero'nun yarısı 3D model alanı — rakiplerde bulunmayan benzersiz avantaj</p></div>
+    <div class="feat-card"><h4>✦ Horizontal Scroll</h4><p>Netflix tarzı yatay kaydırmalı kategori keşfi</p></div>
+    <div class="feat-card"><h4>✦ Güven Barı</h4><p>Marka logoları + sertifika ikonları ile profesyonel güvenilirlik</p></div>
+    <div class="feat-card"><h4>✦ Dual CTA</h4><p>Keşfet + Katalog İncele iki yönlü kullanıcı akışı</p></div>
+  </div>
+
+  <div class="desktop-frame">
+    <div class="tpl-c">
+      <div class="hero">
+        <div class="hero-left">
+          <div class="tag-line">Profesyonel Mutfak Çözümleri</div>
+          <h1>Mutfağınızı<br>3D Olarak<br>Tasarlayın</h1>
+          <div class="hero-desc">6.300+ profesyonel ekipman, gerçek zamanlı 3D görüntüleme ve akıllı proje yönetimi ile endüstriyel mutfak tasarımının geleceği.</div>
+          <div class="action-row">
+            <button class="btn-gold">Ücretsiz Başla →</button>
+            <button class="btn-outline">3D Demo İzle</button>
+          </div>
+          <div class="trust-bar">
+            <div class="trust-item">
+              <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>SSL Güvenlik</span>
+            </div>
+            <div class="trust-item">
+              <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span>Diamond Yetkili</span>
+            </div>
+            <div class="trust-item">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <span>TR / EN / DE</span>
+            </div>
+          </div>
+        </div>
+        <div class="hero-right">
+          <div class="model-placeholder">
+            <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          </div>
+          <div class="model-badge">
+            <span>🧊 Buzdolabı — Diamond Gold</span>
+            <span class="rotate-hint">↻ Döndürmek için sürükle</span>
+          </div>
+        </div>
+      </div>
+      <div class="hscroll-section">
+        <div class="hscroll-title">Kategorileri Keşfet</div>
+        <div class="hscroll-track">
+          <div class="hscroll-card"><div class="hc-icon">❄️</div><div class="hc-name">Soğutma</div><div class="hc-count">1.775 ürün</div></div>
+          <div class="hscroll-card"><div class="hc-icon">🔥</div><div class="hc-name">Pişirme</div><div class="hc-count">1.439 ürün</div></div>
+          <div class="hscroll-card"><div class="hc-icon">🧹</div><div class="hc-name">Hazırlık & Hijyen</div><div class="hc-count">615 ürün</div></div>
+          <div class="hscroll-card"><div class="hc-icon">🍽️</div><div class="hc-name">Self Servis</div><div class="hc-count">499 ürün</div></div>
+          <div class="hscroll-card"><div class="hc-icon">🍕</div><div class="hc-name">Pizza & Pasta</div><div class="hc-count">401 ürün</div></div>
+          <div class="hscroll-card"><div class="hc-icon">⚡</div><div class="hc-name">Dinamik Hazırlık</div><div class="hc-count">359 ürün</div></div>
+          <div class="hscroll-card"><div class="hc-icon">🫧</div><div class="hc-name">Bulaşık</div><div class="hc-count">273 ürün</div></div>
+          <div class="hscroll-card"><div class="hc-icon">🍞</div><div class="hc-name">Fırın</div><div class="hc-count">162 ürün</div></div>
+          <div class="hscroll-card"><div class="hc-icon">🧊</div><div class="hc-name">Dondurma</div><div class="hc-count">82 ürün</div></div>
+          <div class="hscroll-card"><div class="hc-icon">☕</div><div class="hc-name">Kahve & Çay</div><div class="hc-count">95 ürün</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TEMPLATE D ===================== -->
+<div id="tmpl-d" class="template-container">
+  <div class="tmpl-header">
+    <div class="tmpl-badge">★ ŞABLON D</div>
+    <h2>Minimal Professional</h2>
+    <p>Stripe/Linear/Notion ilhamıyla ultra temiz, bol beyaz alan, güven odaklı profesyonel tasarım. Basitlik = güç.</p>
+    <div class="tmpl-tags">
+      <span class="tmpl-tag">Ultra Clean</span>
+      <span class="tmpl-tag">Whitespace</span>
+      <span class="tmpl-tag">Trust Signals</span>
+      <span class="tmpl-tag">Stripe Style</span>
+    </div>
+  </div>
+  <div class="features-strip">
+    <div class="feat-card"><h4>✦ Minimal Hero</h4><p>Sadece logo + başlık + 2 buton — sadelik güç verir</p></div>
+    <div class="feat-card"><h4>✦ Özellik Kartları</h4><p>3 sütun grid ile temiz özellik sunumu</p></div>
+    <div class="feat-card"><h4>✦ Metrik Bandı</h4><p>Koyu renkli bant üzerinde etkileyici sayılar</p></div>
+    <div class="feat-card"><h4>✦ Marka Barı</h4><p>Diamond, Diverso, CombiSteel logoları ile güven</p></div>
+  </div>
+
+  <div class="desktop-frame">
+    <div class="tpl-d">
+      <div class="hero">
+        <div class="logo-minimal">
+          <svg viewBox="0 0 24 24"><path d="M6 13.87A4 4 0 0 1 7.41 6.6a5.11 5.11 0 0 1 .22-1.94 5 5 0 0 1 9.06 1.1 3.5 3.5 0 0 1 3.58 3.57 3.37 3.37 0 0 1-.32 1.48A4 4 0 0 1 18 17.87V18H6v-.13z"/><line x1="8" y1="21" x2="8" y2="18"/><line x1="12" y1="21" x2="12" y2="18"/><line x1="16" y1="21" x2="16" y2="18"/></svg>
+        </div>
+        <h1>2MC Gastro</h1>
+        <div class="hero-sub">Endüstriyel mutfak tasarımı, 3D ekipman görüntüleme ve akıllı proje yönetimi — tek platformda.</div>
+        <div class="cta-row">
+          <button class="btn-solid">Başlayın →</button>
+          <button class="btn-ghost">Demo İzle</button>
+        </div>
+      </div>
+
+      <div class="features-section">
+        <div class="feat-box">
+          <div class="fb-icon"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+          <h3>3D Model Görüntüleme</h3>
+          <p>Her ürünü 360° döndürüp inceleme imkanı. Rakiplerin hiçbirinde bulunmayan benzersiz özellik.</p>
+        </div>
+        <div class="feat-box">
+          <div class="fb-icon"><svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+          <h3>Tasarım Stüdyosu</h3>
+          <p>Profesyonel mutfak planı oluşturun. Drag & drop ile ekipmanları yerleştirin.</p>
+        </div>
+        <div class="feat-box">
+          <div class="fb-icon"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <h3>Akıllı BOM</h3>
+          <p>Otomatik malzeme listesi oluşturma. Bütçe analizi ve maliyet optimizasyonu.</p>
+        </div>
+        <div class="feat-box">
+          <div class="fb-icon"><svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+          <h3>Gelişmiş Arama</h3>
+          <p>6.300+ ürün arasında anında filtreleme. Marka, kategori ve özellik bazlı arama.</p>
+        </div>
+        <div class="feat-box">
+          <div class="fb-icon"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+          <h3>Proje Yönetimi</h3>
+          <p>Birden fazla mutfak projesini organize edin. Revizyon takibi ve ekip paylaşımı.</p>
+        </div>
+        <div class="feat-box">
+          <div class="fb-icon"><svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+          <h3>Çoklu Dil</h3>
+          <p>Türkçe, İngilizce ve Almanca tam dil desteği. Uluslararası müşterileriniz için.</p>
+        </div>
+      </div>
+
+      <div class="metrics-band">
+        <div class="metric"><div class="m-num">6.316</div><div class="m-lbl">Ürün</div></div>
+        <div class="metric"><div class="m-num">17</div><div class="m-lbl">Kategori</div></div>
+        <div class="metric"><div class="m-num">5</div><div class="m-lbl">Marka</div></div>
+        <div class="metric"><div class="m-num">3D</div><div class="m-lbl">Görüntüleme</div></div>
+        <div class="metric"><div class="m-num">3</div><div class="m-lbl">Dil</div></div>
+      </div>
+
+      <div class="brands-section">
+        <div class="brands-title">Markalarımız</div>
+        <div class="brand-logos">
+          <div class="brand-logo">DIAMOND</div>
+          <div class="brand-logo" style="color:#aaa">DIVERSO</div>
+          <div class="brand-logo" style="color:#bbb">COMBISTEEL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== COMPARISON TABLE ===================== -->
+<div class="compare-section" style="padding-bottom: 100px;">
+  <h3>Şablon Karşılaştırma Matrisi</h3>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Özellik</th>
+        <th>A — Luxury</th>
+        <th>B — Smart</th>
+        <th>C — Catalog</th>
+        <th>D — Minimal</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Full-Screen Hero</td><td class="check">✓</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>Akıllı Arama</td><td class="cross">—</td><td class="check">✓</td><td class="cross">—</td><td class="cross">—</td></tr>
+      <tr><td>3D Model Vitrin</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td><td class="cross">—</td></tr>
+      <tr><td>Kategori Grid</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓ (scroll)</td><td class="cross">—</td></tr>
+      <tr><td>Canlı İstatistikler</td><td class="check">✓</td><td class="check">✓</td><td class="cross">—</td><td class="check">✓</td></tr>
+      <tr><td>Özellik Kartları</td><td class="cross">—</td><td class="check">✓</td><td class="cross">—</td><td class="check">✓</td></tr>
+      <tr><td>Güven Barı</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>Marka Logoları</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td></tr>
+      <tr><td>Dark Theme</td><td class="check">✓</td><td class="cross">—</td><td class="check">✓</td><td class="cross">—</td></tr>
+      <tr><td>Gold Aksan</td><td class="check">✓</td><td class="cross">—</td><td class="check">✓</td><td class="cross">—</td></tr>
+      <tr><td>Dual CTA Buton</td><td class="check">✓</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>Horizontal Scroll</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td><td class="cross">—</td></tr>
+      <tr>
+        <td><strong>Rakip Farklılık Skoru</strong></td>
+        <td><strong style="color: var(--gold);">★★★★★</strong></td>
+        <td><strong style="color: var(--gold);">★★★☆☆</strong></td>
+        <td><strong style="color: var(--gold);">★★★★★</strong></td>
+        <td><strong style="color: var(--gold);">★★★★☆</strong></td>
+      </tr>
+      <tr>
+        <td><strong>Uygulama Kolaylığı</strong></td>
+        <td><strong>★★★★☆</strong></td>
+        <td><strong>★★★☆☆</strong></td>
+        <td><strong>★★☆☆☆</strong></td>
+        <td><strong>★★★★★</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.template-container').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tmpl-' + id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>

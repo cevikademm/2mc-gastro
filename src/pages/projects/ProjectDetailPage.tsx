@@ -1,14 +1,43 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore, type ProductItem } from '../../stores/projectStore';
 import {
   ArrowLeft, Ruler, ClipboardList, Calendar, Building,
   Plus, Trash2, Package, Flame, Droplets, Refrigerator,
-  Table, Microwave, Waves, Eye, Settings2, Users, FileText, Download, Loader2
+  Table, Microwave, Waves, Eye, Settings2, Users, FileText, Download, Loader2,
+  Box, Sparkles, CheckCircle2, X
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { meshyGenerate, getProduct3DModelsByKeys, productKeyFor, type Product3DModel } from '../../lib/meshyClient';
+import { useMeshStore } from '../../stores/meshStore';
+import SafeModelViewer from '../../components/SafeModelViewer';
+
+// Kat planından placedItems okuma
+interface FloorPlanItem {
+  id: string;
+  equipmentId?: string;
+  name: string;
+  icon: string;
+  imageData?: string;
+  width: number;
+  height: number;
+  category: string;
+  kw: number;
+  price?: number;
+  brand?: string;
+  desc?: string;
+}
+
+function getFloorPlanItems(projectId: string): FloorPlanItem[] {
+  try {
+    const key = `2mc-floorplan-${projectId}`;
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    return data.items || [];
+  } catch { return []; }
+}
 
 const ICON_MAP: Record<string, any> = {
   refrigerator: Refrigerator, flame: Flame, droplets: Droplets,
@@ -23,8 +52,25 @@ const CATEGORY_COLORS: Record<string, string> = {
   cooking: '#ef4444', cold: '#3b82f6', cleaning: '#06b6d4', neutral: '#6b7280', other: '#8b5cf6',
 };
 
-function QuoteTab({ project }: { project: import('../../stores/projectStore').Project }) {
-  const { products, name, clientName, id } = project;
+function QuoteTab({ project, floorItems }: { project: import('../../stores/projectStore').Project; floorItems: FloorPlanItem[] }) {
+  const { name, clientName, id } = project;
+  // Kat planındaki ürünleri ProductItem formatına çevir
+  const products = floorItems.map((fi): ProductItem => ({
+    id: fi.equipmentId || fi.id,
+    name: fi.name,
+    code: fi.equipmentId || fi.id,
+    category: (fi.category as any) || 'other',
+    icon: fi.icon || 'package',
+    imageData: fi.imageData,
+    dimensions: { width: Math.round(fi.width / 10), height: Math.round(fi.height / 10), depth: 0 },
+    kw: fi.kw || 0,
+    powerType: fi.kw > 0 ? 'electric' : 'none',
+    price: fi.price || 0,
+    description: fi.desc || '',
+    brand: fi.brand || '',
+    series: '',
+    features: [],
+  }));
   const quoteNo = `TKF-${id.slice(-6).toUpperCase()}-${new Date().getFullYear()}`;
   const subtotal = products.reduce((sum, p) => sum + p.price, 0);
   const vatRate = 0.19;
@@ -34,44 +80,233 @@ function QuoteTab({ project }: { project: import('../../stores/projectStore').Pr
   const quoteRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
 
+  const COMPANY = {
+    name: '2MC Werbung & Gastro GmbH',
+    address: 'Musterstraße 12, 10115 Berlin, Deutschland',
+    phone: '+49 30 1234 5678',
+    email: 'info@2mc-gastro.de',
+    website: 'www.2mc-gastro.de',
+    vat: 'DE123456789',
+  };
+
+  const IMAGE_PROXY = 'https://mnlgbsfarubpvkmqqvff.supabase.co/functions/v1/image-proxy';
+
+  async function loadImgBase64(src: string): Promise<string | null> {
+    if (!src) return null;
+    const url = src.startsWith('http') ? src : window.location.origin + (src.startsWith('/') ? '' : '/') + src;
+    const fetchUrl = url.startsWith(window.location.origin) ? url : `${IMAGE_PROXY}?url=${encodeURIComponent(url)}`;
+    try {
+      const res = await fetch(fetchUrl);
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      return await new Promise<string | null>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch { return null; }
+  }
+
   const exportQuotePDF = async () => {
-    if (!quoteRef.current) return;
     setExporting(true);
     try {
-      // A4 portrait: 210mm × 297mm at 96dpi ≈ 794 × 1123px
-      const canvas = await html2canvas(quoteRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        imageTimeout: 5000,
-      });
-      const imgData = canvas.toDataURL('image/png');
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageW = doc.internal.pageSize.getWidth();   // 210mm
-      const pageH = doc.internal.pageSize.getHeight();  // 297mm
-      const imgW = pageW;
-      const imgH = (canvas.height * pageW) / canvas.width;
+      const PW = 210;
+      const PH = 297;
+      const dateStr = new Date().toLocaleDateString('tr-TR');
 
-      if (imgH <= pageH) {
-        doc.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
-      } else {
-        // Multi-page: slice the canvas into A4-height chunks
-        const pxPerPage = (canvas.width * pageH) / pageW;
-        let offsetY = 0;
-        while (offsetY < canvas.height) {
-          if (offsetY > 0) doc.addPage();
-          const sliceH = Math.min(pxPerPage, canvas.height - offsetY);
-          const sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = canvas.width;
-          sliceCanvas.height = sliceH;
-          const ctx = sliceCanvas.getContext('2d')!;
-          ctx.drawImage(canvas, 0, -offsetY);
-          doc.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, (sliceH * pageW) / canvas.width);
-          offsetY += pxPerPage;
-        }
+      // Load logos
+      const [logoFull, logoIcon, logoHolo] = await Promise.all([
+        loadImgBase64('/logo-werbung.png'),
+        loadImgBase64('/logo-icon.png'),
+        loadImgBase64('https://mnlgbsfarubpvkmqqvff.supabase.co/storage/v1/object/public/2mcwerbung/logo4.png'),
+      ]);
+
+      // Hologram watermark
+      let holoPageData: string | null = null;
+      if (logoHolo) {
+        holoPageData = await new Promise<string | null>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            const c = document.createElement('canvas');
+            c.width = 794; c.height = 1123;
+            const ctx = c.getContext('2d')!;
+            const sz = Math.min(c.width, c.height) * 0.92;
+            ctx.globalAlpha = 0.055;
+            ctx.drawImage(img, (c.width - sz) / 2, (c.height - sz) / 2, sz, sz);
+            resolve(c.toDataURL('image/png'));
+          };
+          img.onerror = () => resolve(null);
+          img.src = logoHolo;
+        });
       }
-      doc.save(`Teklif_${quoteNo}_${new Date().toISOString().split('T')[0]}.pdf`);
+      const drawHologram = () => { if (holoPageData) doc.addImage(holoPageData, 'PNG', 0, 0, PW, PH); };
+
+      const drawStripe = () => {
+        doc.setFillColor(37, 99, 235);
+        doc.setGState(doc.GState({ opacity: 0.06 }));
+        for (let i = 0; i < 3; i++) {
+          const off = 60 + i * 25;
+          doc.triangle(0, PH - off, PW + 20, PH - off - 80, PW + 20, PH - off - 84, 'F');
+        }
+        doc.setGState(doc.GState({ opacity: 1 }));
+      };
+
+      const drawPageHeader = (pg: number) => {
+        doc.setFillColor(15, 23, 60);
+        doc.rect(0, 0, PW, 38, 'F');
+        doc.setFillColor(37, 99, 235);
+        doc.rect(0, 38, PW, 2, 'F');
+        if (logoFull) doc.addImage(logoFull, 'PNG', 10, 5, 72, 20);
+        else { doc.setTextColor(255, 255, 255); doc.setFontSize(18); doc.setFont('helvetica', 'bold'); doc.text('2MC WERBUNG', 14, 20); }
+        if (logoIcon) doc.addImage(logoIcon, 'PNG', PW - 38, 4, 28, 28);
+        doc.setTextColor(180, 200, 255); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+        doc.text(COMPANY.address, PW - 10, 34, { align: 'right' });
+      };
+
+      // Page 1
+      drawHologram(); drawStripe(); drawPageHeader(1);
+
+      // Title block
+      doc.setFillColor(245, 247, 255);
+      doc.roundedRect(10, 46, PW - 20, 28, 3, 3, 'F');
+      doc.setFillColor(37, 99, 235);
+      doc.roundedRect(10, 46, 4, 28, 2, 2, 'F');
+      doc.setTextColor(15, 23, 60); doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+      doc.text('TEKLİF  /  ANGEBOT', 20, 57);
+      doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 90, 120);
+      doc.text(`Teklif No: ${quoteNo}`, 20, 65);
+      doc.text(`Tarih: ${dateStr}`, 80, 65);
+      doc.text(`Müşteri: ${clientName || '—'}`, 120, 65);
+
+      // Client info bar
+      doc.setFillColor(15, 23, 60);
+      doc.rect(10, 78, PW - 20, 10, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFontSize(7.5);
+      doc.text(`Proje: ${name}`, 14, 85);
+      doc.text(`✆ ${COMPANY.phone}`, 80, 85);
+      doc.text(`✉ ${COMPANY.email}`, 130, 85);
+      doc.text(`USt: ${COMPANY.vat}`, 175, 85);
+
+      let y = 96;
+      let pageNum = 1;
+
+      // Pre-load product images
+      const imgCache: Record<string, string | null> = {};
+      await Promise.all(
+        products.map(async (p) => {
+          const src = p.imageData || '';
+          if (src) imgCache[p.id] = await loadImgBase64(src);
+          else imgCache[p.id] = null;
+        })
+      );
+
+      // Column headers
+      const drawColumnHeaders = () => {
+        doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 110, 140);
+        doc.text('GÖRSEL', 12, y);
+        doc.text('ADET', 32, y);
+        doc.text('ÜRÜN KODU', 42, y);
+        doc.text('ÜRÜN ADI', 78, y);
+        doc.text('BİRİM FİYAT', 158, y, { align: 'right' });
+        doc.text('TOPLAM', PW - 12, y, { align: 'right' });
+        y += 2;
+        doc.setDrawColor(200, 210, 230); doc.line(10, y, PW - 10, y);
+        y += 3;
+      };
+      drawColumnHeaders();
+
+      // Product rows
+      let rowAlt = false;
+      for (const product of products) {
+        const rowH = 18;
+        if (y + rowH > 272) {
+          doc.addPage(); pageNum++;
+          drawHologram(); drawStripe(); drawPageHeader(pageNum);
+          y = 48; drawColumnHeaders();
+        }
+
+        if (rowAlt) { doc.setFillColor(245, 247, 255); doc.rect(10, y - 1, PW - 20, rowH, 'F'); }
+        rowAlt = !rowAlt;
+
+        // Image
+        const imgData = imgCache[product.id];
+        if (imgData) {
+          doc.addImage(imgData, 'PNG', 12, y, 14, 14);
+        } else {
+          doc.setFillColor(230, 235, 245); doc.roundedRect(12, y, 14, 14, 2, 2, 'F');
+          doc.setTextColor(180, 190, 210); doc.setFontSize(6); doc.text('N/A', 19, y + 8, { align: 'center' });
+        }
+
+        // Quantity badge
+        doc.setFillColor(37, 99, 235); doc.roundedRect(30, y + 3, 9, 7, 1.5, 1.5, 'F');
+        doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+        doc.text('1', 34.5, y + 8.5, { align: 'center' });
+
+        // Code
+        doc.setTextColor(37, 99, 235); doc.setFontSize(6.5); doc.setFont('helvetica', 'bold');
+        doc.text(product.code.substring(0, 22), 42, y + 5);
+        if (product.brand) {
+          doc.setTextColor(140, 150, 170); doc.setFontSize(6); doc.setFont('helvetica', 'normal');
+          doc.text(product.brand, 42, y + 11);
+        }
+
+        // Name
+        doc.setTextColor(15, 23, 60); doc.setFontSize(7.5); doc.setFont('helvetica', 'bold');
+        const pName = product.name.length > 42 ? product.name.substring(0, 42) + '…' : product.name;
+        doc.text(pName, 78, y + 5);
+
+        // Dims & kW
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(120, 130, 155);
+        const dims = `${product.dimensions.width}×${product.dimensions.height}cm${product.kw > 0 ? `  |  ${product.kw} kW` : ''}`;
+        doc.text(dims, 78, y + 11);
+
+        // Price
+        doc.setTextColor(80, 90, 120); doc.setFontSize(7.5); doc.setFont('helvetica', 'normal');
+        doc.text(product.price > 0 ? fmt(product.price) : '—', 158, y + 7, { align: 'right' });
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(15, 23, 60);
+        doc.text(product.price > 0 ? fmt(product.price) : '—', PW - 12, y + 7, { align: 'right' });
+
+        doc.setDrawColor(220, 225, 240); doc.line(10, y + rowH - 1, PW - 10, y + rowH - 1);
+        y += rowH;
+      }
+
+      // Totals
+      if (y + 45 > 272) {
+        doc.addPage(); pageNum++;
+        drawHologram(); drawStripe(); drawPageHeader(pageNum);
+        y = 48;
+      }
+      y += 4;
+      doc.setFillColor(245, 247, 255); doc.roundedRect(PW / 2, y, PW / 2 - 10, 40, 3, 3, 'F');
+      doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 90, 120);
+      doc.text('Ara Toplam:', PW / 2 + 5, y + 9);
+      doc.text(fmt(subtotal), PW - 12, y + 9, { align: 'right' });
+      doc.text('KDV (%19):', PW / 2 + 5, y + 17);
+      doc.text(fmt(vat), PW - 12, y + 17, { align: 'right' });
+      doc.setDrawColor(37, 99, 235); doc.line(PW / 2 + 3, y + 21, PW - 10, y + 21);
+      doc.setFillColor(15, 23, 60); doc.roundedRect(PW / 2, y + 23, PW / 2 - 10, 13, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+      doc.text('GENEL TOPLAM:', PW / 2 + 5, y + 31);
+      doc.text(fmt(total), PW - 12, y + 31, { align: 'right' });
+
+      // Footer on all pages
+      const totalPg = doc.getNumberOfPages();
+      for (let pg = 1; pg <= totalPg; pg++) {
+        doc.setPage(pg);
+        doc.setFillColor(15, 23, 60); doc.rect(0, PH - 12, PW, 12, 'F');
+        doc.setFillColor(37, 99, 235); doc.rect(0, PH - 12, PW, 1.5, 'F');
+        doc.setTextColor(180, 200, 255); doc.setFontSize(6.5); doc.setFont('helvetica', 'normal');
+        doc.text(`${COMPANY.name}  ·  ${COMPANY.address}  ·  ${COMPANY.phone}  ·  ${COMPANY.email}`, PW / 2, PH - 6, { align: 'center' });
+        doc.setTextColor(100, 130, 200);
+        doc.text(`${pg} / ${totalPg}`, PW - 12, PH - 6, { align: 'right' });
+      }
+
+      doc.save(`Teklif_${quoteNo}_${dateStr.replace(/\./g, '-')}.pdf`);
+    } catch (err) {
+      console.error('PDF export hatası:', err);
+      alert('PDF oluşturulurken bir hata oluştu.');
     } finally {
       setExporting(false);
     }
@@ -99,7 +334,7 @@ function QuoteTab({ project }: { project: import('../../stores/projectStore').Pr
         {/* Hologram watermark — new circular logo */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
           <img
-            src="/logo-hologram.png"
+            src="https://mnlgbsfarubpvkmqqvff.supabase.co/storage/v1/object/public/2mcwerbung/logo4.png"
             alt=""
             onError={(e) => { (e.target as HTMLImageElement).src = '/logo-icon.png'; }}
             className="w-80 h-80 object-contain select-none"
@@ -207,6 +442,9 @@ function QuoteTab({ project }: { project: import('../../stores/projectStore').Pr
                         <p className="font-black text-sm text-slate-800">{prod.name}</p>
                         <p className="text-[10px] font-mono text-slate-400 mt-0.5">{prod.code}{prod.brand ? ` · ${prod.brand}` : ''}</p>
                         {prod.description && <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">{prod.description}</p>}
+                        {prod.imageData && prod.imageData.startsWith('http') && (
+                          <a href={prod.imageData} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-medium mt-0.5 inline-block">Ürün Görseli ↗</a>
+                        )}
                       </div>
                       <div className="text-sm text-slate-600">
                         <span className="font-medium">{prod.dimensions.width}×{prod.dimensions.height}</span>
@@ -284,6 +522,70 @@ export default function ProjectDetailPage() {
   const { projects, selectedProject, selectProject, clearSelection, removeProductFromProject } = useProjectStore();
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'quote' | 'settings'>('overview');
   const [viewProduct, setViewProduct] = useState<ProductItem | null>(null);
+  const [selected3D, setSelected3D] = useState<Set<string>>(new Set());
+  const [meshModalOpen, setMeshModalOpen] = useState(false);
+  const [view3DModel, setView3DModel] = useState<Product3DModel | null>(null);
+  const meshRows = useMeshStore(s => s.rows);
+  const meshActiveKeys = useMeshStore(s => s.activeKeys);
+  const setMeshRow = useMeshStore(s => s.setRow);
+  const setMeshRows = useMeshStore(s => s.setRows);
+  const setMeshActiveKeys = useMeshStore(s => s.setActiveKeys);
+
+  const toggle3DSelect = (itemId: string) => {
+    setSelected3D(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId); else next.add(itemId);
+      return next;
+    });
+  };
+
+  const startMeshGeneration = async () => {
+    if (selected3D.size === 0) return;
+    const items = floorItems.filter(fi => selected3D.has(fi.id));
+    const keys = items.map(fi => productKeyFor(fi.imageData, fi.equipmentId || fi.id)).filter(Boolean);
+    setMeshActiveKeys(keys);
+    setMeshModalOpen(true);
+
+    await Promise.all(items.map(async (fi) => {
+      const key = productKeyFor(fi.imageData, fi.equipmentId || fi.id);
+      if (!key) return;
+
+      // Frontend cache check
+      const cached = useMeshStore.getState().rows[key];
+      if (cached && cached.status === 'done' && cached.glb_url) return;
+
+      const imageUrl = fi.imageData && /^https?:\/\//i.test(fi.imageData) ? fi.imageData : '';
+      if (!imageUrl) {
+        setMeshRow({
+          id: key, product_key: key, name: fi.name,
+          source_image_url: fi.imageData || '',
+          meshy_task_id: null, status: 'error', progress: 0,
+          error: 'Ürün görseli public URL değil (base64). MeshAI için katalog görseli gerekli.',
+          glb_url: null, usdz_url: null, thumbnail_url: null,
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+          finished_at: null,
+        });
+        return;
+      }
+
+      try {
+        await meshyGenerate(
+          { productKey: key, name: fi.name, imageUrl },
+          (row) => setMeshRow(row),
+        );
+      } catch (err) {
+        setMeshRow({
+          id: key, product_key: key, name: fi.name,
+          source_image_url: imageUrl,
+          meshy_task_id: null, status: 'error', progress: 0,
+          error: err instanceof Error ? err.message : 'Bilinmeyen hata',
+          glb_url: null, usdz_url: null, thumbnail_url: null,
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+          finished_at: null,
+        });
+      }
+    }));
+  };
 
   useEffect(() => {
     if (id) selectProject(id);
@@ -291,6 +593,33 @@ export default function ProjectDetailPage() {
   }, [id, projects]);
 
   const project = projects.find(p => p.id === id);
+
+  // Kat planındaki ürünleri oku
+  const floorItems = useMemo(() => id ? getFloorPlanItems(id) : [], [id, activeTab]);
+
+  // model-viewer script'ini bir kez yükle (çift register'ı önle)
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.querySelector('script[data-model-viewer]')) return;
+    const s = document.createElement('script');
+    s.type = 'module';
+    s.src = 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js';
+    s.setAttribute('data-model-viewer', 'true');
+    document.head.appendChild(s);
+  }, []);
+
+  // Mevcut 3D modelleri Supabase'den çek (rozetler için)
+  useEffect(() => {
+    if (floorItems.length === 0) return;
+    const keys = floorItems
+      .map(fi => productKeyFor(fi.imageData, fi.equipmentId || fi.id))
+      .filter(Boolean);
+    if (keys.length === 0) return;
+    getProduct3DModelsByKeys(keys).then(map => {
+      const rows = Object.values(map);
+      if (rows.length > 0) setMeshRows(rows);
+    }).catch(() => {});
+  }, [floorItems.length]);
 
   if (!project) {
     return (
@@ -309,8 +638,8 @@ export default function ProjectDetailPage() {
     inProgress: 'bg-violet-100 text-violet-900',
   };
 
-  const totalKW = p.products.reduce((sum, prod) => sum + prod.kw, 0);
-  const totalPrice = p.products.reduce((sum, prod) => sum + prod.price, 0);
+  const totalKW = floorItems.reduce((sum, fi) => sum + (fi.kw || 0), 0);
+  const totalPrice = floorItems.reduce((sum, fi) => sum + (fi.price || 0), 0);
 
   return (
     <div className="max-w-6xl mx-auto w-full space-y-6">
@@ -326,7 +655,7 @@ export default function ProjectDetailPage() {
             <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${statusColors[p.status]}`}>
               {p.status}
             </span>
-            <span className="text-sm text-on-surface-variant">{p.products.length} ürün</span>
+            <span className="text-sm text-on-surface-variant">{floorItems.length} ürün</span>
             <span className="text-sm text-on-surface-variant">•</span>
             <span className="text-sm text-on-surface-variant">{p.area} m²</span>
           </div>
@@ -352,7 +681,7 @@ export default function ProjectDetailPage() {
         <div className="flex gap-6">
           {[
             { key: 'overview', label: 'Genel Bakış', icon: Building },
-            { key: 'products', label: `Ürünler (${p.products.length})`, icon: Package },
+            { key: 'products', label: `Ürünler (${floorItems.length})`, icon: Package },
             { key: 'quote', label: 'Teklif', icon: FileText },
             { key: 'settings', label: 'Ayarlar', icon: Settings2 },
           ].map((tab) => {
@@ -381,7 +710,7 @@ export default function ProjectDetailPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10 shadow-sm">
                 <div className="text-[10px] font-bold text-slate-400 uppercase">Ürün Sayısı</div>
-                <div className="text-2xl font-black text-primary mt-1">{p.products.length}</div>
+                <div className="text-2xl font-black text-primary mt-1">{floorItems.length}</div>
               </div>
               <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10 shadow-sm">
                 <div className="text-[10px] font-bold text-slate-400 uppercase">Toplam Güç</div>
@@ -459,32 +788,32 @@ export default function ProjectDetailPage() {
                 <h2 className="font-headline font-bold text-primary text-sm uppercase tracking-wider">Ürünler</h2>
                 <button onClick={() => setActiveTab('products')} className="text-xs text-primary font-bold hover:underline">Tümü →</button>
               </div>
-              {p.products.length === 0 ? (
+              {floorItems.length === 0 ? (
                 <div className="text-center py-8">
                   <Package size={32} className="mx-auto text-slate-300 mb-2" />
-                  <p className="text-xs text-slate-400">Henüz ürün eklenmedi</p>
-                  <Link to={`/projects/${p.id}/products/add`} className="text-xs text-primary font-bold hover:underline mt-2 inline-block">
-                    İlk ürünü ekle →
+                  <p className="text-xs text-slate-400">Kat planında ürün yok</p>
+                  <Link to={`/projects/${p.id}/design`} className="text-xs text-primary font-bold hover:underline mt-2 inline-block">
+                    Kat planına git →
                   </Link>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {p.products.slice(0, 5).map((prod) => {
-                    const Icon = ICON_MAP[prod.icon] || Package;
+                  {floorItems.slice(0, 5).map((fi) => {
+                    const Icon = ICON_MAP[fi.icon] || Package;
                     return (
-                      <div key={prod.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
-                        {prod.imageData ? (
-                          <img src={prod.imageData} alt={prod.name} className="w-10 h-10 object-cover rounded-lg border border-slate-200" />
+                      <div key={fi.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                        {fi.imageData ? (
+                          <img src={fi.imageData} alt={fi.name} className="w-10 h-10 object-contain rounded-lg border border-slate-200" />
                         ) : (
                           <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                            <Icon size={16} style={{ color: CATEGORY_COLORS[prod.category] }} />
+                            <Icon size={16} style={{ color: CATEGORY_COLORS[fi.category] || '#6b7280' }} />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-bold text-slate-700 truncate">{prod.name}</div>
-                          <div className="text-[10px] text-slate-400">{prod.dimensions.width}×{prod.dimensions.height}cm</div>
+                          <div className="text-xs font-bold text-slate-700 truncate">{fi.name}</div>
+                          <div className="text-[10px] text-slate-400">{Math.round(fi.width / 10)}×{Math.round(fi.height / 10)}cm</div>
                         </div>
-                        <span className="text-[10px] font-bold text-slate-400">{prod.kw}kW</span>
+                        <span className="text-[10px] font-bold text-slate-400">{fi.kw || 0}kW</span>
                       </div>
                     );
                   })}
@@ -495,81 +824,104 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      {/* Products Tab */}
+      {/* Products Tab — Kat planındaki ürünler */}
       {activeTab === 'products' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-on-surface-variant">{p.products.length} ürün mevcut</p>
-            <Link
-              to={`/projects/${p.id}/products/add`}
-              className="flex items-center gap-2 brushed-metal text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg hover:opacity-90 transition-all"
-            >
-              <Plus size={16} /> Yeni Ürün Ekle
-            </Link>
+          <div className="flex justify-between items-center flex-wrap gap-3">
+            <p className="text-sm text-on-surface-variant">
+              {floorItems.length} ürün (kat planından)
+              {selected3D.size > 0 && <span className="ml-2 text-primary font-bold">• {selected3D.size} seçili</span>}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={startMeshGeneration}
+                disabled={selected3D.size === 0}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm shadow-lg transition-all bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Seçilen ürünlerden MeshAI ile 3D model üret"
+              >
+                <Sparkles size={16} /> 3D Modelle (MeshAI)
+                {selected3D.size > 0 && <span className="bg-white/25 px-1.5 rounded-full text-[10px]">{selected3D.size}</span>}
+              </button>
+              <Link
+                to={`/projects/${p.id}/design`}
+                className="flex items-center gap-2 brushed-metal text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg hover:opacity-90 transition-all"
+              >
+                <Ruler size={16} /> Kat Planına Git
+              </Link>
+            </div>
           </div>
 
-          {p.products.length === 0 ? (
+          {floorItems.length === 0 ? (
             <div className="bg-surface-container-lowest rounded-xl shadow-sm p-16 text-center border border-outline-variant/10">
               <Package size={48} className="mx-auto text-slate-200 mb-4" />
-              <h3 className="font-bold text-lg text-slate-500 mb-2">Henüz ürün eklenmedi</h3>
-              <p className="text-sm text-slate-400 mb-6">Bu projeye ürün ekleyerek başlayın. Görsel, teknik özellik ve fiyat bilgilerini girin.</p>
+              <h3 className="font-bold text-lg text-slate-500 mb-2">Kat planında ürün yok</h3>
+              <p className="text-sm text-slate-400 mb-6">Kat planına ürün ekleyerek başlayın. Diamond veya CombiSteel kataloglarından ürün seçip kat planına yerleştirin.</p>
               <Link
-                to={`/projects/${p.id}/products/add`}
+                to={`/projects/${p.id}/design`}
                 className="inline-flex items-center gap-2 brushed-metal text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:opacity-90 transition-all"
               >
-                <Plus size={18} /> İlk Ürünü Ekle
+                <Ruler size={18} /> Kat Planını Aç
               </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {p.products.map((prod) => {
-                const Icon = ICON_MAP[prod.icon] || Package;
+              {floorItems.map((fi) => {
+                const Icon = ICON_MAP[fi.icon] || Package;
+                const catColor = CATEGORY_COLORS[fi.category] || '#6b7280';
+                const catLabel = CATEGORY_LABELS[fi.category] || fi.category || 'Diğer';
+                const meshKey = productKeyFor(fi.imageData, fi.equipmentId || fi.id);
+                const meshRow = meshRows[meshKey];
+                const has3D = meshRow?.status === 'done' && !!meshRow.glb_url;
                 return (
-                  <div key={prod.id} className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden group">
+                  <div key={fi.id} className={`bg-surface-container-lowest rounded-xl shadow-sm border overflow-hidden group transition-all ${selected3D.has(fi.id) ? 'border-violet-500 ring-2 ring-violet-500/30' : 'border-outline-variant/10'}`}>
                     {/* Product Image */}
                     <div className="h-40 bg-slate-50 relative flex items-center justify-center">
-                      {prod.imageData ? (
-                        <img src={prod.imageData} alt={prod.name} className="w-full h-full object-contain p-2" />
+                      {fi.imageData ? (
+                        <img src={fi.imageData} alt={fi.name} className="w-full h-full object-contain p-2" />
                       ) : (
-                        <Icon size={40} style={{ color: CATEGORY_COLORS[prod.category] }} className="opacity-30" />
+                        <Icon size={40} style={{ color: catColor }} className="opacity-30" />
                       )}
                       <div className="absolute top-2 left-2">
-                        <span
-                          className="px-2 py-0.5 text-[9px] font-black uppercase rounded-full text-white"
-                          style={{ backgroundColor: CATEGORY_COLORS[prod.category] }}
-                        >
-                          {CATEGORY_LABELS[prod.category]}
+                        <span className="px-2 py-0.5 text-[9px] font-black uppercase rounded-full text-white" style={{ backgroundColor: catColor }}>
+                          {catLabel}
                         </span>
                       </div>
-                      {/* Action buttons */}
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                      {has3D ? (
                         <button
-                          onClick={() => setViewProduct(prod)}
-                          className="p-1.5 bg-white/90 text-slate-500 hover:text-primary rounded-md shadow-sm"
+                          onClick={() => setView3DModel(meshRow!)}
+                          className="absolute top-2 right-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wide shadow-lg ring-2 ring-white bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:scale-105 active:scale-95 transition-all"
+                          title="3D modeli görüntüle"
                         >
-                          <Eye size={14} />
+                          <Box size={14} className="drop-shadow" />
+                          3D ✓
                         </button>
+                      ) : (
                         <button
-                          onClick={() => removeProductFromProject(p.id, prod.id)}
-                          className="p-1.5 bg-white/90 text-slate-500 hover:text-red-500 rounded-md shadow-sm"
+                          onClick={() => toggle3DSelect(fi.id)}
+                          className={`absolute top-2 right-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wide shadow-lg ring-2 transition-all hover:scale-105 active:scale-95 ${
+                            selected3D.has(fi.id)
+                              ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white ring-white animate-pulse'
+                              : 'bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 text-white ring-white/70 hover:ring-white shadow-violet-400/50'
+                          }`}
+                          title="3D modelleme için seç"
                         >
-                          <Trash2 size={14} />
+                          {selected3D.has(fi.id) ? <CheckCircle2 size={14} className="drop-shadow" /> : <Sparkles size={14} className="drop-shadow" />}
+                          3D
                         </button>
-                      </div>
+                      )}
                     </div>
 
                     {/* Product Info */}
                     <div className="p-4">
-                      <h3 className="font-bold text-sm text-on-surface">{prod.name}</h3>
-                      <p className="text-[10px] text-slate-400 mt-0.5 font-mono">{prod.code}</p>
-                      {prod.description && <p className="text-xs text-slate-500 mt-2">{prod.description}</p>}
+                      <h3 className="font-bold text-sm text-on-surface">{fi.name}</h3>
+                      <p className="text-[10px] text-slate-400 mt-0.5 font-mono">{fi.equipmentId || fi.id}</p>
+                      {fi.brand && <p className="text-[10px] text-primary font-medium mt-1">{fi.brand}</p>}
+                      {fi.desc && <p className="text-xs text-slate-500 mt-2 line-clamp-2">{fi.desc}</p>}
 
                       <div className="flex items-center gap-3 mt-3 text-[10px] text-slate-400">
-                        <span className="font-bold">{prod.dimensions.width}×{prod.dimensions.height}cm</span>
-                        {prod.kw > 0 && <span>•</span>}
-                        {prod.kw > 0 && <span className="font-bold">{prod.kw} kW</span>}
-                        {prod.price > 0 && <span>•</span>}
-                        {prod.price > 0 && <span className="font-bold text-primary">€{prod.price.toLocaleString()}</span>}
+                        <span className="font-bold">{Math.round(fi.width / 10)}×{Math.round(fi.height / 10)}cm</span>
+                        {fi.kw > 0 && <><span>•</span><span className="font-bold">{fi.kw} kW</span></>}
+                        {(fi.price || 0) > 0 && <><span>•</span><span className="font-bold text-primary">€{(fi.price || 0).toLocaleString()}</span></>}
                       </div>
                     </div>
                   </div>
@@ -582,7 +934,7 @@ export default function ProjectDetailPage() {
 
       {/* Quote Tab */}
       {activeTab === 'quote' && (
-        <QuoteTab project={p} />
+        <QuoteTab project={p} floorItems={floorItems} />
       )}
 
       {/* Settings Tab */}
@@ -599,6 +951,150 @@ export default function ProjectDetailPage() {
                 <label className="block text-xs font-bold text-on-surface-variant uppercase mb-1.5">Genişlik (cm)</label>
                 <input type="number" defaultValue={p.roomHeightCm} className="w-full bg-surface-container-highest border-none rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-primary outline-none" />
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3D Model Viewer Modal */}
+      {view3DModel && view3DModel.glb_url && (
+        <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4" onClick={() => setView3DModel(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Box size={20} />
+                <div>
+                  <h2 className="font-bold text-base">{view3DModel.name}</h2>
+                  <p className="text-[11px] text-white/80">3D Model — sürükle: döndür, kaydır: yakınlaştır</p>
+                </div>
+              </div>
+              <button onClick={() => setView3DModel(null)} className="p-1.5 rounded-lg hover:bg-white/20 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 bg-gradient-to-br from-slate-50 to-slate-100" style={{ minHeight: 480 }}>
+              <SafeModelViewer
+                src={view3DModel.glb_url}
+                iosSrc={view3DModel.usdz_url || undefined}
+                alt={view3DModel.name}
+              />
+            </div>
+            <div className="p-4 border-t border-slate-100 flex justify-between items-center gap-3 flex-wrap">
+              <p className="text-[11px] text-slate-400">MeshAI ile üretildi • Supabase'de saklı</p>
+              <div className="flex gap-2">
+                {view3DModel.glb_url && (
+                  <a href={view3DModel.glb_url} download={`${view3DModel.name}.glb`} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-bold transition-colors">
+                    <Download size={12} /> GLB
+                  </a>
+                )}
+                {view3DModel.usdz_url && (
+                  <a href={view3DModel.usdz_url} download={`${view3DModel.name}.usdz`} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-bold transition-colors">
+                    <Download size={12} /> USDZ
+                  </a>
+                )}
+                {view3DModel.fbx_url && (
+                  <a href={view3DModel.fbx_url} download={`${view3DModel.name}.fbx`} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-bold transition-colors">
+                    <Download size={12} /> FBX
+                  </a>
+                )}
+                {view3DModel.obj_url && (
+                  <a href={view3DModel.obj_url} download={`${view3DModel.name}.obj`} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-bold transition-colors">
+                    <Download size={12} /> OBJ
+                  </a>
+                )}
+                <button onClick={() => setView3DModel(null)} className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+                  Kapat
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MeshAI 3D Generation Modal */}
+      {meshModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setMeshModalOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Sparkles size={22} />
+                <div>
+                  <h2 className="font-bold text-lg">MeshAI 3D Üretimi</h2>
+                  <p className="text-xs text-white/80">Seçilen ürünler için GLB modelleri oluşturuluyor</p>
+                </div>
+              </div>
+              <button onClick={() => setMeshModalOpen(false)} className="p-1.5 rounded-lg hover:bg-white/20 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-3">
+              {meshActiveKeys.map((jobKey) => {
+                const job = meshRows[jobKey];
+                if (!job) return null;
+                return (
+                <div key={jobKey} className="border border-slate-200 rounded-xl p-4 flex items-center gap-4">
+                  <div className="w-14 h-14 bg-slate-50 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {job.thumbnail_url || job.source_image_url ? <img src={job.thumbnail_url || job.source_image_url} alt={job.name} className="w-full h-full object-contain" /> : <Box size={24} className="text-slate-300" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-sm text-slate-800 truncate">{job.name}</p>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">
+                        {job.status === 'pending' && 'Bekliyor'}
+                        {job.status === 'processing' && (
+                          <>
+                            {job.stage === 'preview' && '1/2 Model'}
+                            {job.stage === 'refine' && '2/2 Doku'}
+                            {!job.stage && 'İşleniyor'} • {job.progress}%
+                          </>
+                        )}
+                        {job.status === 'done' && 'Tamam'}
+                        {job.status === 'error' && 'Hata'}
+                      </span>
+                    </div>
+                    <div className="mt-2 w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${job.status === 'error' ? 'bg-red-500' : 'bg-gradient-to-r from-violet-500 to-fuchsia-500'}`}
+                        style={{ width: `${job.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    {job.status === 'processing' && <Loader2 size={18} className="animate-spin text-violet-600" />}
+                    {job.status === 'done' && job.glb_url && (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setView3DModel(job)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 text-white hover:bg-violet-700 text-xs font-bold transition-colors"
+                        >
+                          <Eye size={12} /> Önizle
+                        </button>
+                        <a
+                          href={job.glb_url}
+                          download={`${job.name}.glb`}
+                          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-bold transition-colors"
+                          title="GLB indir"
+                        >
+                          <Download size={12} />
+                        </a>
+                      </div>
+                    )}
+                    {job.status === 'error' && <X size={18} className="text-red-500" />}
+                  </div>
+                </div>
+                );
+              })}
+              {meshActiveKeys.some(k => meshRows[k]?.status === 'error') && (
+                <p className="text-[11px] text-red-500 px-1">
+                  {meshActiveKeys.map(k => meshRows[k]).filter(j => j?.status === 'error').map(j => j!.error).join(' • ')}
+                </p>
+              )}
+            </div>
+            <div className="p-4 border-t border-slate-100 flex justify-between items-center">
+              <p className="text-[11px] text-slate-400">Üretilen modeller cache'lenir; aynı ürün için tekrar istek atılmaz.</p>
+              <button onClick={() => setMeshModalOpen(false)} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+                Kapat
+              </button>
             </div>
           </div>
         </div>

@@ -17,6 +17,8 @@ interface UIState {
   cookieConsent: boolean | null;
   notifications: Notification[];
   notificationPanelOpen: boolean;
+  showPromoProducts: boolean;
+  setShowPromoProducts: (v: boolean) => void;
   toggleSidebar: () => void;
   toggleMobileMenu: () => void;
   setCookieConsent: (value: boolean) => void;
@@ -42,6 +44,8 @@ export const useUIStore = create<UIState>()(
       cookieConsent: null,
       notifications: initialNotifications,
       notificationPanelOpen: false,
+      showPromoProducts: true,
+      setShowPromoProducts: (v) => set({ showPromoProducts: v }),
 
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
       toggleMobileMenu: () => set((s) => ({ mobileMenuOpen: !s.mobileMenuOpen })),
@@ -78,6 +82,7 @@ export const useUIStore = create<UIState>()(
       partialize: (state) => ({
         cookieConsent: state.cookieConsent,
         notifications: state.notifications,
+        showPromoProducts: state.showPromoProducts,
       }),
     }
   )
