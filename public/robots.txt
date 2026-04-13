@@ -1,28 +1,82 @@
+# 2MC Gastro — robots.txt
+# https://2mcgastro.com
+
 User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /auth/
 Disallow: /login
 Disallow: /register
+Disallow: /pending-approval
+Disallow: /forgot-password
 Disallow: /settings
 Disallow: /payment
+Disallow: /checkout
 Disallow: /cart
+Disallow: /profile
+Disallow: /orders
+Disallow: /admin/
+Disallow: /*?utm_*
+Disallow: /*?ref=
+Disallow: /*?fbclid=
+Disallow: /*?gclid=
 
-# AI crawlers — allow for GEO/AI Overviews
+# AI crawlers — allow for GEO / AI Overviews / LLM training citations
 User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
 Allow: /
 
 User-agent: Google-Extended
 Allow: /
 
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
 User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
 Allow: /
 
 User-agent: PerplexityBot
 Allow: /
 
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
 User-agent: CCBot
 Allow: /
 
+User-agent: YandexBot
+Allow: /
+
+# Block aggressive scrapers / SEO tools
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
 Sitemap: https://2mcgastro.com/sitemap.xml
+Sitemap: https://2mcgastro.com/sitemap-products.xml
 Host: https://2mcgastro.com

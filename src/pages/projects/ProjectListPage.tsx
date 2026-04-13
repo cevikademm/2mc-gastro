@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore, type Project } from '../../stores/projectStore';
 import { Plus, Search, Filter, ChevronRight, Trash2 } from 'lucide-react';
+import { EmptyState, EmptyProjectsIllustration } from '../../components/illustrations/EmptyState';
 
 export default function ProjectListPage() {
   const { t } = useTranslation();
@@ -117,7 +118,13 @@ export default function ProjectListPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-on-surface-variant">{t('common.noData')}</td>
+                  <td colSpan={5} className="px-6 py-8">
+                    <EmptyState
+                      illustration={<EmptyProjectsIllustration />}
+                      title={t('common.noData')}
+                      description={search || statusFilter !== 'all' ? 'Filtreleri değiştirerek tekrar deneyin.' : 'Yeni bir proje oluşturarak başlayın.'}
+                    />
+                  </td>
                 </tr>
               )}
             </tbody>

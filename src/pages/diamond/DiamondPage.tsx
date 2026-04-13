@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDiamondStore, type DiamondProduct } from '../../stores/diamondStore';
 import { useCompareStore, type CompareItem } from '../../stores/compareStore';
 import { useCartStore } from '../../stores/cartStore';
@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import CartQuantityButton from '../../components/CartQuantityButton';
 import Model3DViewer, { has3DModel } from '../../components/Model3DViewer';
+import { CategoryIcon } from '../../components/icons/CategoryIcon';
+import { EmptyState, EmptySearchIllustration } from '../../components/illustrations/EmptyState';
 
 function ProductImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [error, setError] = useState(false);
@@ -104,7 +106,7 @@ const DEFAULT_VISIBLE = [
 
 function formatCellValue(key: string, val: any): string {
   if (val === null || val === undefined || val === '') return '—';
-  if (typeof val === 'boolean') return val ? 'Evet' : 'Hayır';
+  if (typeof val === 'boolean') return val ? '✓' : '—';
   if (key.startsWith('price_') || key === 'price_display') {
     const n = Number(val);
     return n > 0 ? `€${n.toLocaleString('de-DE', { minimumFractionDigits: 2 })}` : '—';
@@ -163,9 +165,17 @@ export default function DiamondPage() {
   const toggleCompare = (item: DiamondProduct) => toggleCompareGlobal(toCompareItem(item));
   const isItemComparing = (id: string) => isComparing(`diamond-${id}`);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const conceptLabel = searchParams.get('concept');
+
   useEffect(() => {
-    fetchProducts();
     fetchCategories();
+    const q = searchParams.get('q');
+    if (q) {
+      setFilter('search', q);
+    } else {
+      fetchProducts();
+    }
   }, []);
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -235,6 +245,25 @@ export default function DiamondPage() {
   return (
     <div className="flex flex-col gap-5 max-w-[1800px] mx-auto w-full">
 
+      {conceptLabel && (
+        <div className="flex items-center justify-between gap-3 bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-2.5">
+          <div className="flex items-center gap-2 text-xs font-bold text-indigo-700">
+            <Sparkles size={14} />
+            <span>{conceptLabel}</span>
+            <span className="text-indigo-400 font-normal">konseptine uygun ürünler</span>
+          </div>
+          <button
+            onClick={() => {
+              setFilter('search', '');
+              setSearchParams({});
+            }}
+            className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+          >
+            <X size={12} /> Temizle
+          </button>
+        </div>
+      )}
+
       {/* ─── Hero Header ─── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-500 to-purple-500 rounded-2xl p-6 md:p-8">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
@@ -245,10 +274,10 @@ export default function DiamondPage() {
               <Diamond size={28} className="text-white" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-headline font-black text-white tracking-tight">Diamond EU Katalog</h1>
+              <h1 className="text-2xl md:text-3xl font-headline font-black text-white tracking-tight">{t('diamond.title')}</h1>
               <p className="text-white/70 text-sm mt-1">
                 <span className="bg-white/20 rounded-full px-2.5 py-0.5 text-white font-bold text-xs mr-2">{totalCount.toLocaleString()}</span>
-                profesyonel mutfak ekipmanı
+                {t('diamond.subtitle')}
               </p>
             </div>
           </div>
@@ -258,7 +287,7 @@ export default function DiamondPage() {
               type="text"
               value={filters.search}
               onChange={(e) => setFilter('search', e.target.value)}
-              placeholder="SKU, ürün adı veya açıklama ara..."
+              placeholder={t('diamond.searchPlaceholder')}
               className="w-full bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl py-3 pl-11 pr-10 text-sm text-white placeholder-white/50 focus:bg-white/25 focus:ring-2 focus:ring-white/30 outline-none transition-all"
             />
             {filters.search && (
@@ -271,7 +300,7 @@ export default function DiamondPage() {
       {/* ─── Toolbar ─── */}
       <div className="flex flex-wrap items-center gap-2">
         <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${showFilters || hasActiveFilters ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-200'}`}>
-          <SlidersHorizontal size={14} /> Filtreler {hasActiveFilters && <span className="bg-indigo-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">!</span>}
+          <SlidersHorizontal size={14} /> {t('common.filter')} {hasActiveFilters && <span className="bg-indigo-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">!</span>}
         </button>
         {showPromo && (
           <button onClick={() => setFilter('promoOnly', !filters.promoOnly)} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${filters.promoOnly ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-white text-slate-600 border-slate-200 hover:border-amber-200'}`}>
@@ -279,10 +308,10 @@ export default function DiamondPage() {
           </button>
         )}
         <button onClick={() => setFilter('newOnly', !filters.newOnly)} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${filters.newOnly ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-200'}`}>
-          <Sparkles size={14} /> Yeni
+          <Sparkles size={14} /> {t('diamond.new')}
         </button>
         <button onClick={() => setFilter('inStockOnly', !filters.inStockOnly)} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${filters.inStockOnly ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-200'}`}>
-          <Box size={14} /> Stokta
+          <Box size={14} /> {t('diamond.inStock')}
         </button>
 
         <div className="flex bg-white rounded-xl border border-slate-200 p-0.5 ml-auto">
@@ -294,15 +323,15 @@ export default function DiamondPage() {
         {viewMode === 'table' && (
           <div className="relative">
             <button onClick={() => setShowColPicker(!showColPicker)} className="px-3 py-2 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 transition-all">
-              Sütunlar ({visibleCols.length}/{ALL_COLUMNS.length})
+              {t('diamond.columns')} ({visibleCols.length}/{ALL_COLUMNS.length})
             </button>
             {showColPicker && (
               <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl shadow-2xl border border-slate-200 z-50 p-3">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-xs font-bold text-slate-700">Görünür Sütunlar</span>
+                  <span className="text-xs font-bold text-slate-700">{t('diamond.visibleColumns')}</span>
                   <div className="flex gap-2">
-                    <button onClick={() => setVisibleCols(ALL_COLUMNS.map(c => c.key))} className="text-[10px] text-indigo-600 font-bold hover:underline">Tümü</button>
-                    <button onClick={() => setVisibleCols(DEFAULT_VISIBLE)} className="text-[10px] text-slate-500 font-bold hover:underline">Varsayılan</button>
+                    <button onClick={() => setVisibleCols(ALL_COLUMNS.map(c => c.key))} className="text-[10px] text-indigo-600 font-bold hover:underline">{t('common.all')}</button>
+                    <button onClick={() => setVisibleCols(DEFAULT_VISIBLE)} className="text-[10px] text-slate-500 font-bold hover:underline">{t('diamond.default')}</button>
                   </div>
                 </div>
                 {['Genel', 'Fiyat', 'Stok', 'Boyut', 'Teknik', 'Kategori', 'Durum', 'Medya'].map(group => (
@@ -321,7 +350,7 @@ export default function DiamondPage() {
         )}
 
         {hasActiveFilters && (
-          <button onClick={resetFilters} className="flex items-center gap-1 px-3 py-2 text-xs text-red-500 hover:text-red-700 font-medium transition-colors"><RotateCcw size={12} /> Temizle</button>
+          <button onClick={resetFilters} className="flex items-center gap-1 px-3 py-2 text-xs text-red-500 hover:text-red-700 font-medium transition-colors"><RotateCcw size={12} /> {t('common.clear')}</button>
         )}
       </div>
 
@@ -329,13 +358,13 @@ export default function DiamondPage() {
       {showFilters && (
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><Zap size={11} className="text-amber-500" /> Elektrik Gücü (kW)</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><Zap size={11} className="text-amber-500" /> {t('diamond.electricPower')}</p>
             <div className="flex items-center gap-2">
               <input type="number" min={0} step={0.1} value={filters.minKw || ''} onChange={(e) => setFilter('minKw', Number(e.target.value) || 0)} placeholder="Min kW" className="w-28 bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs focus:ring-2 focus:ring-amber-300 outline-none" />
               <span className="text-slate-300">—</span>
               <input type="number" min={0} step={0.1} value={filters.maxKw || ''} onChange={(e) => setFilter('maxKw', Number(e.target.value) || 0)} placeholder="Max kW" className="w-28 bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs focus:ring-2 focus:ring-amber-300 outline-none" />
               {(filters.minKw > 0 || filters.maxKw > 0) && (
-                <button onClick={() => { setFilter('minKw', 0); setFilter('maxKw', 0); }} className="text-[10px] text-red-500 hover:text-red-700 font-bold flex items-center gap-0.5"><X size={12} /> Temizle</button>
+                <button onClick={() => { setFilter('minKw', 0); setFilter('maxKw', 0); }} className="text-[10px] text-red-500 hover:text-red-700 font-bold flex items-center gap-0.5"><X size={12} /> {t('common.clear')}</button>
               )}
             </div>
           </div>
@@ -345,17 +374,18 @@ export default function DiamondPage() {
       {/* ─── Category Pills ─── */}
       <div className="flex flex-wrap gap-1.5 items-center">
         <button onClick={() => setFilter('family', '')} className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${!filters.family ? 'bg-indigo-500 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'}`}>
-          Tümü
+          {t('common.all')}
         </button>
         {visibleFamilies.map(fam => (
-          <button key={fam.name} onClick={() => setFilter('family', filters.family === fam.name ? '' : fam.name)} className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${filters.family === fam.name ? 'bg-indigo-500 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'}`}>
-            {fam.name || 'Diğer'} <span className="opacity-50">({fam.count})</span>
+          <button key={fam.name} onClick={() => setFilter('family', filters.family === fam.name ? '' : fam.name)} className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${filters.family === fam.name ? 'bg-indigo-500 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'}`}>
+            <CategoryIcon category={fam.name} size={16} />
+            {fam.name || t('common.other')} <span className="opacity-50">({fam.count})</span>
           </button>
         ))}
         {familyGroups.length > 12 && (
           <button onClick={() => setShowAllFamilies(!showAllFamilies)} className="flex items-center gap-1 px-3 py-2 text-xs text-indigo-500 font-bold hover:text-indigo-700 transition-colors">
             <ChevronDown size={14} className={`transition-transform ${showAllFamilies ? 'rotate-180' : ''}`} />
-            {showAllFamilies ? 'Daha az' : `+${familyGroups.length - 12} daha`}
+            {showAllFamilies ? t('common.less') : `+${familyGroups.length - 12} ${t('common.more')}`}
           </button>
         )}
       </div>
@@ -364,15 +394,15 @@ export default function DiamondPage() {
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <Loader2 size={24} className="animate-spin text-indigo-600 mr-2" />
-          <span className="text-sm text-slate-500">Ürünler yükleniyor...</span>
+          <span className="text-sm text-slate-500">{t('common.loading')}</span>
         </div>
       )}
 
       {/* Error */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
-          Hata: {error}
-          <button onClick={fetchProducts} className="ml-3 text-red-600 underline font-bold">Tekrar Dene</button>
+          {t('common.error')}: {error}
+          <button onClick={fetchProducts} className="ml-3 text-red-600 underline font-bold">{t('common.retry')}</button>
         </div>
       )}
 
@@ -385,14 +415,14 @@ export default function DiamondPage() {
             return (
               <div
                 key={item.id}
-                onClick={() => setDetailItem(item)}
+                onClick={() => navigate(`/product/${item.id}`)}
                 className={`bg-white rounded-2xl border overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group relative ${inCompare ? 'border-violet-300 ring-2 ring-violet-100' : 'border-slate-200/80'}`}
               >
                 {/* Badges */}
                 <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
-                  {item.is_new && <span className="bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">Yeni</span>}
-                  {item.is_good_deal && <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">Fırsat</span>}
-                  {showPromo && (item.price_promo ?? 0) > 0 && <span className="bg-red-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">Promo</span>}
+                  {item.is_new && <span className="bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">{t('diamond.new')}</span>}
+                  {item.is_good_deal && <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">{t('diamond.deal')}</span>}
+                  {showPromo && (item.price_promo ?? 0) > 0 && <span className="bg-red-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">{t('diamond.promo')}</span>}
                 </div>
 
                 {/* Compare checkbox */}
@@ -409,7 +439,7 @@ export default function DiamondPage() {
                     <button
                       onClick={(e) => { e.stopPropagation(); setView3D(item); }}
                       className="absolute bottom-1 right-1 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-600 text-white text-[9px] font-black uppercase tracking-wider shadow-md hover:bg-indigo-700 transition-all"
-                      title="3D Görünümü Aç"
+                      title={t('diamond.open3D')}
                     >
                       <Box size={10} /> 3D
                     </button>
@@ -441,7 +471,7 @@ export default function DiamondPage() {
                     <button
                       onClick={e => { e.stopPropagation(); handleShowOnFloorPlan(item.id); }}
                       className="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all"
-                      title="Kat Planına Ekle"
+                      title={t('catalog.addToFloorPlan')}
                     >
                       <MapPin size={10} />
                     </button>
@@ -459,25 +489,25 @@ export default function DiamondPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-surface-container border-b border-outline-variant/10">
-                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Ürün</th>
-                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Açıklama</th>
-                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Boyutlar (mm)</th>
+                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{t('common.product')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{t('common.description')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{t('catalog.dimensions')}</th>
                 <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">kW</th>
-                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Stok</th>
-                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant text-right">Fiyat</th>
-                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant text-center w-20">İşlem</th>
+                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{t('diamond.stock')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant text-right">{t('common.price')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant text-center w-20">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/5">
               {products.map((item) => (
-                <tr key={item.id} onClick={() => setDetailItem(item)} className="hover:bg-surface-container-high/50 cursor-pointer transition-colors group">
+                <tr key={item.id} onClick={() => navigate(`/product/${item.id}`)} className="hover:bg-surface-container-high/50 cursor-pointer transition-colors group">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
                       <ProductImage src={item.image_thumb || item.image_big} alt={item.name} className="w-10 h-10 rounded-md flex-shrink-0" />
                       <div>
                         <div className="text-xs font-bold text-on-surface flex items-center gap-1.5">
                           {item.name}
-                          {item.is_new && <span className="bg-emerald-100 text-emerald-700 text-[8px] font-bold px-1 py-0.5 rounded">YENİ</span>}
+                          {item.is_new && <span className="bg-emerald-100 text-emerald-700 text-[8px] font-bold px-1 py-0.5 rounded">{t('diamond.new').toUpperCase()}</span>}
                         </div>
                         <div className="text-[10px] font-mono text-on-surface-variant">{item.id}</div>
                       </div>
@@ -488,7 +518,7 @@ export default function DiamondPage() {
                   <td className="py-3 px-4 text-xs text-on-surface">{Number(item.electric_power_kw) > 0 ? `${item.electric_power_kw} kW` : '—'}</td>
                   <td className="py-3 px-4">
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${item.stock && item.stock !== '0' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {item.stock || 'Yok'}
+                      {item.stock || t('common.none')}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-xs font-bold text-primary text-right">{formatPrice(item.price_catalog)}</td>
@@ -511,8 +541,8 @@ export default function DiamondPage() {
           <table className="w-full text-left min-w-max">
             <thead className="sticky top-0 z-10">
               <tr className="bg-surface-container border-b border-outline-variant/10">
-                <th className="py-2.5 px-3 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant sticky left-0 bg-surface-container z-20 min-w-[60px]">İşlem</th>
-                <th className="py-2.5 px-3 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant sticky left-[60px] bg-surface-container z-20 min-w-[50px]">Görsel</th>
+                <th className="py-2.5 px-3 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant sticky left-0 bg-surface-container z-20 min-w-[60px]">{t('common.actions')}</th>
+                <th className="py-2.5 px-3 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant sticky left-[60px] bg-surface-container z-20 min-w-[50px]">{t('diamond.image')}</th>
                 {activeColumns.map(col => (
                   <th key={col.key} className="py-2.5 px-3 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant whitespace-nowrap">
                     {col.label}
@@ -522,11 +552,11 @@ export default function DiamondPage() {
             </thead>
             <tbody className="divide-y divide-outline-variant/5">
               {products.map((item) => (
-                <tr key={item.id} onClick={() => setDetailItem(item)} className="hover:bg-surface-container-high/50 cursor-pointer transition-colors">
+                <tr key={item.id} onClick={() => navigate(`/product/${item.id}`)} className="hover:bg-surface-container-high/50 cursor-pointer transition-colors">
                   <td className="py-2 px-3 sticky left-0 bg-white z-10">
                     <div className="flex items-center gap-0.5">
                       <CartQuantityButton product={toCartItem(item) as any} size="sm" />
-                      <button onClick={(e) => { e.stopPropagation(); handleShowOnFloorPlan(item.id); }} className="p-1 rounded text-slate-300 hover:text-primary transition-all" title="Kat planına ekle"><MapPin size={13} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleShowOnFloorPlan(item.id); }} className="p-1 rounded text-slate-300 hover:text-primary transition-all" title={t('catalog.addToFloorPlan')}><MapPin size={13} /></button>
                     </div>
                   </td>
                   <td className="py-2 px-3 sticky left-[60px] bg-white z-10">
@@ -541,9 +571,9 @@ export default function DiamondPage() {
                         ) : col.key === 'price_promo' && showPromo && (item.price_promo ?? 0) > 0 ? (
                           <span className="text-red-600 font-bold">{formatCellValue(col.key, val)}</span>
                         ) : col.key === 'is_new' && val ? (
-                          <span className="bg-emerald-100 text-emerald-700 text-[9px] font-bold px-1.5 py-0.5 rounded">Evet</span>
+                          <span className="bg-emerald-100 text-emerald-700 text-[9px] font-bold px-1.5 py-0.5 rounded">{t('common.yes')}</span>
                         ) : col.key === 'is_good_deal' && val ? (
-                          <span className="bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded">Evet</span>
+                          <span className="bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded">{t('common.yes')}</span>
                         ) : col.key === 'stock' ? (
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${val && val !== '0' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
                             {val || '—'}
@@ -563,23 +593,23 @@ export default function DiamondPage() {
 
       {/* Empty State */}
       {!isLoading && !error && products.length === 0 && (
-        <div className="py-16 text-center">
-          <Package size={48} className="mx-auto text-on-surface-variant/20 mb-4" />
-          <h3 className="text-lg font-bold text-on-surface-variant mb-1">Ürün bulunamadı</h3>
-          <p className="text-sm text-on-surface-variant/60">Farklı arama terimleri veya filtreler deneyin.</p>
-          {(filters.search || filters.family || filters.promoOnly || filters.newOnly || filters.inStockOnly) && (
-            <button onClick={resetFilters} className="mt-3 px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-colors">
-              Filtreleri Temizle
+        <EmptyState
+          illustration={<EmptySearchIllustration />}
+          title={t('catalog.noResults')}
+          description={t('catalog.tryDifferent')}
+          action={(filters.search || filters.family || filters.promoOnly || filters.newOnly || filters.inStockOnly) && (
+            <button onClick={resetFilters} className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-colors">
+              {t('diamond.clearFilters')}
             </button>
           )}
-        </div>
+        />
       )}
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between py-2">
           <p className="text-xs text-on-surface-variant">
-            <span className="font-bold text-on-surface">{((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalCount)}</span> / {totalCount.toLocaleString()} ürün
+            <span className="font-bold text-on-surface">{((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalCount)}</span> / {totalCount.toLocaleString()} {t('common.products')}
           </p>
           <div className="flex items-center gap-1">
             <button onClick={() => setPage(1)} disabled={currentPage === 1} className="px-2 py-1.5 rounded text-xs font-medium text-on-surface-variant disabled:opacity-30 hover:bg-surface-container-high transition-colors">«</button>
@@ -605,13 +635,13 @@ export default function DiamondPage() {
                   onClick={() => setView3D(detailItem)}
                   className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-black uppercase tracking-wider shadow-lg hover:bg-indigo-700 transition-all"
                 >
-                  <Box size={14} /> 3D Görünüm
+                  <Box size={14} /> {t('diamond.view3D')}
                 </button>
               )}
               <div className="absolute top-3 left-3 flex gap-1.5">
                 <span className="bg-black/40 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">Diamond</span>
-                {detailItem.is_new && <span className="bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">YENİ</span>}
-                {detailItem.is_good_deal && <span className="bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">FIRSAT</span>}
+                {detailItem.is_new && <span className="bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">{t('diamond.new').toUpperCase()}</span>}
+                {detailItem.is_good_deal && <span className="bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">{t('diamond.deal').toUpperCase()}</span>}
               </div>
             </div>
             <div className="p-6 space-y-4">
@@ -626,21 +656,21 @@ export default function DiamondPage() {
               {/* All data in organized grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div className="bg-surface-container-highest rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1"><Ruler size={14} /> Boyutlar (mm)</div>
+                  <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1"><Ruler size={14} /> {t('catalog.dimensions')}</div>
                   <p className="font-bold text-on-surface text-sm">{detailItem.length_mm} × {detailItem.width_mm} × {detailItem.height_mm}</p>
-                  {detailItem.volume_m3 && <p className="text-[10px] text-on-surface-variant mt-0.5">Hacim: {detailItem.volume_m3} m³</p>}
-                  {detailItem.weight && <p className="text-[10px] text-on-surface-variant mt-0.5">Ağırlık: {detailItem.weight} {detailItem.weight_unit}</p>}
+                  {detailItem.volume_m3 && <p className="text-[10px] text-on-surface-variant mt-0.5">{t('diamond.volume')}: {detailItem.volume_m3} m³</p>}
+                  {detailItem.weight && <p className="text-[10px] text-on-surface-variant mt-0.5">{t('diamond.weight')}: {detailItem.weight} {detailItem.weight_unit}</p>}
                 </div>
                 <div className="bg-surface-container-highest rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1"><Zap size={14} /> Elektrik</div>
-                  <p className="font-bold text-on-surface text-sm">{Number(detailItem.electric_power_kw) > 0 ? `${detailItem.electric_power_kw} kW` : 'Yok'}</p>
+                  <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1"><Zap size={14} /> {t('diamond.electric')}</div>
+                  <p className="font-bold text-on-surface text-sm">{Number(detailItem.electric_power_kw) > 0 ? `${detailItem.electric_power_kw} kW` : t('common.none')}</p>
                   {detailItem.electric_connection && <p className="text-[10px] text-on-surface-variant mt-0.5">{detailItem.electric_connection}</p>}
                   {detailItem.electric_connection_2 && <p className="text-[10px] text-on-surface-variant mt-0.5">{detailItem.electric_connection_2}</p>}
                   {detailItem.kcal_power && <p className="text-[10px] text-on-surface-variant mt-0.5">{detailItem.kcal_power} kcal</p>}
                   {detailItem.horse_power && <p className="text-[10px] text-on-surface-variant mt-0.5">{detailItem.horse_power} HP</p>}
                 </div>
                 <div className="bg-surface-container-highest rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1"><Euro size={14} /> Fiyat</div>
+                  <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1"><Euro size={14} /> {t('common.price')}</div>
                   {showPromo && (detailItem.price_promo ?? 0) > 0 ? (
                     <div>
                       <span className="text-xs text-on-surface-variant line-through mr-2">{formatPrice(detailItem.price_catalog)}</span>
@@ -649,32 +679,32 @@ export default function DiamondPage() {
                   ) : (
                     <p className="font-bold text-primary text-sm">{formatPrice(detailItem.price_catalog)}</p>
                   )}
-                  {detailItem.price_display && <p className="text-[10px] text-on-surface-variant mt-0.5">Gösterilen: {formatPrice(detailItem.price_display)}</p>}
+                  {detailItem.price_display && <p className="text-[10px] text-on-surface-variant mt-0.5">{t('diamond.displayed')}: {formatPrice(detailItem.price_display)}</p>}
                   <p className="text-[10px] text-on-surface-variant mt-0.5">{detailItem.currency}</p>
                 </div>
                 <div className="bg-surface-container-highest rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1"><Package size={14} /> Stok & Teslimat</div>
-                  <p className={`font-bold text-sm ${detailItem.stock && detailItem.stock !== '0' ? 'text-emerald-600' : 'text-slate-400'}`}>{detailItem.stock || 'Stokta Yok'}</p>
-                  {detailItem.restock_info && <p className="text-[10px] text-on-surface-variant mt-0.5">Yeniden: {detailItem.restock_info}</p>}
-                  {detailItem.supplier_delivery_delay && <p className="text-[10px] text-on-surface-variant mt-0.5">Teslimat: {detailItem.supplier_delivery_delay} gün</p>}
+                  <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1"><Package size={14} /> {t('diamond.stockDelivery')}</div>
+                  <p className={`font-bold text-sm ${detailItem.stock && detailItem.stock !== '0' ? 'text-emerald-600' : 'text-slate-400'}`}>{detailItem.stock || t('diamond.outOfStock')}</p>
+                  {detailItem.restock_info && <p className="text-[10px] text-on-surface-variant mt-0.5">{t('diamond.restock')}: {detailItem.restock_info}</p>}
+                  {detailItem.supplier_delivery_delay && <p className="text-[10px] text-on-surface-variant mt-0.5">{t('diamond.delivery')}: {detailItem.supplier_delivery_delay} {t('diamond.days')}</p>}
                 </div>
                 <div className="bg-surface-container-highest rounded-lg p-3">
-                  <div className="text-xs text-on-surface-variant mb-1 font-medium">Kategori</div>
+                  <div className="text-xs text-on-surface-variant mb-1 font-medium">{t('catalog.category')}</div>
                   <p className="text-xs font-bold text-on-surface">{detailItem.product_family_name}</p>
-                  <p className="text-[10px] text-on-surface-variant mt-0.5">Kategori: {detailItem.product_category_id}</p>
-                  <p className="text-[10px] text-on-surface-variant">Grup: {detailItem.product_range_id}</p>
-                  <p className="text-[10px] text-on-surface-variant">Hat: {detailItem.product_line_id}</p>
+                  <p className="text-[10px] text-on-surface-variant mt-0.5">{t('catalog.category')}: {detailItem.product_category_id}</p>
+                  <p className="text-[10px] text-on-surface-variant">{t('diamond.range')}: {detailItem.product_range_id}</p>
+                  <p className="text-[10px] text-on-surface-variant">{t('diamond.line')}: {detailItem.product_line_id}</p>
                 </div>
                 <div className="bg-surface-container-highest rounded-lg p-3">
-                  <div className="text-xs text-on-surface-variant mb-1 font-medium">Durum</div>
+                  <div className="text-xs text-on-surface-variant mb-1 font-medium">{t('common.status')}</div>
                   <div className="flex flex-wrap gap-1">
-                    {detailItem.is_new && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded">Yeni</span>}
-                    {detailItem.is_good_deal && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded">Kampanyalı</span>}
-                    {detailItem.has_accessories && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">Aksesuar Var</span>}
-                    <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded">Tip: {detailItem.product_type}</span>
+                    {detailItem.is_new && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded">{t('diamond.new')}</span>}
+                    {detailItem.is_good_deal && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded">{t('diamond.deal')}</span>}
+                    {detailItem.has_accessories && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">{t('diamond.hasAccessories')}</span>}
+                    <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded">{t('diamond.type')}: {detailItem.product_type}</span>
                   </div>
-                  {detailItem.replacement_product_id && <p className="text-[10px] text-on-surface-variant mt-1">Yedek: {detailItem.replacement_product_id}</p>}
-                  {detailItem.page_catalog_number && <p className="text-[10px] text-on-surface-variant mt-0.5">Katalog Sayfa: {detailItem.page_catalog_number}</p>}
+                  {detailItem.replacement_product_id && <p className="text-[10px] text-on-surface-variant mt-1">{t('diamond.replacement')}: {detailItem.replacement_product_id}</p>}
+                  {detailItem.page_catalog_number && <p className="text-[10px] text-on-surface-variant mt-0.5">{t('diamond.catalogPage')}: {detailItem.page_catalog_number}</p>}
                 </div>
               </div>
 
@@ -685,7 +715,7 @@ export default function DiamondPage() {
                   onClick={() => { setDetailItem(null); handleShowOnFloorPlan(detailItem.id); }}
                   className="flex-1 py-2.5 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg flex items-center justify-center gap-2 transition-all"
                 >
-                  <MapPin size={16} /> Kat Planına Ekle
+                  <MapPin size={16} /> {t('catalog.addToFloorPlan')}
                 </button>
               </div>
             </div>
@@ -699,15 +729,15 @@ export default function DiamondPage() {
           <div className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-outline-variant/10">
               <div>
-                <h2 className="text-base font-headline font-black text-on-surface">Projeye Ekle</h2>
-                <p className="text-xs text-on-surface-variant mt-0.5">Hangi projenin kat planına eklensin?</p>
+                <h2 className="text-base font-headline font-black text-on-surface">{t('catalog.addToProject')}</h2>
+                <p className="text-xs text-on-surface-variant mt-0.5">{t('diamond.whichProject')}</p>
               </div>
               <button onClick={() => setProjectModalItem(null)} className="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant"><X size={18} /></button>
             </div>
             <div className="overflow-y-auto flex-1 p-4 space-y-4">
               {activeProjects.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-1.5 mb-2"><Clock size={13} className="text-primary" /><span className="text-[11px] font-bold uppercase tracking-wider text-primary">Devam Eden</span></div>
+                  <div className="flex items-center gap-1.5 mb-2"><Clock size={13} className="text-primary" /><span className="text-[11px] font-bold uppercase tracking-wider text-primary">{t('diamond.ongoing')}</span></div>
                   <div className="space-y-2">
                     {activeProjects.map(p => (
                       <button key={p.id} onClick={() => handleProjectSelect(p.id)} className="w-full text-left px-4 py-3 rounded-xl bg-primary/5 hover:bg-primary/10 border border-primary/15 hover:border-primary/30 transition-all group">
@@ -720,7 +750,7 @@ export default function DiamondPage() {
               )}
               {completedProjects.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-1.5 mb-2"><CheckCircle2 size={13} className="text-on-surface-variant/50" /><span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/50">Tamamlanan</span></div>
+                  <div className="flex items-center gap-1.5 mb-2"><CheckCircle2 size={13} className="text-on-surface-variant/50" /><span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/50">{t('diamond.completed')}</span></div>
                   <div className="space-y-2">
                     {completedProjects.map(p => (
                       <button key={p.id} onClick={() => handleProjectSelect(p.id)} className="w-full text-left px-4 py-3 rounded-xl bg-surface-container-highest hover:bg-surface-container-high border border-outline-variant/10 transition-all group opacity-70 hover:opacity-100">
@@ -731,7 +761,7 @@ export default function DiamondPage() {
                 </div>
               )}
               {projects.length === 0 && (
-                <div className="py-10 text-center"><Package size={36} className="mx-auto text-on-surface-variant/20 mb-3" /><p className="text-sm font-bold text-on-surface-variant">Henüz proje yok</p></div>
+                <div className="py-10 text-center"><Package size={36} className="mx-auto text-on-surface-variant/20 mb-3" /><p className="text-sm font-bold text-on-surface-variant">{t('catalog.noProjects')}</p></div>
               )}
             </div>
           </div>

@@ -52,7 +52,7 @@
     "details": "Detaylar",
     "selected": "seçili",
     "moreCanBeAdded": "daha eklenebilir",
-    "cheapest": "En Ucuz",
+    "cheapest": "En Uygun Fiyat",
     "none": "Yok",
     "or": "ya da"
   },
@@ -82,7 +82,12 @@
     "panel": "Panel",
     "drawing": "Çizim",
     "myOrders": "Siparişlerim",
-    "newOrder": "Yeni Sipariş"
+    "newOrder": "Yeni Sipariş",
+    "admin": "Yönetici",
+    "search": "Ara...",
+    "brand": "Marka Kimliği",
+    "adminOrders": "Siparişler",
+    "adminUsers": "Kullanıcılar"
   },
   "brand": {
     "name": "2MC Gastro",
@@ -180,7 +185,217 @@
     "feature_smart_desc": "Proje yönetimi ve revizyon takibi",
     "readyTitle": "Hazır mısınız?",
     "readyDesc": "Profesyonel mutfak tasarımına hemen başlayın.",
-    "startButton": "Başlayalım"
+    "startButton": "Başlayalım",
+    "popularCategories": "En Popüler Kategoriler",
+    "bestsellers": "En Çok Satanlar",
+    "toolsTitle": "Akıllı Mutfak Araçları",
+    "bannerHint": "Sonraki banner için tıkla",
+    "modules": {
+      "diamond": "Katalog",
+      "combisteel": "Mağaza",
+      "studio": "Tasarım",
+      "compare": "Ürün",
+      "quote": "PDF",
+      "projects": "Yönetim",
+      "compareLabel": "KARŞILAŞTIR",
+      "quoteLabel": "TEKLİF",
+      "projectsLabel": "PROJELER"
+    },
+    "cat": {
+      "pizzaGrill": "Pizza & Izgara",
+      "cooling": "Soğutma",
+      "washing": "Yıkama & Temizlik",
+      "steelFurniture": "Paslanmaz Mobilya",
+      "doughMachines": "Hamur Makineleri",
+      "cookingDevices": "Pişirme Cihazları"
+    },
+    "tools": {
+      "badge": "Araçlar",
+      "subtitle": "AI planlama, kapasite hesabı ve 3D tasarım — tek platformda",
+      "aiPlanner": {
+        "title": "AI Mutfak Planlayıcı",
+        "desc": "Yapay zeka işletme tipinize göre eksiksiz ekipman listesi çıkarır. Metrekare, kapasite ve bütçeye göre öneriler.",
+        "badge": "YAPAY ZEKA",
+        "step1": "İşletme tipi",
+        "step2": "Alan & kuver",
+        "step3": "Ekipman listesi"
+      },
+      "capacity": {
+        "title": "Kapasite Hesap Aracı",
+        "desc": "Günlük kuver, menü tipi ve alan bilgileriyle ocak, fırın, soğutma ve bulaşık kapasitelerini anında hesaplayın.",
+        "badge": "HESAPLAMA",
+        "step1": "Menü tipi",
+        "step2": "Pişirme",
+        "step3": "Soğutma",
+        "step4": "Bulaşık"
+      },
+      "studio3d": {
+        "title": "3D Tasarım Stüdyosu",
+        "desc": "Mutfağınızı sürükle-bırak ile 3D modelleyin, ekipmanları yerleştirin ve teklifinizi tek tıkla PDF olarak alın.",
+        "step1": "Plan çiz",
+        "step2": "3D yerleştir",
+        "step3": "PDF teklif"
+      }
+    },
+    "spec": {
+      "capacity": "Kapasite",
+      "power": "Güç",
+      "rpm": "Devir",
+      "dimensions": "Boyutlar",
+      "weight": "Ağırlık",
+      "material": "Malzeme",
+      "category": "Kategori",
+      "lighting": "Aydınlatma",
+      "usage": "Kullanım",
+      "installation": "Montaj"
+    },
+    "showcase3d": {
+      "title": "3D Ürün",
+      "titleAccent": "Vitrini",
+      "subtitle": "Modelleri döndürün, yakınlaştırın · karta tıklayın ve tüm detayları inceleyin",
+      "tagEquipment": "EKİPMAN",
+      "tagPresentation": "SUNUM",
+      "tagConcept": "KONSEPT",
+      "item1": {
+        "subtitle": "Yüksek kapasite endüstriyel",
+        "desc": "Endüstriyel fırın, pastane ve büyük catering işletmeleri için 60 litre kazan kapasiteli profesyonel planet mikser.",
+        "material": "AISI 304 Paslanmaz",
+        "feat1": "Planet hareket · homojen yoğurma",
+        "feat2": "Otomatik kazan yükseltme",
+        "feat3": "Zaman ayarlı dijital kontrol",
+        "feat4": "CE sertifikalı · 2 yıl garanti"
+      },
+      "item2": {
+        "title": "Şişe Teşhir Vitrini",
+        "subtitle": "Bar & içecek sunum rafı",
+        "desc": "Bar ve restoranlar için renkli içecek şişelerini estetik bir şekilde sergileyen profesyonel teşhir vitrini.",
+        "catVal": "Bar ekipmanı",
+        "capVal": "Çok katlı teşhir",
+        "lightVal": "LED arka plan",
+        "matVal": "Paslanmaz · temperli cam",
+        "feat1": "LED arkadan aydınlatma",
+        "feat2": "Ayarlanabilir raf sistemi",
+        "feat3": "Temperli cam paneller",
+        "feat4": "Bar ve restoranlar için ideal"
+      },
+      "item3": {
+        "title": "Showroom Konsept Modeli",
+        "subtitle": "Sergi & tanıtım modülü",
+        "desc": "Mağaza ve showroomlar için özel tasarlanmış konsept ekipman.",
+        "catVal": "Showroom ekipmanı",
+        "useVal": "Sergi · tanıtım",
+        "installVal": "Modüler sistem",
+        "matVal": "Paslanmaz çelik",
+        "feat1": "Modüler tasarım",
+        "feat2": "Kolay kurulum",
+        "feat3": "Profesyonel görünüm",
+        "feat4": "Dayanıklı yapı"
+      },
+      "modal": {
+        "hint": "Döndür · Yakınlaştır · Sürükle",
+        "close": "Kapat",
+        "catalogPrice": "Katalog fiyatı",
+        "techSpecs": "Teknik Özellikler",
+        "highlights": "Öne Çıkan Özellikler",
+        "exploreBtn": "Katalogda Keşfet",
+        "closeBtn": "Kapat"
+      }
+    },
+    "theme": {
+      "doner": "Dönerci",
+      "pizzeria": "Pizzeria",
+      "imbiss": "Büfe",
+      "restaurant": "Restoran",
+      "cafe": "Café",
+      "iceCream": "Dondurmacı",
+      "asian": "Asya Mutfağı",
+      "bakery": "Pastane",
+      "butcher": "Kasap",
+      "bar": "Bar & Pub",
+      "market": "Market",
+      "catering": "Catering",
+      "hotel": "Otel",
+      "foodTruck": "Food Truck"
+    },
+    "themedWorlds": {
+      "subtitle": "14 iş kolu · her konsept için eksiksiz ekipman seti"
+    },
+    "trust": {
+      "euroBiggest": "Avrupa'nın En Büyük",
+      "euroBiggestSub": "Endüstriyel gastro tedarikçisi",
+      "freeShipping": "Ücretsiz Teslimat",
+      "freeShippingSub": "Tüm Avrupa geneli",
+      "priceGuarantee": "Düşük Fiyat Garantisi",
+      "priceGuaranteeSub": "En iyi fiyat taahhüdü",
+      "expressCargo": "Ekspres Kargo",
+      "expressCargoSub": "24-48 saat içinde"
+    },
+    "explore": {
+      "catHeading": "Ürün Kategorileri",
+      "pagesHeading": "Site Mimarisi",
+      "catSubtitle": "8 ana kategori · 6.300+ ürün",
+      "pagesSubtitle": "14 sayfa · tüm deneyim noktaları",
+      "tabCategories": "Kategoriler",
+      "tabPages": "Sayfalar",
+      "cat1": "Pişirme Ekipmanları",
+      "cat1Sub": "Ocak, Fırın, Izgara, Fritöz, Pizza Fırını",
+      "cat2": "Soğutma & Dondurma",
+      "cat2Sub": "Buzdolabı, Dondurucu, Salatbar, Blast Chiller",
+      "cat3": "Yıkama & Hijyen",
+      "cat3Sub": "Bulaşık & Bardak Makinesi, El Yıkama",
+      "cat4": "Hazırlama & Kesme",
+      "cat4Sub": "Sebze Doğrama, Et Kıyma, Dilimleyici",
+      "cat5": "Mobilya & Paslanmaz",
+      "cat5Sub": "Tezgah, Raf, Arabalar, Evye, Davlumbaz",
+      "cat6": "İçecek & Bar",
+      "cat6Sub": "Espresso, Blender, Sıkacak, Bar",
+      "cat7": "Servis & Sunum",
+      "cat7Sub": "Tabak, Bardak, Servis Arabası, Chafing",
+      "cat8": "Paketleme & Teslimat",
+      "cat8Sub": "Vakum, Folyo, Teslimat Çantası",
+      "tagCritical": "KRİTİK",
+      "tagImportant": "ÖNEMLİ",
+      "tagDifferentiator": "FARK YARATAN",
+      "page": {
+        "home": "Anasayfa",
+        "homeDesc": "Hero, kategoriler, öneriler",
+        "catList": "Kategori Listesi",
+        "catListDesc": "Filtreleme, sıralama, grid/list",
+        "prodDetail": "Ürün Detay",
+        "prodDetailDesc": "Galeri, spec, fiyat, stok",
+        "cart": "Sepet",
+        "cartDesc": "Slide-over + tam sayfa, özet",
+        "payment": "Ödeme",
+        "paymentDesc": "3 adım: bilgi → kargo → ödeme",
+        "search": "Arama Sonuçları",
+        "searchDesc": "Anlık öneriler, filtreler",
+        "account": "Kullanıcı Hesabı",
+        "accountDesc": "Siparişler, adres, favoriler",
+        "b2b": "B2B Portal",
+        "b2bDesc": "Toplu fiyat, teklif, fatura",
+        "blog": "Blog / Rehber",
+        "blogDesc": "SEO içerikleri, rehberler",
+        "compare": "Karşılaştırma",
+        "compareDesc": "2–4 ürün yan yana",
+        "planner": "Mutfak Planlayıcı",
+        "plannerDesc": "AI-destekli ekipman planlama"
+      }
+    },
+    "quickLinks": {
+      "heading": "Yardım & İletişim",
+      "contact": "İletişim",
+      "contactDesc": "Form, harita, telefon, WhatsApp",
+      "about": "Hakkımızda",
+      "aboutDesc": "Hikâye, değerler, ekip",
+      "faq": "SSS / Yardım",
+      "faqDesc": "Sık sorulanlar, kargo, iade",
+      "tagStandard": "STANDART"
+    },
+    "nav": {
+      "home": "Anasayfa",
+      "contact": "İletişim",
+      "loginRegister": "Giriş / Kayıt"
+    }
   },
   "pending": {
     "title": "Hesabınız Onay Bekliyor",

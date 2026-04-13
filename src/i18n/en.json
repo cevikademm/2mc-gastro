@@ -52,7 +52,7 @@
     "details": "Details",
     "selected": "selected",
     "moreCanBeAdded": "more can be added",
-    "cheapest": "Cheapest",
+    "cheapest": "Best Value",
     "none": "None",
     "or": "or"
   },
@@ -82,7 +82,12 @@
     "panel": "Panel",
     "drawing": "Drawing",
     "myOrders": "My Orders",
-    "newOrder": "New Order"
+    "newOrder": "New Order",
+    "admin": "Admin",
+    "search": "Search...",
+    "brand": "Brand Identity",
+    "adminOrders": "Orders",
+    "adminUsers": "Users"
   },
   "brand": {
     "name": "2MC Gastro",
@@ -180,7 +185,217 @@
     "feature_smart_desc": "Project management and revision tracking",
     "readyTitle": "Ready?",
     "readyDesc": "Start professional kitchen design now.",
-    "startButton": "Let's Go"
+    "startButton": "Let's Go",
+    "popularCategories": "Most Popular Categories",
+    "bestsellers": "Our Bestsellers",
+    "toolsTitle": "Smart Kitchen Tools",
+    "bannerHint": "Click for next banner",
+    "modules": {
+      "diamond": "Catalog",
+      "combisteel": "Store",
+      "studio": "Design",
+      "compare": "Product",
+      "quote": "PDF",
+      "projects": "Management",
+      "compareLabel": "COMPARE",
+      "quoteLabel": "QUOTE",
+      "projectsLabel": "PROJECTS"
+    },
+    "cat": {
+      "pizzaGrill": "Pizza & Grill",
+      "cooling": "Cooling",
+      "washing": "Washing & Cleaning",
+      "steelFurniture": "Stainless Steel Furniture",
+      "doughMachines": "Dough Machines",
+      "cookingDevices": "Cooking Devices"
+    },
+    "tools": {
+      "badge": "Tools",
+      "subtitle": "AI planning, capacity calculation and 3D design — all in one platform",
+      "aiPlanner": {
+        "title": "AI Kitchen Planner",
+        "desc": "AI generates a complete equipment list based on your business type. Recommendations by area, capacity, and budget.",
+        "badge": "AI",
+        "step1": "Business type",
+        "step2": "Area & covers",
+        "step3": "Equipment list"
+      },
+      "capacity": {
+        "title": "Capacity Calculator",
+        "desc": "Instantly calculate cooking, oven, cooling and dishwashing capacities based on daily covers, menu type and area.",
+        "badge": "CALCULATION",
+        "step1": "Menu type",
+        "step2": "Cooking",
+        "step3": "Cooling",
+        "step4": "Dishwashing"
+      },
+      "studio3d": {
+        "title": "3D Design Studio",
+        "desc": "Model your kitchen in 3D with drag-and-drop, place equipment and get your quote as a PDF in one click.",
+        "step1": "Draw plan",
+        "step2": "3D place",
+        "step3": "PDF quote"
+      }
+    },
+    "spec": {
+      "capacity": "Capacity",
+      "power": "Power",
+      "rpm": "Speed",
+      "dimensions": "Dimensions",
+      "weight": "Weight",
+      "material": "Material",
+      "category": "Category",
+      "lighting": "Lighting",
+      "usage": "Usage",
+      "installation": "Installation"
+    },
+    "showcase3d": {
+      "title": "3D Product",
+      "titleAccent": "Showcase",
+      "subtitle": "Rotate, zoom in · click the card to see all details",
+      "tagEquipment": "EQUIPMENT",
+      "tagPresentation": "DISPLAY",
+      "tagConcept": "CONCEPT",
+      "item1": {
+        "subtitle": "High capacity industrial",
+        "desc": "Professional planetary mixer with 60-liter bowl capacity for industrial bakeries, pastry shops and large catering operations.",
+        "material": "AISI 304 Stainless Steel",
+        "feat1": "Planetary motion · homogeneous kneading",
+        "feat2": "Automatic bowl lift",
+        "feat3": "Timer digital control",
+        "feat4": "CE certified · 2 year warranty"
+      },
+      "item2": {
+        "title": "Bottle Display Cabinet",
+        "subtitle": "Bar & beverage display shelf",
+        "desc": "Professional display cabinet for bars and restaurants to elegantly showcase colorful beverage bottles.",
+        "catVal": "Bar equipment",
+        "capVal": "Multi-tier display",
+        "lightVal": "LED backlight",
+        "matVal": "Stainless steel · tempered glass",
+        "feat1": "LED backlighting",
+        "feat2": "Adjustable shelf system",
+        "feat3": "Tempered glass panels",
+        "feat4": "Ideal for bars and restaurants"
+      },
+      "item3": {
+        "title": "Showroom Concept Model",
+        "subtitle": "Exhibition & presentation module",
+        "desc": "Custom designed concept equipment for stores and showrooms.",
+        "catVal": "Showroom equipment",
+        "useVal": "Exhibition · presentation",
+        "installVal": "Modular system",
+        "matVal": "Stainless steel",
+        "feat1": "Modular design",
+        "feat2": "Easy installation",
+        "feat3": "Professional look",
+        "feat4": "Durable construction"
+      },
+      "modal": {
+        "hint": "Rotate · Zoom · Drag",
+        "close": "Close",
+        "catalogPrice": "Catalog price",
+        "techSpecs": "Technical Specifications",
+        "highlights": "Key Features",
+        "exploreBtn": "Explore in Catalog",
+        "closeBtn": "Close"
+      }
+    },
+    "theme": {
+      "doner": "Döner Shop",
+      "pizzeria": "Pizzeria",
+      "imbiss": "Snack Bar",
+      "restaurant": "Restaurant",
+      "cafe": "Café",
+      "iceCream": "Ice Cream Shop",
+      "asian": "Asian Kitchen",
+      "bakery": "Bakery",
+      "butcher": "Butcher",
+      "bar": "Bar & Pub",
+      "market": "Market",
+      "catering": "Catering",
+      "hotel": "Hotel",
+      "foodTruck": "Food Truck"
+    },
+    "themedWorlds": {
+      "subtitle": "14 business segments · complete equipment set for every concept"
+    },
+    "trust": {
+      "euroBiggest": "Europe's Largest",
+      "euroBiggestSub": "Industrial gastro supplier",
+      "freeShipping": "Free Delivery",
+      "freeShippingSub": "All across Europe",
+      "priceGuarantee": "Low Price Guarantee",
+      "priceGuaranteeSub": "Best price commitment",
+      "expressCargo": "Express Shipping",
+      "expressCargoSub": "Within 24-48 hours"
+    },
+    "explore": {
+      "catHeading": "Product Categories",
+      "pagesHeading": "Site Architecture",
+      "catSubtitle": "8 main categories · 6,300+ products",
+      "pagesSubtitle": "14 pages · all experience points",
+      "tabCategories": "Categories",
+      "tabPages": "Pages",
+      "cat1": "Cooking Equipment",
+      "cat1Sub": "Stove, Oven, Grill, Fryer, Pizza Oven",
+      "cat2": "Cooling & Freezing",
+      "cat2Sub": "Refrigerator, Freezer, Salad Bar, Blast Chiller",
+      "cat3": "Washing & Hygiene",
+      "cat3Sub": "Dishwasher & Glass Washer, Hand Washing",
+      "cat4": "Preparation & Cutting",
+      "cat4Sub": "Vegetable Cutter, Meat Grinder, Slicer",
+      "cat5": "Furniture & Stainless",
+      "cat5Sub": "Counter, Shelf, Carts, Sink, Hood",
+      "cat6": "Beverage & Bar",
+      "cat6Sub": "Espresso, Blender, Juicer, Bar",
+      "cat7": "Service & Presentation",
+      "cat7Sub": "Plates, Glasses, Service Cart, Chafing",
+      "cat8": "Packaging & Delivery",
+      "cat8Sub": "Vacuum, Film, Delivery Bag",
+      "tagCritical": "CRITICAL",
+      "tagImportant": "IMPORTANT",
+      "tagDifferentiator": "DIFFERENTIATOR",
+      "page": {
+        "home": "Home",
+        "homeDesc": "Hero, categories, recommendations",
+        "catList": "Category List",
+        "catListDesc": "Filtering, sorting, grid/list",
+        "prodDetail": "Product Detail",
+        "prodDetailDesc": "Gallery, spec, price, stock",
+        "cart": "Cart",
+        "cartDesc": "Slide-over + full page, summary",
+        "payment": "Payment",
+        "paymentDesc": "3 steps: info → shipping → payment",
+        "search": "Search Results",
+        "searchDesc": "Instant suggestions, filters",
+        "account": "User Account",
+        "accountDesc": "Orders, address, favorites",
+        "b2b": "B2B Portal",
+        "b2bDesc": "Bulk pricing, quotes, invoices",
+        "blog": "Blog / Guide",
+        "blogDesc": "SEO content, guides",
+        "compare": "Comparison",
+        "compareDesc": "2–4 products side by side",
+        "planner": "Kitchen Planner",
+        "plannerDesc": "AI-powered equipment planning"
+      }
+    },
+    "quickLinks": {
+      "heading": "Help & Contact",
+      "contact": "Contact",
+      "contactDesc": "Form, map, phone, WhatsApp",
+      "about": "About Us",
+      "aboutDesc": "Story, values, team",
+      "faq": "FAQ / Help",
+      "faqDesc": "FAQ, shipping, returns",
+      "tagStandard": "STANDARD"
+    },
+    "nav": {
+      "home": "Home",
+      "contact": "Contact",
+      "loginRegister": "Login / Register"
+    }
   },
   "pending": {
     "title": "Your Account is Pending Approval",

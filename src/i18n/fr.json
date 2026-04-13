@@ -52,7 +52,7 @@
     "details": "Détails",
     "selected": "sélectionné(s)",
     "moreCanBeAdded": "de plus peuvent être ajoutés",
-    "cheapest": "Moins cher",
+    "cheapest": "Meilleur rapport",
     "none": "Aucun",
     "or": "ou"
   },
@@ -82,7 +82,12 @@
     "panel": "Panneau",
     "drawing": "Dessin",
     "myOrders": "Mes commandes",
-    "newOrder": "Nouvelle commande"
+    "newOrder": "Nouvelle commande",
+    "admin": "Admin",
+    "search": "Rechercher...",
+    "brand": "Identité de marque",
+    "adminOrders": "Commandes",
+    "adminUsers": "Utilisateurs"
   },
   "brand": {
     "name": "2MC Gastro",
@@ -148,7 +153,217 @@
     "featureHACCP": "Conforme HACCP",
     "featureHACCPDesc": "Normes européennes",
     "featureHACCPDescLong": "Conformité totale aux normes européennes d'hygiène et de sécurité",
-    "copyright": "© 2024 2MC Werbung & Gastro GmbH · Made in Germany"
+    "copyright": "© 2024 2MC Werbung & Gastro GmbH · Made in Germany",
+    "popularCategories": "Catégories les plus populaires",
+    "bestsellers": "Nos best-sellers",
+    "toolsTitle": "Outils de cuisine intelligents",
+    "bannerHint": "Cliquez pour le prochain",
+    "modules": {
+      "diamond": "Catalogue",
+      "combisteel": "Boutique",
+      "studio": "Design",
+      "compare": "Produit",
+      "quote": "PDF",
+      "projects": "Gestion",
+      "compareLabel": "COMPARER",
+      "quoteLabel": "DEVIS",
+      "projectsLabel": "PROJETS"
+    },
+    "cat": {
+      "pizzaGrill": "Pizza & Grill",
+      "cooling": "Réfrigération",
+      "washing": "Lavage & Nettoyage",
+      "steelFurniture": "Mobilier inox",
+      "doughMachines": "Pétrins",
+      "cookingDevices": "Appareils de cuisson"
+    },
+    "tools": {
+      "badge": "Outils",
+      "subtitle": "Planification IA, calcul de capacité et design 3D — tout en une plateforme",
+      "aiPlanner": {
+        "title": "Planificateur IA",
+        "desc": "L'IA génère une liste complète d'équipements selon votre type d'entreprise.",
+        "badge": "IA",
+        "step1": "Type d'entreprise",
+        "step2": "Surface & couverts",
+        "step3": "Liste d'équipements"
+      },
+      "capacity": {
+        "title": "Calculateur de capacité",
+        "desc": "Calculez instantanément les capacités de cuisson, réfrigération et lavage.",
+        "badge": "CALCUL",
+        "step1": "Type de menu",
+        "step2": "Cuisson",
+        "step3": "Réfrigération",
+        "step4": "Lavage"
+      },
+      "studio3d": {
+        "title": "Studio Design 3D",
+        "desc": "Modélisez votre cuisine en 3D, placez les équipements et obtenez votre devis en PDF.",
+        "step1": "Dessiner le plan",
+        "step2": "Placer en 3D",
+        "step3": "Devis PDF"
+      }
+    },
+    "spec": {
+      "capacity": "Capacité",
+      "power": "Puissance",
+      "rpm": "Vitesse",
+      "dimensions": "Dimensions",
+      "weight": "Poids",
+      "material": "Matériau",
+      "category": "Catégorie",
+      "lighting": "Éclairage",
+      "usage": "Utilisation",
+      "installation": "Installation"
+    },
+    "showcase3d": {
+      "title": "Produit 3D",
+      "titleAccent": "Vitrine",
+      "subtitle": "Tournez, zoomez · cliquez sur la carte pour tous les détails",
+      "tagEquipment": "ÉQUIPEMENT",
+      "tagPresentation": "PRÉSENTATION",
+      "tagConcept": "CONCEPT",
+      "item1": {
+        "subtitle": "Haute capacité industrielle",
+        "desc": "Pétrin planétaire professionnel de 60 litres.",
+        "material": "AISI 304 Inox",
+        "feat1": "Mouvement planétaire · pétrissage homogène",
+        "feat2": "Levée automatique de cuve",
+        "feat3": "Commande numérique avec minuterie",
+        "feat4": "Certifié CE · garantie 2 ans"
+      },
+      "item2": {
+        "title": "Vitrine à bouteilles",
+        "subtitle": "Présentoir bar & boissons",
+        "desc": "Vitrine professionnelle pour bars et restaurants.",
+        "catVal": "Équipement de bar",
+        "capVal": "Présentation multi-niveaux",
+        "lightVal": "Rétroéclairage LED",
+        "matVal": "Inox · verre trempé",
+        "feat1": "Rétroéclairage LED",
+        "feat2": "Système de rayonnage réglable",
+        "feat3": "Panneaux en verre trempé",
+        "feat4": "Idéal pour bars et restaurants"
+      },
+      "item3": {
+        "title": "Modèle concept showroom",
+        "subtitle": "Module d'exposition",
+        "desc": "Équipement concept conçu sur mesure pour les showrooms.",
+        "catVal": "Équipement showroom",
+        "useVal": "Exposition · présentation",
+        "installVal": "Système modulaire",
+        "matVal": "Acier inoxydable",
+        "feat1": "Design modulaire",
+        "feat2": "Installation facile",
+        "feat3": "Aspect professionnel",
+        "feat4": "Construction durable"
+      },
+      "modal": {
+        "hint": "Tourner · Zoomer · Glisser",
+        "close": "Fermer",
+        "catalogPrice": "Prix catalogue",
+        "techSpecs": "Caractéristiques techniques",
+        "highlights": "Points forts",
+        "exploreBtn": "Découvrir dans le catalogue",
+        "closeBtn": "Fermer"
+      }
+    },
+    "theme": {
+      "doner": "Kebab",
+      "pizzeria": "Pizzeria",
+      "imbiss": "Snack",
+      "restaurant": "Restaurant",
+      "cafe": "Café",
+      "iceCream": "Glacier",
+      "asian": "Cuisine asiatique",
+      "bakery": "Boulangerie",
+      "butcher": "Boucherie",
+      "bar": "Bar & Pub",
+      "market": "Supermarché",
+      "catering": "Traiteur",
+      "hotel": "Hôtel",
+      "foodTruck": "Food Truck"
+    },
+    "themedWorlds": {
+      "subtitle": "14 secteurs · équipement complet pour chaque concept"
+    },
+    "trust": {
+      "euroBiggest": "Le plus grand d'Europe",
+      "euroBiggestSub": "Fournisseur gastro industriel",
+      "freeShipping": "Livraison gratuite",
+      "freeShippingSub": "Dans toute l'Europe",
+      "priceGuarantee": "Garantie du meilleur prix",
+      "priceGuaranteeSub": "Engagement meilleur prix",
+      "expressCargo": "Livraison express",
+      "expressCargoSub": "Sous 24-48 heures"
+    },
+    "explore": {
+      "catHeading": "Catégories de produits",
+      "pagesHeading": "Architecture du site",
+      "catSubtitle": "8 catégories · 6 300+ produits",
+      "pagesSubtitle": "14 pages · tous les points de contact",
+      "tabCategories": "Catégories",
+      "tabPages": "Pages",
+      "cat1": "Équipements de cuisson",
+      "cat1Sub": "Cuisinière, Four, Grill, Friteuse, Four à pizza",
+      "cat2": "Réfrigération & Congélation",
+      "cat2Sub": "Réfrigérateur, Congélateur, Saladette, Cellule de refroidissement",
+      "cat3": "Lavage & Hygiène",
+      "cat3Sub": "Lave-vaisselle, Lave-verres, Lavabo",
+      "cat4": "Préparation & Découpe",
+      "cat4Sub": "Coupe-légumes, Hachoir, Trancheuse",
+      "cat5": "Mobilier & Inox",
+      "cat5Sub": "Plan de travail, Étagère, Chariots, Évier, Hotte",
+      "cat6": "Boissons & Bar",
+      "cat6Sub": "Espresso, Blender, Presse-agrumes, Bar",
+      "cat7": "Service & Présentation",
+      "cat7Sub": "Assiettes, Verres, Chariot de service, Chafing",
+      "cat8": "Emballage & Livraison",
+      "cat8Sub": "Sous vide, Film, Sac de livraison",
+      "tagCritical": "CRITIQUE",
+      "tagImportant": "IMPORTANT",
+      "tagDifferentiator": "DIFFÉRENCIATEUR",
+      "page": {
+        "home": "Accueil",
+        "homeDesc": "Hero, catégories, recommandations",
+        "catList": "Liste de catégories",
+        "catListDesc": "Filtrage, tri, grille/liste",
+        "prodDetail": "Détail produit",
+        "prodDetailDesc": "Galerie, spec, prix, stock",
+        "cart": "Panier",
+        "cartDesc": "Slide-over + pleine page, résumé",
+        "payment": "Paiement",
+        "paymentDesc": "3 étapes: info → livraison → paiement",
+        "search": "Résultats de recherche",
+        "searchDesc": "Suggestions instantanées, filtres",
+        "account": "Compte utilisateur",
+        "accountDesc": "Commandes, adresse, favoris",
+        "b2b": "Portail B2B",
+        "b2bDesc": "Prix en gros, devis, factures",
+        "blog": "Blog / Guide",
+        "blogDesc": "Contenu SEO, guides",
+        "compare": "Comparaison",
+        "compareDesc": "2–4 produits côte à côte",
+        "planner": "Planificateur cuisine",
+        "plannerDesc": "Planification IA des équipements"
+      }
+    },
+    "quickLinks": {
+      "heading": "Aide & Contact",
+      "contact": "Contact",
+      "contactDesc": "Formulaire, carte, téléphone, WhatsApp",
+      "about": "À propos",
+      "aboutDesc": "Histoire, valeurs, équipe",
+      "faq": "FAQ / Aide",
+      "faqDesc": "Questions fréquentes, livraison, retours",
+      "tagStandard": "STANDARD"
+    },
+    "nav": {
+      "home": "Accueil",
+      "contact": "Contact",
+      "loginRegister": "Connexion / Inscription"
+    }
   },
   "pending": {
     "title": "Votre compte est en attente d'approbation",

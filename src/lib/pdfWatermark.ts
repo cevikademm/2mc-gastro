@@ -1,6 +1,6 @@
 import type { jsPDF } from 'jspdf';
 
-const LOGO_URL = 'https://mnlgbsfarubpvkmqqvff.supabase.co/storage/v1/object/public/2mcwerbung/logo4.png';
+const LOGO_URL = 'https://ohcytmzyjvpfsqejujzs.supabase.co/storage/v1/object/public/2mcwerbung/logo4.png';
 
 let cachedLogoDataURL: string | null = null;
 

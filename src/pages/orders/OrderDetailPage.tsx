@@ -13,7 +13,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   cancelled: { label: 'İptal Edildi', color: 'text-red-700', bg: 'bg-red-50 border-red-200', icon: XCircle },
 };
 
-const IMAGE_PROXY = 'https://mnlgbsfarubpvkmqqvff.supabase.co/functions/v1/image-proxy';
+const IMAGE_PROXY = 'https://ohcytmzyjvpfsqejujzs.supabase.co/functions/v1/image-proxy';
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();

@@ -1,16 +1,25 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useUIStore } from '../stores/uiStore';
 import { useCartStore } from '../stores/cartStore';
 import NotificationPanel from './NotificationPanel';
 import ComparePanel from './ComparePanel';
 import LanguageSelector from './LanguageSelector';
+import SearchCommand from './SearchCommand';
+import LiveChatWidget from './LiveChatWidget';
+import SiteFooter from './SiteFooter';
 import {
-  Bell, Settings, LayoutDashboard, Ruler, Refrigerator, Home,
+  Bell, Settings, LayoutDashboard, Ruler, Refrigerator, Home, Search,
   SlidersHorizontal, HelpCircle, BookOpen, PlusCircle,
-  Menu, X, LogOut, LogIn, User, Globe, CreditCard, FolderOpen, ShoppingCart, Pencil, Diamond, Box, Package
+  Menu, X, LogOut, LogIn, User, Globe, CreditCard, FolderOpen, ShoppingCart, Pencil, Diamond, Box, Package, Palette, Shield, Users
 } from 'lucide-react';
+
+const ADMIN_ITEMS = [
+  { path: '/admin/orders', labelKey: 'nav.adminOrders', fallback: 'Siparişler', icon: Shield, id: 'admin-orders' },
+  { path: '/admin/users',  labelKey: 'nav.adminUsers',  fallback: 'Kullanıcılar', icon: Users, id: 'admin-users' },
+];
 
 const NAV_ITEMS = [
   { path: '/dashboard', labelKey: 'nav.project', id: 'project' },
@@ -23,11 +32,15 @@ const SIDE_ITEMS = [
   { path: '/manual', labelKey: 'nav.manual', icon: Pencil, id: 'manual' },
   { path: '/diamond', labelKey: 'Diamond', icon: Diamond, id: 'diamond', raw: true },
   { path: '/combisteel', labelKey: 'CombiSteel', icon: Box, id: 'combisteel', raw: true },
+  { path: '/kitchen-planner', labelKey: 'AI Mutfak Planlayıcı', icon: Refrigerator, id: 'kitchen-planner', raw: true },
   { path: '/cart', labelKey: 'nav.cart', icon: ShoppingCart, id: 'cart' },
   { path: '/orders', labelKey: 'nav.myOrders', icon: Package, id: 'orders' },
 
   { path: '/settings', labelKey: 'nav.settings', icon: SlidersHorizontal, id: 'settings' },
   { path: '/payment', labelKey: 'nav.payment', icon: CreditCard, id: 'payment' },
+  { path: '/brand', labelKey: 'nav.brand', icon: Palette, id: 'brand' },
+  { path: '/blog', labelKey: 'Blog', icon: Pencil, id: 'blog', raw: true },
+  { path: '/tools/kitchen-calculator', labelKey: 'Hesaplayıcı', icon: Box, id: 'calc', raw: true },
 ];
 
 // Alt tab bar için sadece önemli 5 sayfa
@@ -56,6 +69,18 @@ export default function Layout() {
     logout();
     navigate('/login');
   };
+
+  const [searchOpen, setSearchOpen] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <div className="bg-surface font-body text-on-surface min-h-screen flex flex-col">
@@ -95,6 +120,22 @@ export default function Layout() {
               {t('nav.exportDWG')}
             </button>
           </div>
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="hidden md:flex items-center gap-2 px-3 h-9 text-xs text-slate-400 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+            title="Ara (Ctrl+K)"
+          >
+            <Search size={14} />
+            <span>{t('nav.search', 'Ara...')}</span>
+            <kbd className="ml-2 px-1.5 py-0.5 bg-white text-[9px] font-bold text-slate-500 rounded border border-slate-200">⌘K</kbd>
+          </button>
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="md:hidden p-1.5 text-slate-500 hover:bg-slate-100 rounded-full"
+            aria-label="Ara"
+          >
+            <Search size={18} />
+          </button>
           <Link to="/cart" className="relative p-1.5 md:p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
             <ShoppingCart size={18} />
             {cartCount > 0 && (
@@ -161,10 +202,31 @@ export default function Layout() {
                       isActive ? 'bg-primary/10 text-primary font-bold' : 'text-slate-500 hover:bg-slate-200'
                     }`}
                   >
-                    <Icon size={18} /> {(item as any).raw ? item.labelKey : t(item.labelKey)}
+                    <Icon size={18} /> {(item as any).raw ? item.labelKey : t(item.labelKey, { defaultValue: item.labelKey })}
                   </Link>
                 );
               })}
+              {user?.role === 'admin' && (
+                <div className="mt-4 pt-4 border-t border-outline-variant/20 space-y-1">
+                  <div className="px-4 pb-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{t('nav.admin')}</div>
+                  {ADMIN_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname.startsWith(item.path);
+                    return (
+                      <Link
+                        key={item.id}
+                        to={item.path}
+                        onClick={toggleMobileMenu}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all ${
+                          isActive ? 'bg-primary/10 text-primary font-bold' : 'text-slate-500 hover:bg-slate-200'
+                        }`}
+                      >
+                        <Icon size={18} /> {t(item.labelKey, { defaultValue: item.fallback })}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </nav>
             <div className="mt-6 pt-4 border-t border-outline-variant/20 space-y-1">
               {isAuthenticated ? (
@@ -178,7 +240,7 @@ export default function Layout() {
                 </>
               ) : (
                 <Link to="/login" onClick={toggleMobileMenu} className="w-full flex items-center gap-3 text-primary px-4 py-2 hover:bg-primary/10 rounded-md text-sm font-bold">
-                  <LogIn size={18} /> Giriş Yap
+                  <LogIn size={18} /> {t('nav.login')}
                 </Link>
               )}
             </div>
@@ -219,10 +281,33 @@ export default function Layout() {
                   }`}
                 >
                   <Icon size={18} />
-                  {t(item.labelKey)}
+                  {(item as any).raw ? item.labelKey : t(item.labelKey, { defaultValue: item.labelKey })}
                 </Link>
               );
             })}
+            {user?.role === 'admin' && (
+              <div className="mt-4 pt-4 border-t border-outline-variant/20 space-y-1">
+                <div className="px-4 pb-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{t('nav.admin', 'Yönetici')}</div>
+                {ADMIN_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname.startsWith(item.path);
+                  return (
+                    <Link
+                      key={item.id}
+                      to={item.path}
+                      className={`w-full flex items-center gap-3 px-4 py-2 transition-all duration-200 rounded-md text-sm font-medium ${
+                        isActive
+                          ? 'bg-primary/10 text-primary border-r-4 border-primary'
+                          : 'text-slate-500 hover:bg-slate-200 hover:translate-x-1'
+                      }`}
+                    >
+                      <Icon size={18} />
+                      {t(item.labelKey, { defaultValue: item.fallback })}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </nav>
 
           {location.pathname === '/dashboard' && (
@@ -249,7 +334,7 @@ export default function Layout() {
               </>
             ) : (
               <Link to="/login" className="w-full flex items-center gap-3 text-primary px-4 py-2 hover:bg-primary/10 transition-all rounded-md text-sm font-bold">
-                <LogIn size={18} /> Giriş Yap
+                <LogIn size={18} /> {t('nav.login')}
               </Link>
             )}
           </div>
@@ -268,6 +353,8 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+
+      {!isDesign && <SiteFooter />}
 
       {/* Mobile Bottom Navigation — sadece telefon (<md) */}
       {!isDesign && (
@@ -293,6 +380,12 @@ export default function Layout() {
 
       {/* Global Compare Panel */}
       <ComparePanel />
+
+      {/* Global CMD+K Search */}
+      <SearchCommand open={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      {/* Global AI Live Chat */}
+      <LiveChatWidget />
     </div>
   );
 }

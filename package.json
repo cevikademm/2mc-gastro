@@ -6,7 +6,9 @@
   "description": "2MC Gastro - Professional commercial kitchen planning and equipment management platform for the European market",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build",
+    "build": "node scripts/generate-sitemap.mjs && vite build",
+    "sitemap": "node scripts/generate-sitemap.mjs",
+    "blog:new": "node scripts/new-blog-post.mjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"

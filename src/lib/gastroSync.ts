@@ -34,11 +34,11 @@ function flushAll() {
 
 // ─── PROJECTS ───
 export async function syncProjects(projects: any[], activities: any[]) {
-  if (!gastroDb) return;
+  if (!gastroDb) { console.warn('[GastroSync] Supabase not configured'); return; }
   const uid = USER_ID();
   // Upsert each project
   for (const p of projects) {
-    await gastroDb.from('gastro_projects').upsert({
+    const { error } = await gastroDb.from('gastro_projects').upsert({
       id: p.id,
       user_id: uid,
       name: p.name,
@@ -55,10 +55,11 @@ export async function syncProjects(projects: any[], activities: any[]) {
       room_height_cm: p.roomHeightCm || 400,
       products: p.products || [],
     }, { onConflict: 'id' });
+    if (error) console.error('[GastroSync] project upsert error:', p.id, error.message);
   }
   // Sync activities
   for (const a of activities) {
-    await gastroDb.from('gastro_activities').upsert({
+    const { error } = await gastroDb.from('gastro_activities').upsert({
       id: a.id,
       user_id: uid,
       title: a.title,
@@ -66,7 +67,9 @@ export async function syncProjects(projects: any[], activities: any[]) {
       activity_time: a.time,
       active: a.active,
     }, { onConflict: 'id' });
+    if (error) console.error('[GastroSync] activity upsert error:', a.id, error.message);
   }
+  console.log('[GastroSync] synced', projects.length, 'projects,', activities.length, 'activities');
 }
 
 export function debouncedSyncProjects(projects: any[], activities: any[]) {

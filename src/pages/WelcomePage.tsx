@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import { AnimatePresence } from 'motion/react';
 import {
   ChefHat, Ruler, ClipboardList, Refrigerator,
-  ArrowRight, ArrowLeft, Sparkles, Globe,
+  ArrowRight, ArrowLeft, Sparkles,
   ShieldCheck, BadgeCheck, Languages, Play
 } from 'lucide-react';
 
@@ -47,14 +47,18 @@ export default function WelcomePage() {
     if (step > 0) setStep(step - 1);
   };
 
+  const langs = ['tr','en','de','fr','nl','it','es','pt','pl','cs','ro','el','sv','da','hu'];
+  const langFlag: Record<string, string> = {
+    tr:'🇹🇷', en:'🇬🇧', de:'🇩🇪', fr:'🇫🇷', nl:'🇳🇱', it:'🇮🇹', es:'🇪🇸',
+    pt:'🇵🇹', pl:'🇵🇱', cs:'🇨🇿', ro:'🇷🇴', el:'🇬🇷', sv:'🇸🇪', da:'🇩🇰', hu:'🇭🇺',
+  };
+
   const cycleLang = () => {
-    const langs = ['tr', 'en', 'de'];
     const current = langs.indexOf(i18n.language);
     const next = langs[(current + 1) % langs.length];
     i18n.changeLanguage(next);
+    try { localStorage.setItem('2mc_lang', next); } catch {}
   };
-
-  const langLabel: Record<string, string> = { tr: 'TR', en: 'EN', de: 'DE' };
 
   return (
     <div className="min-h-screen bg-surface flex flex-col items-center justify-center relative overflow-hidden">
@@ -70,8 +74,7 @@ export default function WelcomePage() {
         onClick={cycleLang}
         className="absolute top-6 right-6 z-20 flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container-highest/60 backdrop-blur text-on-surface-variant hover:text-primary transition-colors text-sm font-bold"
       >
-        <Globe size={16} />
-        {langLabel[i18n.language] || 'TR'}
+        <span className="text-base leading-none">{langFlag[i18n.language] || '🇹🇷'}</span>
       </button>
 
       <div className="relative z-10 w-full max-w-lg px-6">

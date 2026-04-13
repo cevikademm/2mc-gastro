@@ -9,6 +9,9 @@
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/sitemap-products.xml", "destination": "/api/sitemap-products" },
+    { "source": "/feed-gmc.xml", "destination": "/api/feed-gmc" },
+    { "source": "/rss.xml", "destination": "/api/rss" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "crons": [

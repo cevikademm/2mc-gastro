@@ -22,7 +22,7 @@ export default function SettingsPage() {
   const handleSave = () => {
     updateProfile({ language: lang, region, currency, dateFormat, notifications: notifs });
     i18n.changeLanguage(lang);
-    (window as any).__2mc_lang = lang;
+    try { localStorage.setItem('2mc_lang', lang); } catch {}
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -127,9 +127,21 @@ export default function SettingsPage() {
                 <div>
                   <label className="block text-xs font-bold text-on-surface-variant uppercase mb-2">{t('common.language')}</label>
                   <select value={lang} onChange={(e) => setLang(e.target.value)} className="w-full bg-surface-container-highest border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary outline-none">
-                    <option value="tr">Türkçe</option>
-                    <option value="en">English</option>
-                    <option value="de">Deutsch</option>
+                    <option value="tr">🇹🇷 Türkçe</option>
+                    <option value="en">🇬🇧 English</option>
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="fr">🇫🇷 Français</option>
+                    <option value="nl">🇳🇱 Nederlands</option>
+                    <option value="it">🇮🇹 Italiano</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="pt">🇵🇹 Português</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                    <option value="cs">🇨🇿 Čeština</option>
+                    <option value="ro">🇷🇴 Română</option>
+                    <option value="el">🇬🇷 Ελληνικά</option>
+                    <option value="sv">🇸🇪 Svenska</option>
+                    <option value="da">🇩🇰 Dansk</option>
+                    <option value="hu">🇭🇺 Magyar</option>
                     <option value="fr">Français</option>
                     <option value="nl">Nederlands</option>
                   </select>

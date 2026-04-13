@@ -52,7 +52,7 @@
     "details": "Details",
     "selected": "ausgewählt",
     "moreCanBeAdded": "weitere hinzufügbar",
-    "cheapest": "Günstigster",
+    "cheapest": "Bester Preis",
     "none": "Keine",
     "or": "oder"
   },
@@ -82,7 +82,12 @@
     "panel": "Panel",
     "drawing": "Zeichnung",
     "myOrders": "Meine Bestellungen",
-    "newOrder": "Neue Bestellung"
+    "newOrder": "Neue Bestellung",
+    "admin": "Admin",
+    "search": "Suche...",
+    "brand": "Markenidentität",
+    "adminOrders": "Bestellungen",
+    "adminUsers": "Benutzer"
   },
   "brand": {
     "name": "2MC Gastro",
@@ -180,7 +185,217 @@
     "feature_smart_desc": "Projektverwaltung und Revisionsverfolgung",
     "readyTitle": "Bereit?",
     "readyDesc": "Starten Sie jetzt mit der professionellen Küchenplanung.",
-    "startButton": "Los geht's"
+    "startButton": "Los geht's",
+    "popularCategories": "Beliebteste Kategorien",
+    "bestsellers": "Unsere Bestseller",
+    "toolsTitle": "Smarte Küchenwerkzeuge",
+    "bannerHint": "Klicken für nächstes Banner",
+    "modules": {
+      "diamond": "Katalog",
+      "combisteel": "Shop",
+      "studio": "Design",
+      "compare": "Produkt",
+      "quote": "PDF",
+      "projects": "Verwaltung",
+      "compareLabel": "VERGLEICHEN",
+      "quoteLabel": "ANGEBOT",
+      "projectsLabel": "PROJEKTE"
+    },
+    "cat": {
+      "pizzaGrill": "Pizza & Grill",
+      "cooling": "Kühlung",
+      "washing": "Spülen & Reinigen",
+      "steelFurniture": "Edelstahlmöbel",
+      "doughMachines": "Teigmaschinen",
+      "cookingDevices": "Kochgeräte"
+    },
+    "tools": {
+      "badge": "Werkzeuge",
+      "subtitle": "KI-Planung, Kapazitätsberechnung und 3D-Design — alles auf einer Plattform",
+      "aiPlanner": {
+        "title": "KI-Küchenplaner",
+        "desc": "KI erstellt eine vollständige Geräteliste basierend auf Ihrem Geschäftstyp. Empfehlungen nach Fläche, Kapazität und Budget.",
+        "badge": "KI",
+        "step1": "Geschäftstyp",
+        "step2": "Fläche & Gedecke",
+        "step3": "Geräteliste"
+      },
+      "capacity": {
+        "title": "Kapazitätsrechner",
+        "desc": "Berechnen Sie sofort Koch-, Ofen-, Kühl- und Spülkapazitäten basierend auf täglichen Gedecken, Menütyp und Fläche.",
+        "badge": "BERECHNUNG",
+        "step1": "Menütyp",
+        "step2": "Kochen",
+        "step3": "Kühlung",
+        "step4": "Spülen"
+      },
+      "studio3d": {
+        "title": "3D Design Studio",
+        "desc": "Modellieren Sie Ihre Küche in 3D per Drag-and-Drop, platzieren Sie Geräte und erhalten Sie Ihr Angebot als PDF mit einem Klick.",
+        "step1": "Plan zeichnen",
+        "step2": "3D platzieren",
+        "step3": "PDF-Angebot"
+      }
+    },
+    "spec": {
+      "capacity": "Kapazität",
+      "power": "Leistung",
+      "rpm": "Drehzahl",
+      "dimensions": "Abmessungen",
+      "weight": "Gewicht",
+      "material": "Material",
+      "category": "Kategorie",
+      "lighting": "Beleuchtung",
+      "usage": "Verwendung",
+      "installation": "Montage"
+    },
+    "showcase3d": {
+      "title": "3D Produkt",
+      "titleAccent": "Vitrine",
+      "subtitle": "Drehen, zoomen · klicken Sie auf die Karte für alle Details",
+      "tagEquipment": "AUSRÜSTUNG",
+      "tagPresentation": "PRÄSENTATION",
+      "tagConcept": "KONZEPT",
+      "item1": {
+        "subtitle": "Hohe Kapazität industriell",
+        "desc": "Professioneller Planetenmixer mit 60-Liter-Kessel für industrielle Bäckereien, Konditoreien und große Catering-Betriebe.",
+        "material": "AISI 304 Edelstahl",
+        "feat1": "Planetenbewegung · homogenes Kneten",
+        "feat2": "Automatische Kesselanhebung",
+        "feat3": "Timer-Digitalsteuerung",
+        "feat4": "CE-zertifiziert · 2 Jahre Garantie"
+      },
+      "item2": {
+        "title": "Flaschen-Vitrine",
+        "subtitle": "Bar- & Getränke-Präsentationsregal",
+        "desc": "Professionelle Vitrine für Bars und Restaurants zur eleganten Präsentation bunter Getränkeflaschen.",
+        "catVal": "Bar-Ausstattung",
+        "capVal": "Mehrstöckige Präsentation",
+        "lightVal": "LED-Hintergrundbeleuchtung",
+        "matVal": "Edelstahl · gehärtetes Glas",
+        "feat1": "LED-Hintergrundbeleuchtung",
+        "feat2": "Verstellbares Regalsystem",
+        "feat3": "Gehärtete Glaspaneele",
+        "feat4": "Ideal für Bars und Restaurants"
+      },
+      "item3": {
+        "title": "Showroom-Konzeptmodell",
+        "subtitle": "Ausstellungs- & Präsentationsmodul",
+        "desc": "Speziell entworfene Konzeptausrüstung für Geschäfte und Showrooms.",
+        "catVal": "Showroom-Ausrüstung",
+        "useVal": "Ausstellung · Präsentation",
+        "installVal": "Modulares System",
+        "matVal": "Edelstahl",
+        "feat1": "Modulares Design",
+        "feat2": "Einfache Installation",
+        "feat3": "Professionelles Aussehen",
+        "feat4": "Robuste Konstruktion"
+      },
+      "modal": {
+        "hint": "Drehen · Zoomen · Ziehen",
+        "close": "Schließen",
+        "catalogPrice": "Katalogpreis",
+        "techSpecs": "Technische Daten",
+        "highlights": "Herausragende Merkmale",
+        "exploreBtn": "Im Katalog entdecken",
+        "closeBtn": "Schließen"
+      }
+    },
+    "theme": {
+      "doner": "Döner-Laden",
+      "pizzeria": "Pizzeria",
+      "imbiss": "Imbiss",
+      "restaurant": "Restaurant",
+      "cafe": "Café",
+      "iceCream": "Eisdiele",
+      "asian": "Asiatische Küche",
+      "bakery": "Bäckerei",
+      "butcher": "Metzgerei",
+      "bar": "Bar & Pub",
+      "market": "Markt",
+      "catering": "Catering",
+      "hotel": "Hotel",
+      "foodTruck": "Food Truck"
+    },
+    "themedWorlds": {
+      "subtitle": "14 Branchen · komplette Ausstattung für jedes Konzept"
+    },
+    "trust": {
+      "euroBiggest": "Europas Größter",
+      "euroBiggestSub": "Industrieller Gastro-Lieferant",
+      "freeShipping": "Kostenlose Lieferung",
+      "freeShippingSub": "Europaweit",
+      "priceGuarantee": "Tiefpreisgarantie",
+      "priceGuaranteeSub": "Bestpreis-Zusage",
+      "expressCargo": "Expressversand",
+      "expressCargoSub": "Innerhalb von 24-48 Stunden"
+    },
+    "explore": {
+      "catHeading": "Produktkategorien",
+      "pagesHeading": "Website-Architektur",
+      "catSubtitle": "8 Hauptkategorien · 6.300+ Produkte",
+      "pagesSubtitle": "14 Seiten · alle Erlebnispunkte",
+      "tabCategories": "Kategorien",
+      "tabPages": "Seiten",
+      "cat1": "Kochgeräte",
+      "cat1Sub": "Herd, Ofen, Grill, Fritteuse, Pizzaofen",
+      "cat2": "Kühlung & Tiefkühlung",
+      "cat2Sub": "Kühlschrank, Gefrierschrank, Salatbar, Schockkühler",
+      "cat3": "Spülen & Hygiene",
+      "cat3Sub": "Geschirrspüler & Gläserspüler, Handwaschbecken",
+      "cat4": "Vorbereitung & Schneiden",
+      "cat4Sub": "Gemüseschneider, Fleischwolf, Aufschnittmaschine",
+      "cat5": "Möbel & Edelstahl",
+      "cat5Sub": "Arbeitstisch, Regal, Wagen, Spüle, Dunstabzug",
+      "cat6": "Getränke & Bar",
+      "cat6Sub": "Espresso, Mixer, Entsafter, Bar",
+      "cat7": "Service & Präsentation",
+      "cat7Sub": "Teller, Gläser, Servierwagen, Chafing",
+      "cat8": "Verpackung & Lieferung",
+      "cat8Sub": "Vakuum, Folie, Liefertasche",
+      "tagCritical": "KRITISCH",
+      "tagImportant": "WICHTIG",
+      "tagDifferentiator": "DIFFERENZIEREND",
+      "page": {
+        "home": "Startseite",
+        "homeDesc": "Hero, Kategorien, Empfehlungen",
+        "catList": "Kategorieliste",
+        "catListDesc": "Filtern, Sortieren, Raster/Liste",
+        "prodDetail": "Produktdetail",
+        "prodDetailDesc": "Galerie, Spez., Preis, Bestand",
+        "cart": "Warenkorb",
+        "cartDesc": "Slide-over + Vollbild, Zusammenfassung",
+        "payment": "Zahlung",
+        "paymentDesc": "3 Schritte: Info → Versand → Zahlung",
+        "search": "Suchergebnisse",
+        "searchDesc": "Sofortvorschläge, Filter",
+        "account": "Benutzerkonto",
+        "accountDesc": "Bestellungen, Adresse, Favoriten",
+        "b2b": "B2B-Portal",
+        "b2bDesc": "Mengenpreise, Angebote, Rechnungen",
+        "blog": "Blog / Ratgeber",
+        "blogDesc": "SEO-Inhalte, Ratgeber",
+        "compare": "Vergleich",
+        "compareDesc": "2–4 Produkte nebeneinander",
+        "planner": "Küchenplaner",
+        "plannerDesc": "KI-gestützte Geräteplanung"
+      }
+    },
+    "quickLinks": {
+      "heading": "Hilfe & Kontakt",
+      "contact": "Kontakt",
+      "contactDesc": "Formular, Karte, Telefon, WhatsApp",
+      "about": "Über uns",
+      "aboutDesc": "Geschichte, Werte, Team",
+      "faq": "FAQ / Hilfe",
+      "faqDesc": "Häufige Fragen, Versand, Rückgabe",
+      "tagStandard": "STANDARD"
+    },
+    "nav": {
+      "home": "Startseite",
+      "contact": "Kontakt",
+      "loginRegister": "Anmelden / Registrieren"
+    }
   },
   "pending": {
     "title": "Ihr Konto wartet auf Genehmigung",

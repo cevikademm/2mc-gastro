@@ -89,7 +89,7 @@ function QuoteTab({ project, floorItems }: { project: import('../../stores/proje
     vat: 'DE123456789',
   };
 
-  const IMAGE_PROXY = 'https://mnlgbsfarubpvkmqqvff.supabase.co/functions/v1/image-proxy';
+  const IMAGE_PROXY = 'https://ohcytmzyjvpfsqejujzs.supabase.co/functions/v1/image-proxy';
 
   async function loadImgBase64(src: string): Promise<string | null> {
     if (!src) return null;
@@ -120,7 +120,7 @@ function QuoteTab({ project, floorItems }: { project: import('../../stores/proje
       const [logoFull, logoIcon, logoHolo] = await Promise.all([
         loadImgBase64('/logo-werbung.png'),
         loadImgBase64('/logo-icon.png'),
-        loadImgBase64('https://mnlgbsfarubpvkmqqvff.supabase.co/storage/v1/object/public/2mcwerbung/logo4.png'),
+        loadImgBase64('https://ohcytmzyjvpfsqejujzs.supabase.co/storage/v1/object/public/2mcwerbung/logo4.png'),
       ]);
 
       // Hologram watermark
@@ -334,7 +334,7 @@ function QuoteTab({ project, floorItems }: { project: import('../../stores/proje
         {/* Hologram watermark — new circular logo */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
           <img
-            src="https://mnlgbsfarubpvkmqqvff.supabase.co/storage/v1/object/public/2mcwerbung/logo4.png"
+            src="https://ohcytmzyjvpfsqejujzs.supabase.co/storage/v1/object/public/2mcwerbung/logo4.png"
             alt=""
             onError={(e) => { (e.target as HTMLImageElement).src = '/logo-icon.png'; }}
             className="w-80 h-80 object-contain select-none"
@@ -597,6 +597,32 @@ export default function ProjectDetailPage() {
   // Kat planındaki ürünleri oku
   const floorItems = useMemo(() => id ? getFloorPlanItems(id) : [], [id, activeTab]);
 
+  // project.products → FloorPlanItem formatına çevir (AddProductPage'den eklenen ürünler)
+  const storeProductItems: FloorPlanItem[] = useMemo(() => {
+    if (!project) return [];
+    return project.products.map((prod) => ({
+      id: prod.id,
+      equipmentId: prod.code,
+      name: prod.name,
+      icon: prod.icon,
+      imageData: prod.imageData,
+      width: (prod.dimensions?.width || 80) * 10, // cm → mm (floorplan format)
+      height: (prod.dimensions?.height || 70) * 10,
+      category: prod.category || 'other',
+      kw: prod.kw || 0,
+      price: prod.price || 0,
+      brand: prod.brand || '',
+      desc: prod.description || '',
+    }));
+  }, [project?.products]);
+
+  // Birleşik ürün listesi (floorplan + store products, çakışmaları filtrele)
+  const allItems: FloorPlanItem[] = useMemo(() => {
+    const floorIds = new Set(floorItems.map(fi => fi.equipmentId || fi.id));
+    const uniqueStoreItems = storeProductItems.filter(sp => !floorIds.has(sp.equipmentId || sp.id));
+    return [...floorItems, ...uniqueStoreItems];
+  }, [floorItems, storeProductItems]);
+
   // model-viewer script'ini bir kez yükle (çift register'ı önle)
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -638,8 +664,8 @@ export default function ProjectDetailPage() {
     inProgress: 'bg-violet-100 text-violet-900',
   };
 
-  const totalKW = floorItems.reduce((sum, fi) => sum + (fi.kw || 0), 0);
-  const totalPrice = floorItems.reduce((sum, fi) => sum + (fi.price || 0), 0);
+  const totalKW = allItems.reduce((sum, fi) => sum + (fi.kw || 0), 0);
+  const totalPrice = allItems.reduce((sum, fi) => sum + (fi.price || 0), 0);
 
   return (
     <div className="max-w-6xl mx-auto w-full space-y-6">
@@ -655,7 +681,7 @@ export default function ProjectDetailPage() {
             <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${statusColors[p.status]}`}>
               {p.status}
             </span>
-            <span className="text-sm text-on-surface-variant">{floorItems.length} ürün</span>
+            <span className="text-sm text-on-surface-variant">{allItems.length} ürün</span>
             <span className="text-sm text-on-surface-variant">•</span>
             <span className="text-sm text-on-surface-variant">{p.area} m²</span>
           </div>
@@ -681,7 +707,7 @@ export default function ProjectDetailPage() {
         <div className="flex gap-6">
           {[
             { key: 'overview', label: 'Genel Bakış', icon: Building },
-            { key: 'products', label: `Ürünler (${floorItems.length})`, icon: Package },
+            { key: 'products', label: `Ürünler (${allItems.length})`, icon: Package },
             { key: 'quote', label: 'Teklif', icon: FileText },
             { key: 'settings', label: 'Ayarlar', icon: Settings2 },
           ].map((tab) => {
@@ -710,7 +736,7 @@ export default function ProjectDetailPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10 shadow-sm">
                 <div className="text-[10px] font-bold text-slate-400 uppercase">Ürün Sayısı</div>
-                <div className="text-2xl font-black text-primary mt-1">{floorItems.length}</div>
+                <div className="text-2xl font-black text-primary mt-1">{allItems.length}</div>
               </div>
               <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10 shadow-sm">
                 <div className="text-[10px] font-bold text-slate-400 uppercase">Toplam Güç</div>
@@ -788,17 +814,17 @@ export default function ProjectDetailPage() {
                 <h2 className="font-headline font-bold text-primary text-sm uppercase tracking-wider">Ürünler</h2>
                 <button onClick={() => setActiveTab('products')} className="text-xs text-primary font-bold hover:underline">Tümü →</button>
               </div>
-              {floorItems.length === 0 ? (
+              {allItems.length === 0 ? (
                 <div className="text-center py-8">
                   <Package size={32} className="mx-auto text-slate-300 mb-2" />
-                  <p className="text-xs text-slate-400">Kat planında ürün yok</p>
-                  <Link to={`/projects/${p.id}/design`} className="text-xs text-primary font-bold hover:underline mt-2 inline-block">
-                    Kat planına git →
+                  <p className="text-xs text-slate-400">Henüz ürün eklenmedi</p>
+                  <Link to={`/projects/${p.id}/products/add`} className="text-xs text-primary font-bold hover:underline mt-2 inline-block">
+                    Ürün ekle →
                   </Link>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {floorItems.slice(0, 5).map((fi) => {
+                  {allItems.slice(0, 5).map((fi) => {
                     const Icon = ICON_MAP[fi.icon] || Package;
                     return (
                       <div key={fi.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
@@ -829,7 +855,7 @@ export default function ProjectDetailPage() {
         <div className="space-y-4">
           <div className="flex justify-between items-center flex-wrap gap-3">
             <p className="text-sm text-on-surface-variant">
-              {floorItems.length} ürün (kat planından)
+              {allItems.length} ürün
               {selected3D.size > 0 && <span className="ml-2 text-primary font-bold">• {selected3D.size} seçili</span>}
             </p>
             <div className="flex items-center gap-2">
@@ -851,21 +877,29 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
-          {floorItems.length === 0 ? (
+          {allItems.length === 0 ? (
             <div className="bg-surface-container-lowest rounded-xl shadow-sm p-16 text-center border border-outline-variant/10">
               <Package size={48} className="mx-auto text-slate-200 mb-4" />
-              <h3 className="font-bold text-lg text-slate-500 mb-2">Kat planında ürün yok</h3>
-              <p className="text-sm text-slate-400 mb-6">Kat planına ürün ekleyerek başlayın. Diamond veya CombiSteel kataloglarından ürün seçip kat planına yerleştirin.</p>
-              <Link
-                to={`/projects/${p.id}/design`}
-                className="inline-flex items-center gap-2 brushed-metal text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:opacity-90 transition-all"
-              >
-                <Ruler size={18} /> Kat Planını Aç
-              </Link>
+              <h3 className="font-bold text-lg text-slate-500 mb-2">Henüz ürün eklenmedi</h3>
+              <p className="text-sm text-slate-400 mb-6">Ürün Ekle butonu veya kat planından ürün ekleyebilirsiniz.</p>
+              <div className="flex items-center justify-center gap-3">
+                <Link
+                  to={`/projects/${p.id}/products/add`}
+                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:opacity-90 transition-all"
+                >
+                  <Plus size={18} /> Ürün Ekle
+                </Link>
+                <Link
+                  to={`/projects/${p.id}/design`}
+                  className="inline-flex items-center gap-2 brushed-metal text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:opacity-90 transition-all"
+                >
+                  <Ruler size={18} /> Kat Planı
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {floorItems.map((fi) => {
+              {allItems.map((fi) => {
                 const Icon = ICON_MAP[fi.icon] || Package;
                 const catColor = CATEGORY_COLORS[fi.category] || '#6b7280';
                 const catLabel = CATEGORY_LABELS[fi.category] || fi.category || 'Diğer';
@@ -934,7 +968,7 @@ export default function ProjectDetailPage() {
 
       {/* Quote Tab */}
       {activeTab === 'quote' && (
-        <QuoteTab project={p} floorItems={floorItems} />
+        <QuoteTab project={p} floorItems={allItems} />
       )}
 
       {/* Settings Tab */}

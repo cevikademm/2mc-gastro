@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '../stores/cartStore';
 import { useOrderStore, type OrderItem } from '../stores/orderStore';
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { useAuthStore } from '../stores/authStore';
+import { EmptyState, EmptyCartIllustration } from './illustrations/EmptyState';
 
 const COMPANY_INFO = {
   name: '2MC Werbung & Gastro GmbH',
@@ -22,7 +24,7 @@ const COMPANY_INFO = {
 };
 
 // Image proxy for cross-origin images (S3 etc.)
-const IMAGE_PROXY = 'https://mnlgbsfarubpvkmqqvff.supabase.co/functions/v1/image-proxy';
+const IMAGE_PROXY = 'https://ohcytmzyjvpfsqejujzs.supabase.co/functions/v1/image-proxy';
 
 // Load an image URL → base64 dataURL (routes cross-origin through proxy)
 async function loadImageAsDataURL(src: string): Promise<string | null> {
@@ -77,6 +79,7 @@ function ProductImage({ src, alt }: { src: string; alt: string }) {
 }
 
 export default function Cart() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { items, removeItem, updateQuantity, clearCart, getTotalItems, getTotalPrice, getItemsByCategory } = useCartStore();
   const { createOrder } = useOrderStore();
@@ -129,12 +132,12 @@ export default function Cart() {
           navigate('/orders');
         }, 2500);
       } else {
-        setOrderError('Sipariş oluşturulamadı. Lütfen giriş yaptığınızdan emin olun.');
+        setOrderError(t('cart.orderCreateFailed'));
       }
     } catch (err) {
       console.error('Order error:', err);
       setOrderLoading(false);
-      setOrderError('Bir hata oluştu. Lütfen tekrar deneyin.');
+      setOrderError(t('cart.orderError'));
     }
   };
 
@@ -166,7 +169,7 @@ export default function Cart() {
       const [logoFull, logoIcon, logoHolo] = await Promise.all([
         loadImageAsDataURL('/logo-werbung.png'),
         loadImageAsDataURL('/logo-icon.png'),
-        loadImageAsDataURL('https://mnlgbsfarubpvkmqqvff.supabase.co/storage/v1/object/public/2mcwerbung/logo4.png'),
+        loadImageAsDataURL('https://ohcytmzyjvpfsqejujzs.supabase.co/storage/v1/object/public/2mcwerbung/logo4.png'),
       ]);
 
       // ── Helper: draw hologram watermark on current page ──
@@ -511,13 +514,11 @@ export default function Cart() {
   if (items.length === 0) {
     return (
       <div className="max-w-4xl mx-auto">
-        <div className="text-center py-24 space-y-4">
-          <div className="w-20 h-20 bg-surface-container-highest rounded-full flex items-center justify-center mx-auto">
-            <ShoppingCart size={36} className="text-on-surface-variant/30" />
-          </div>
-          <h2 className="text-2xl font-headline font-black text-on-surface">Sepetiniz Boş</h2>
-          <p className="text-on-surface-variant">Katalogdan ürün ekleyerek teklif oluşturabilirsiniz.</p>
-        </div>
+        <EmptyState
+          illustration={<EmptyCartIllustration />}
+          title={t('cart.emptyTitle')}
+          description={t('cart.emptyDesc')}
+        />
       </div>
     );
   }
@@ -529,15 +530,15 @@ export default function Cart() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black font-headline text-primary tracking-tight flex items-center gap-3">
-            <ShoppingCart size={28} /> {offerSent ? 'Sipariş Teklifi' : 'Sepet'}
+            <ShoppingCart size={28} /> {offerSent ? t('cart.orderQuote') : t('cart.title')}
           </h1>
-          <p className="text-on-surface-variant font-medium mt-1">{totalItems} ürün · {formatPrice(totalPrice)}</p>
+          <p className="text-on-surface-variant font-medium mt-1">{totalItems} {t('common.products')} · {formatPrice(totalPrice)}</p>
         </div>
         <div className="flex gap-3 flex-wrap">
           <button
             onClick={handleExportPDFClick}
             disabled={pdfLoading}
-            title={isPro ? 'PDF Teklif indir' : 'Pro aboneliğe özel'}
+            title={isPro ? t('cart.pdfDownload') : t('cart.proOnly')}
             className={`relative px-5 py-2.5 rounded-lg font-headline font-bold text-sm flex items-center gap-2 transition-all shadow-sm disabled:opacity-60 ${
               isPro
                 ? 'bg-surface-container-low hover:bg-surface-container-high text-primary'
@@ -545,7 +546,7 @@ export default function Cart() {
             }`}
           >
             {isPro ? <FileText size={16} /> : <Lock size={14} />}
-            {pdfLoading ? 'Hazırlanıyor...' : 'PDF Teklif'}
+            {pdfLoading ? t('cart.preparing') : t('cart.pdfQuote')}
             {!isPro && (
               <span className="ml-1 text-[9px] font-mono uppercase tracking-wider bg-white/20 px-1.5 py-0.5 rounded">
                 PRO
@@ -556,19 +557,25 @@ export default function Cart() {
             onClick={handleSendOffer}
             className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg font-headline font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
           >
-            {offerSent ? 'Gönderildi!' : <><Send size={16} /> Teklif İste</>}
+            {offerSent ? t('cart.sent') : <><Send size={16} /> {t('cart.requestQuote')}</>}
+          </button>
+          <button
+            onClick={() => navigate('/checkout')}
+            className="bg-sky-500 hover:bg-sky-600 text-white px-5 py-2.5 rounded-lg font-headline font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
+          >
+            <Package size={16} /> {t('cart.checkout', 'Ödemeye Git')}
           </button>
           <button
             onClick={() => setOrderModal(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-headline font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
+            className="bg-success hover:bg-success/90 text-white px-5 py-2.5 rounded-lg font-headline font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
           >
-            <Package size={16} /> Sipariş Ver
+            <Package size={16} /> {t('cart.placeOrder')}
           </button>
           <button
             onClick={clearCart}
             className="text-error hover:bg-error-container px-4 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 transition-all"
           >
-            <Trash2 size={16} /> Sepeti Temizle
+            <Trash2 size={16} /> {t('cart.clearCart')}
           </button>
         </div>
       </div>
@@ -610,10 +617,10 @@ export default function Cart() {
                   {isCollapsed ? <ChevronRight size={16} className="text-on-surface-variant" /> : <ChevronDown size={16} className="text-on-surface-variant" />}
                   <span className="font-headline font-bold text-sm text-primary uppercase tracking-wider">{catName}</span>
                   <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {catItems.length} ürün · {catItems.reduce((s, i) => s + i.quantity, 0)} adet
+                    {catItems.length} {t('common.products')} · {catItems.reduce((s, i) => s + i.quantity, 0)} {t('common.piece')}
                   </span>
                 </div>
-                <span className="text-sm font-mono font-bold text-emerald-600">{formatPrice(catTotal)}</span>
+                <span className="text-sm font-mono font-bold text-success">{formatPrice(catTotal)}</span>
               </button>
 
               {!isCollapsed && (
@@ -638,7 +645,7 @@ export default function Cart() {
                               className="text-[10px] text-primary hover:underline font-medium truncate max-w-[200px]"
                               title={product.url}
                             >
-                              Ürün Görseli ↗
+                              {t('cart.productImage')} ↗
                             </a>
                           )}
                         </div>
@@ -646,7 +653,7 @@ export default function Cart() {
 
                       <div className="text-right text-xs text-on-surface-variant hidden sm:block w-24">
                         <p className="flex items-center justify-end gap-1"><Euro size={10} /> {formatPrice(product.price)}</p>
-                        <p className="text-[10px]">birim fiyat</p>
+                        <p className="text-[10px]">{t('cart.unitPrice')}</p>
                       </div>
 
                       <div className="flex items-center gap-1.5 bg-surface-container rounded-lg p-1">
@@ -688,23 +695,23 @@ export default function Cart() {
       <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-6">
         <div className="flex flex-col gap-3 max-w-sm ml-auto">
           <div className="flex justify-between text-sm text-on-surface-variant">
-            <span>Ara Toplam ({totalItems} adet)</span>
+            <span>{t('common.subtotal')} ({totalItems} {t('common.piece')})</span>
             <span className="font-mono">{formatPrice(totalPrice)}</span>
           </div>
           <div className="flex justify-between text-sm text-on-surface-variant">
-            <span>KDV (%19)</span>
+            <span>{t('common.vat')} (19%)</span>
             <span className="font-mono">{formatPrice(totalPrice * 0.19)}</span>
           </div>
           <div className="border-t border-outline-variant/20 pt-3 flex justify-between font-headline font-black text-lg text-primary">
-            <span>Genel Toplam</span>
+            <span>{t('common.total')}</span>
             <span>{formatPrice(totalPrice * 1.19)}</span>
           </div>
         </div>
       </div>
 
       {offerSent && (
-        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm flex items-center gap-2 z-50">
-          <Send size={16} /> Teklif talebiniz gönderildi!
+        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 bg-success text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm flex items-center gap-2 z-50">
+          <Send size={16} /> {t('cart.quoteSent')}
         </div>
       )}
 
@@ -714,45 +721,45 @@ export default function Cart() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-headline font-black text-on-surface flex items-center gap-2">
-                <Package size={20} className="text-emerald-600" /> Sipariş Onayla
+                <Package size={20} className="text-success" /> {t('cart.confirmOrderTitle')}
               </h2>
-              <button onClick={() => setOrderModal(false)} className="p-1 hover:bg-slate-100 rounded-full">
+              <button onClick={() => setOrderModal(false)} className="p-1 hover:bg-surface-container-high rounded-full">
                 <X size={18} />
               </button>
             </div>
             <div className="bg-surface-container-highest rounded-lg p-4 space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-on-surface-variant">Ürün Sayısı</span><span className="font-bold">{totalItems}</span></div>
-              <div className="flex justify-between"><span className="text-on-surface-variant">Ara Toplam</span><span className="font-mono">{formatPrice(totalPrice)}</span></div>
-              <div className="flex justify-between"><span className="text-on-surface-variant">KDV (%19)</span><span className="font-mono">{formatPrice(totalPrice * 0.19)}</span></div>
-              <div className="border-t pt-2 flex justify-between font-bold text-primary"><span>Genel Toplam</span><span>{formatPrice(totalPrice * 1.19)}</span></div>
+              <div className="flex justify-between"><span className="text-on-surface-variant">{t('cart.itemCount')}</span><span className="font-bold">{totalItems}</span></div>
+              <div className="flex justify-between"><span className="text-on-surface-variant">{t('common.subtotal')}</span><span className="font-mono">{formatPrice(totalPrice)}</span></div>
+              <div className="flex justify-between"><span className="text-on-surface-variant">{t('common.vat')} (19%)</span><span className="font-mono">{formatPrice(totalPrice * 0.19)}</span></div>
+              <div className="border-t pt-2 flex justify-between font-bold text-primary"><span>{t('common.total')}</span><span>{formatPrice(totalPrice * 1.19)}</span></div>
             </div>
             <textarea
               value={orderNotes}
               onChange={(e) => setOrderNotes(e.target.value)}
-              placeholder="Sipariş notu (isteğe bağlı)..."
+              placeholder={t('cart.orderNotePlaceholder')}
               className="w-full bg-surface-container-highest border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary outline-none resize-none h-20"
             />
             {orderError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">
+              <div className="bg-error-container border border-error/20 text-error text-sm rounded-lg px-3 py-2">
                 {orderError}
               </div>
             )}
             <div className="flex gap-3">
               <button
                 onClick={() => { setOrderModal(false); setOrderError(''); }}
-                className="flex-1 py-2.5 rounded-lg border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-slate-50 transition-colors"
+                className="flex-1 py-2.5 rounded-lg border border-outline-variant/30 text-on-surface-variant font-bold text-sm hover:bg-surface-container-low transition-colors"
               >
-                İptal
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleCreateOrder}
                 disabled={orderLoading}
-                className="flex-1 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+                className="flex-1 py-2.5 rounded-lg bg-success hover:bg-success/90 text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
               >
                 {orderLoading ? (
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
-                  <><CheckCircle size={16} /> Siparişi Onayla</>
+                  <><CheckCircle size={16} /> {t('cart.confirmOrder')}</>
                 )}
               </button>
             </div>
@@ -762,8 +769,8 @@ export default function Cart() {
 
       {/* Order Success Toast */}
       {orderSuccess && (
-        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm flex items-center gap-2 z-50">
-          <CheckCircle size={16} /> Siparişiniz başarıyla oluşturuldu!
+        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 bg-success text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm flex items-center gap-2 z-50">
+          <CheckCircle size={16} /> {t('cart.orderSuccess')}
         </div>
       )}
 
@@ -784,7 +791,7 @@ export default function Cart() {
             <button
               onClick={() => setPaywallOpen(false)}
               className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors z-10"
-              aria-label="Kapat"
+              aria-label={t('common.close')}
             >
               <X size={16} />
             </button>
@@ -793,24 +800,23 @@ export default function Cart() {
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 mb-4">
                 <Sparkles size={12} className="text-amber-300" />
                 <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-200">
-                  Pro Abonelik
+                  {t('cart.proSubscription')}
                 </span>
               </div>
 
               <h3 className="text-2xl font-black mb-2 leading-tight">
-                PDF Teklif <span className="text-amber-300">Pro</span>'ya özel
+                {t('cart.paywallTitle')}
               </h3>
               <p className="text-white/60 text-sm mb-6 leading-relaxed">
-                Profesyonel marka kimliğiyle hazırlanmış PDF teklifleri Pro
-                aboneliğe özeldir. Hemen yükselt, sınırsız teklif oluştur.
+                {t('cart.paywallDesc')}
               </p>
 
               <div className="space-y-3 mb-6">
                 {[
-                  'Hologramlı, marka kimlikli PDF teklifler',
-                  'Sınırsız teklif oluşturma',
-                  'Çoklu dil desteği (TR/EN/DE/FR/NL)',
-                  'Öncelikli destek',
+                  t('cart.proFeat1'),
+                  t('cart.proFeat2'),
+                  t('cart.proFeat3'),
+                  t('cart.proFeat4'),
                 ].map((f) => (
                   <div key={f} className="flex items-start gap-3 text-sm text-white/85">
                     <div className="mt-0.5 w-5 h-5 rounded-full bg-amber-400/20 border border-amber-400/40 flex items-center justify-center flex-shrink-0">
@@ -823,9 +829,9 @@ export default function Cart() {
 
               <div className="flex items-baseline gap-2 mb-6">
                 <span className="text-4xl font-black text-white">€29</span>
-                <span className="text-white/50 text-sm">/ ay</span>
+                <span className="text-white/50 text-sm">/ {t('cart.month')}</span>
                 <span className="ml-auto text-[10px] font-mono uppercase tracking-wider text-amber-300/70">
-                  istediğin zaman iptal
+                  {t('cart.cancelAnytime')}
                 </span>
               </div>
 
@@ -837,13 +843,13 @@ export default function Cart() {
                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#0f1740] font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/30"
               >
                 <Sparkles size={16} />
-                Pro'ya Yükselt
+                {t('cart.upgradePro')}
               </button>
               <button
                 onClick={() => setPaywallOpen(false)}
                 className="w-full mt-2 py-2.5 text-white/50 hover:text-white text-xs font-medium transition-colors"
               >
-                Belki sonra
+                {t('cart.maybeLater')}
               </button>
             </div>
           </div>

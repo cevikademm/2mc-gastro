@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'fs';
 
-const SUPABASE_URL = 'https://mnlgbsfarubpvkmqqvff.supabase.co';
+const SUPABASE_URL = 'https://ohcytmzyjvpfsqejujzs.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ubGdic2ZhcnVicHZrbXFxdmZmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTQ3Mjg0OSwiZXhwIjoyMDkxMDQ4ODQ5fQ.XuB_yALCqH09es_z3uVVTRplXxHvMemko95TQtQYzeQ';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);

@@ -123,8 +123,8 @@ export default function Catalog() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-headline font-black text-on-surface tracking-tight">Ekipman Kataloğu</h1>
-          <p className="text-on-surface-variant text-sm mt-1">{totalFiltered.toLocaleString()} ürün{selectedCategory ? ` — ${CATEGORIES.find(c => c.id === selectedCategory)?.name}` : ''}</p>
+          <h1 className="text-3xl font-headline font-black text-on-surface tracking-tight">{t('catalog.title')}</h1>
+          <p className="text-on-surface-variant text-sm mt-1">{totalFiltered.toLocaleString()} {t('common.products')}{selectedCategory ? ` — ${CATEGORIES.find(c => c.id === selectedCategory)?.name}` : ''}</p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-80">
@@ -133,7 +133,7 @@ export default function Catalog() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Ürün ara (isim, kod, açıklama)..."
+              placeholder={t('catalog.searchProducts')}
               className="w-full bg-surface-container-highest border-none rounded-lg py-2.5 pl-10 pr-10 text-sm focus:ring-2 focus:ring-primary outline-none"
             />
             {searchQuery && (
@@ -172,7 +172,7 @@ export default function Catalog() {
               : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
           }`}
         >
-          Tümü ({store.allItems.length.toLocaleString()})
+          {t('common.all')} ({store.allItems.length.toLocaleString()})
         </button>
         {CATEGORIES.filter(c => c.count > 0).map((cat) => {
           const Icon = iconMap[cat.icon] || Package;
@@ -198,14 +198,14 @@ export default function Catalog() {
       {/* Subrange Filter */}
       {subranges.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          <span className="text-xs text-on-surface-variant font-medium self-center mr-2">Alt Grup:</span>
+          <span className="text-xs text-on-surface-variant font-medium self-center mr-2">{t('catalog.subrange')}</span>
           <button
             onClick={() => setSubrange('')}
             className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${
               !selectedSubrange ? 'bg-primary/10 text-primary border border-primary/30' : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-high'
             }`}
           >
-            Tümü
+            {t('common.all')}
           </button>
           {subranges.map((sub) => (
             <button
@@ -291,12 +291,12 @@ export default function Catalog() {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-surface-container border-b border-outline-variant/10">
-                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Ürün</th>
-                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Açıklama</th>
-                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Boyutlar (mm)</th>
+                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{t('common.product')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{t('common.description')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{t('catalog.dimensions')}</th>
                 <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">kW</th>
-                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant text-right">Fiyat</th>
-                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant text-center w-24">Islemler</th>
+                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant text-right">{t('common.price')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant text-center w-24">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/5">
@@ -325,21 +325,21 @@ export default function Catalog() {
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleFavorite(item.id); }}
                         className={`p-1.5 rounded-lg transition-all ${isFav ? 'text-pink-500 bg-pink-50' : 'text-on-surface-variant/30 hover:text-pink-500 hover:bg-pink-50'}`}
-                        title={isFav ? 'Favorilerden cikar' : 'Favorilere ekle'}
+                        title={isFav ? t('catalog.removeFavorite') : t('catalog.addFavorite')}
                       >
                         <Heart size={14} fill={isFav ? 'currentColor' : 'none'} />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleShowOnFloorPlan(item.id); }}
                         className="p-1.5 rounded-lg text-on-surface-variant/30 hover:text-primary hover:bg-primary/10 transition-all"
-                        title="Kat planina ekle"
+                        title={t('catalog.addToFloorPlan')}
                       >
                         <MapPin size={14} />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); addToCart(item); }}
                         className={`p-1.5 rounded-lg transition-all ${isInCart(item.id) ? 'text-emerald-600 bg-emerald-50' : 'text-on-surface-variant/30 hover:text-emerald-600 hover:bg-emerald-50'}`}
-                        title="Sepete ekle"
+                        title={t('cart.addToCart')}
                       >
                         <ShoppingCart size={14} />
                       </button>
@@ -357,8 +357,8 @@ export default function Catalog() {
       {items.length === 0 && (
         <div className="py-16 text-center">
           <Package size={48} className="mx-auto text-on-surface-variant/20 mb-4" />
-          <h3 className="text-lg font-bold text-on-surface-variant mb-1">Ürün bulunamadı</h3>
-          <p className="text-sm text-on-surface-variant/60">Farklı arama terimleri veya filtreler deneyin.</p>
+          <h3 className="text-lg font-bold text-on-surface-variant mb-1">{t('catalog.noResults')}</h3>
+          <p className="text-sm text-on-surface-variant/60">{t('catalog.tryDifferent')}</p>
         </div>
       )}
 
@@ -366,7 +366,7 @@ export default function Catalog() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between py-2">
           <p className="text-xs text-on-surface-variant">
-            <span className="font-bold text-on-surface">{((currentPage - 1) * 24) + 1}-{Math.min(currentPage * 24, totalFiltered)}</span> / {totalFiltered.toLocaleString()} ürün
+            <span className="font-bold text-on-surface">{((currentPage - 1) * 24) + 1}-{Math.min(currentPage * 24, totalFiltered)}</span> / {totalFiltered.toLocaleString()} {t('common.products')}
           </p>
           <div className="flex items-center gap-1">
             <button
@@ -438,25 +438,25 @@ export default function Catalog() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-surface-container-highest rounded-lg p-3">
                   <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1">
-                    <Ruler size={14} /> Boyutlar (mm)
+                    <Ruler size={14} /> {t('catalog.dimensions')}
                   </div>
                   <p className="font-bold text-on-surface text-sm">{detailItem.l} × {detailItem.w} × {detailItem.h}</p>
                 </div>
                 <div className="bg-surface-container-highest rounded-lg p-3">
                   <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1">
-                    <Zap size={14} /> Elektrik Gücü
+                    <Zap size={14} /> {t('catalog.electricPower')}
                   </div>
-                  <p className="font-bold text-on-surface text-sm">{detailItem.kw > 0 ? `${detailItem.kw} kW` : 'Yok'}</p>
+                  <p className="font-bold text-on-surface text-sm">{detailItem.kw > 0 ? `${detailItem.kw} kW` : t('common.none')}</p>
                 </div>
                 <div className="bg-surface-container-highest rounded-lg p-3">
                   <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1">
-                    <Euro size={14} /> Katalog Fiyatı
+                    <Euro size={14} /> {t('catalog.catalogPrice')}
                   </div>
                   <p className="font-bold text-primary text-sm">{formatPrice(detailItem.price)}</p>
                 </div>
                 <div className="bg-surface-container-highest rounded-lg p-3">
                   <div className="flex items-center gap-2 text-on-surface-variant text-xs mb-1">
-                    <Package size={14} /> Kategori
+                    <Package size={14} /> {t('catalog.category')}
                   </div>
                   <p className="font-bold text-on-surface text-sm">{CATEGORIES.find(c => c.id === detailItem.cat)?.name || detailItem.cat}</p>
                 </div>
@@ -480,13 +480,13 @@ export default function Catalog() {
                       : 'bg-emerald-500 hover:bg-emerald-600 text-white'
                   }`}
                 >
-                  <ShoppingCart size={16} /> {isInCart(detailItem.id) ? 'Sepette' : 'Sepete Ekle'}
+                  <ShoppingCart size={16} /> {isInCart(detailItem.id) ? t('cart.inCart') : t('cart.addToCart')}
                 </button>
                 <button
                   onClick={() => { setDetailItem(null); handleShowOnFloorPlan(detailItem.id); }}
                   className="flex-1 py-2.5 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg flex items-center justify-center gap-2 transition-all"
                 >
-                  <MapPin size={16} /> Kat Planına Ekle
+                  <MapPin size={16} /> {t('catalog.addToFloorPlan')}
                 </button>
                 <button
                   onClick={() => toggleFavorite(detailItem.id)}
@@ -502,7 +502,7 @@ export default function Catalog() {
 
               {detailItem.img && (
                 <a href={detailItem.img} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-xs text-primary hover:underline">
-                  <ExternalLink size={12} /> Tam boyut gorsel
+                  <ExternalLink size={12} /> {t('catalog.fullSizeImage')}
                 </a>
               )}
             </div>
@@ -516,8 +516,8 @@ export default function Catalog() {
           <div className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-outline-variant/10">
               <div>
-                <h2 className="text-base font-headline font-black text-on-surface">Projeye Ekle</h2>
-                <p className="text-xs text-on-surface-variant mt-0.5">Ürünü hangi projenin kat planına eklemek istiyorsunuz?</p>
+                <h2 className="text-base font-headline font-black text-on-surface">{t('catalog.addToProject')}</h2>
+                <p className="text-xs text-on-surface-variant mt-0.5">{t('catalog.selectProject')}</p>
               </div>
               <button onClick={() => setProjectModalItem(null)} className="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant">
                 <X size={18} />
@@ -529,7 +529,7 @@ export default function Catalog() {
                 <div>
                   <div className="flex items-center gap-1.5 mb-2">
                     <Clock size={13} className="text-primary" />
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-primary">Devam Eden Projeler</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-primary">{t('catalog.ongoingProjects')}</span>
                   </div>
                   <div className="space-y-2">
                     {activeProjects.map(p => (
@@ -558,7 +558,7 @@ export default function Catalog() {
                 <div>
                   <div className="flex items-center gap-1.5 mb-2">
                     <CheckCircle2 size={13} className="text-on-surface-variant/50" />
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/50">Tamamlanan Projeler</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/50">{t('catalog.completedProjects')}</span>
                   </div>
                   <div className="space-y-2">
                     {completedProjects.map(p => (
@@ -584,8 +584,8 @@ export default function Catalog() {
               {projects.length === 0 && (
                 <div className="py-10 text-center">
                   <Package size={36} className="mx-auto text-on-surface-variant/20 mb-3" />
-                  <p className="text-sm font-bold text-on-surface-variant">Henüz proje yok</p>
-                  <p className="text-xs text-on-surface-variant/60 mt-1">Önce bir proje oluşturun.</p>
+                  <p className="text-sm font-bold text-on-surface-variant">{t('catalog.noProjects')}</p>
+                  <p className="text-xs text-on-surface-variant/60 mt-1">{t('catalog.createFirstProject')}</p>
                 </div>
               )}
             </div>

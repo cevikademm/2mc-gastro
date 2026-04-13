@@ -9,14 +9,14 @@ import {
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<string, { labelKey: string; color: string; bg: string; icon: typeof Clock }> = {
-  pending: { labelKey: 'orders.pending', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-300', icon: Clock },
-  confirmed: { labelKey: 'orders.confirmed', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-300', icon: CheckCircle },
-  shipped: { labelKey: 'orders.shipped', color: 'text-violet-700', bg: 'bg-violet-50 border-violet-300', icon: Truck },
-  delivered: { labelKey: 'orders.delivered', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-300', icon: PackageCheck },
-  cancelled: { labelKey: 'orders.cancelled', color: 'text-red-700', bg: 'bg-red-50 border-red-300', icon: XCircle },
+  pending: { labelKey: 'orders.pending', color: 'text-on-warning-container', bg: 'bg-warning-container border-warning/30', icon: Clock },
+  confirmed: { labelKey: 'orders.confirmed', color: 'text-on-info-container', bg: 'bg-info-container border-info/30', icon: CheckCircle },
+  shipped: { labelKey: 'orders.shipped', color: 'text-primary', bg: 'bg-primary-fixed border-primary/30', icon: Truck },
+  delivered: { labelKey: 'orders.delivered', color: 'text-on-success-container', bg: 'bg-success-container border-success/30', icon: PackageCheck },
+  cancelled: { labelKey: 'orders.cancelled', color: 'text-error', bg: 'bg-error-container border-error/30', icon: XCircle },
 };
 
-const IMAGE_PROXY = 'https://mnlgbsfarubpvkmqqvff.supabase.co/functions/v1/image-proxy';
+const IMAGE_PROXY = 'https://ohcytmzyjvpfsqejujzs.supabase.co/functions/v1/image-proxy';
 
 export default function OrdersPage() {
   const { t } = useTranslation();
@@ -88,17 +88,17 @@ export default function OrdersPage() {
           <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{t('orders.totalRevenue')}</p>
           <p className="text-xl font-black font-mono text-primary mt-1">{formatPrice(totalRevenue)}</p>
         </div>
-        <div className="bg-amber-50 rounded-xl p-4 border border-amber-200 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">{t('orders.pending')}</p>
-          <p className="text-xl font-black text-amber-800 mt-1">{pendingCount}</p>
+        <div className="bg-warning-container rounded-xl p-4 border border-warning/30 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-on-warning-container">{t('orders.pending')}</p>
+          <p className="text-xl font-black text-on-warning-container mt-1">{pendingCount}</p>
         </div>
-        <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-blue-700">{t('orders.confirmedShort')}</p>
-          <p className="text-xl font-black text-blue-800 mt-1">{confirmedCount}</p>
+        <div className="bg-info-container rounded-xl p-4 border border-info/30 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-on-info-container">{t('orders.confirmedShort')}</p>
+          <p className="text-xl font-black text-on-info-container mt-1">{confirmedCount}</p>
         </div>
-        <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">{t('orders.deliveredShort')}</p>
-          <p className="text-xl font-black text-emerald-800 mt-1">{deliveredCount}</p>
+        <div className="bg-success-container rounded-xl p-4 border border-success/30 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-on-success-container">{t('orders.deliveredShort')}</p>
+          <p className="text-xl font-black text-on-success-container mt-1">{deliveredCount}</p>
         </div>
       </div>
 

@@ -31,156 +31,46 @@ const LIGHT_DESIGN = 'linear-gradient(120deg, #fef3c7 0%, #ffffff 55%, #fde68a 1
 const LIGHT_DELIVERY = 'linear-gradient(120deg, #d1fae5 0%, #ffffff 55%, #a7f3d0 100%)';
 const LIGHT_SUPPORT = 'linear-gradient(120deg, #ede9fe 0%, #ffffff 55%, #ddd6fe 100%)';
 
+// Unsplash CDN — sinematik gastro/endüstriyel mutfak görselleri.
+// Imgix params: koyu ton + yüksek kontrast + hafif vinyet = sinematik his.
+const UNSPLASH = (id: string) =>
+  `https://images.unsplash.com/photo-${id}?w=1920&h=600&fit=crop&q=85&auto=format&sat=-15&con=15&exp=-10`;
+
 const DEFAULT_SLIDES: BannerSlide[] = [
-  // ===== 01 / EQUIPMENT — Endüstriyel Mutfak Ekipmanları =====
   {
-    id: 'equipment-1',
-    eyebrow: '01 / EQUIPMENT — Variant A',
-    title: 'Endüstriyel Mutfak Ekipmanları',
-    subtitle: 'Combisteel · Rational · Hobart — Avrupa standartlarında ekipman tedariği',
+    id: 'steel',
+    eyebrow: '01 / STEEL',
+    title: 'Paslanmaz Çelik Ekipman Hatları',
+    subtitle: 'AISI 304 — endüstriyel dayanıklılık, HACCP uyumlu yüzeyler',
     gradient: LIGHT_EQUIPMENT,
-    image: 'https://design.canva.ai/XL6wN7dMOP80774',
+    image: UNSPLASH('1514516345957-556ca7d90a29'),
     enabled: true,
   },
   {
-    id: 'equipment-2',
-    eyebrow: '01 / EQUIPMENT — Variant B',
-    title: 'Endüstriyel Mutfak Ekipmanları',
-    subtitle: 'Combisteel · Rational · Hobart — Avrupa standartlarında ekipman tedariği',
-    gradient: LIGHT_EQUIPMENT,
-    image: 'https://design.canva.ai/VonbAmX9JewISyn',
-    enabled: true,
-  },
-  {
-    id: 'equipment-3',
-    eyebrow: '01 / EQUIPMENT — Variant C',
-    title: 'Endüstriyel Mutfak Ekipmanları',
-    subtitle: 'Combisteel · Rational · Hobart — Avrupa standartlarında ekipman tedariği',
-    gradient: LIGHT_EQUIPMENT,
-    image: 'https://design.canva.ai/Wa_IMeAfBVOtyNc',
-    enabled: true,
-  },
-  {
-    id: 'equipment-4',
-    eyebrow: '01 / EQUIPMENT — Variant D',
-    title: 'Endüstriyel Mutfak Ekipmanları',
-    subtitle: 'Combisteel · Rational · Hobart — Avrupa standartlarında ekipman tedariği',
-    gradient: LIGHT_EQUIPMENT,
-    image: 'https://design.canva.ai/2FLu99VhVIIGiJL',
-    enabled: true,
-  },
-
-  // ===== 02 / DESIGN — 3D Mutfak Tasarımı =====
-  {
-    id: 'design-1',
-    eyebrow: '02 / DESIGN — Variant A',
-    title: '3D Mutfak Tasarımı',
-    subtitle: 'HACCP uyumlu, akış optimize edilmiş profesyonel mutfak projeleri',
+    id: 'cooking',
+    eyebrow: '02 / COOKING',
+    title: 'Combi Fırın & Pişirme Hattı',
+    subtitle: 'Rational · Combisteel · Hobart — yüksek kapasiteli pişirme çözümleri',
     gradient: LIGHT_DESIGN,
-    image: 'https://design.canva.ai/e0LtHyZFTkbuWbp',
+    image: UNSPLASH('1556910103-1c02745aae4d'),
     enabled: true,
   },
   {
-    id: 'design-2',
-    eyebrow: '02 / DESIGN — Variant B',
-    title: '3D Mutfak Tasarımı',
-    subtitle: 'HACCP uyumlu, akış optimize edilmiş profesyonel mutfak projeleri',
-    gradient: LIGHT_DESIGN,
-    image: 'https://design.canva.ai/K_OoMyl_QuXjEqn',
-    enabled: true,
-  },
-  {
-    id: 'design-3',
-    eyebrow: '02 / DESIGN — Variant C',
-    title: '3D Mutfak Tasarımı',
-    subtitle: 'HACCP uyumlu, akış optimize edilmiş profesyonel mutfak projeleri',
-    gradient: LIGHT_DESIGN,
-    image: 'https://design.canva.ai/bQ_IgC5bDC2Ty-4',
-    enabled: true,
-  },
-  {
-    id: 'design-4',
-    eyebrow: '02 / DESIGN — Variant D',
-    title: '3D Mutfak Tasarımı',
-    subtitle: 'HACCP uyumlu, akış optimize edilmiş profesyonel mutfak projeleri',
-    gradient: LIGHT_DESIGN,
-    image: 'https://design.canva.ai/I1w8OTH4guwxRYN',
-    enabled: true,
-  },
-
-  // ===== 03 / DELIVERY — Anahtar Teslim Kurulum =====
-  {
-    id: 'delivery-1',
-    eyebrow: '03 / DELIVERY — Variant A',
-    title: 'Anahtar Teslim Kurulum',
-    subtitle: 'Antalya merkezli, Avrupa geneli teslimat ve montaj hizmeti',
+    id: 'prep',
+    eyebrow: '03 / PREP',
+    title: 'Hazırlık İstasyonları',
+    subtitle: 'Profesyonel mise en place — çelik tezgâh, blender, mikser, dilimleyici',
     gradient: LIGHT_DELIVERY,
-    image: 'https://design.canva.ai/tc6L8r57KrrzESN',
+    image: UNSPLASH('1504674900247-0877df9cc836'),
     enabled: true,
   },
   {
-    id: 'delivery-2',
-    eyebrow: '03 / DELIVERY — Variant B',
-    title: 'Anahtar Teslim Kurulum',
-    subtitle: 'Antalya merkezli, Avrupa geneli teslimat ve montaj hizmeti',
-    gradient: LIGHT_DELIVERY,
-    image: 'https://design.canva.ai/ljZR1mu83mtr_6M',
-    enabled: true,
-  },
-  {
-    id: 'delivery-3',
-    eyebrow: '03 / DELIVERY — Variant C',
-    title: 'Anahtar Teslim Kurulum',
-    subtitle: 'Antalya merkezli, Avrupa geneli teslimat ve montaj hizmeti',
-    gradient: LIGHT_DELIVERY,
-    image: 'https://design.canva.ai/VcqV8em0Pj8By7r',
-    enabled: true,
-  },
-  {
-    id: 'delivery-4',
-    eyebrow: '03 / DELIVERY — Variant D',
-    title: 'Anahtar Teslim Kurulum',
-    subtitle: 'Antalya merkezli, Avrupa geneli teslimat ve montaj hizmeti',
-    gradient: LIGHT_DELIVERY,
-    image: 'https://design.canva.ai/kEZQVEk-9WHbXq-',
-    enabled: true,
-  },
-
-  // ===== 04 / SUPPORT — 7/24 Teknik Destek =====
-  {
-    id: 'support-1',
-    eyebrow: '04 / SUPPORT — Variant A',
-    title: '7/24 Teknik Destek',
-    subtitle: 'Garanti süresince yedek parça ve servis güvencesi',
+    id: 'refrigeration',
+    eyebrow: '04 / REFRIGERATION',
+    title: 'Soğuk Zincir & Depolama',
+    subtitle: 'Blast chiller · walk-in · buzdolabı — gıda güvenliği garantisi',
     gradient: LIGHT_SUPPORT,
-    image: 'https://design.canva.ai/oiEzJ9XSaQ_9_sM',
-    enabled: true,
-  },
-  {
-    id: 'support-2',
-    eyebrow: '04 / SUPPORT — Variant B',
-    title: '7/24 Teknik Destek',
-    subtitle: 'Garanti süresince yedek parça ve servis güvencesi',
-    gradient: LIGHT_SUPPORT,
-    image: 'https://design.canva.ai/JD8MfgPIbkNQOYT',
-    enabled: true,
-  },
-  {
-    id: 'support-3',
-    eyebrow: '04 / SUPPORT — Variant C',
-    title: '7/24 Teknik Destek',
-    subtitle: 'Garanti süresince yedek parça ve servis güvencesi',
-    gradient: LIGHT_SUPPORT,
-    image: 'https://design.canva.ai/5V_3XAF1mRwIdts',
-    enabled: true,
-  },
-  {
-    id: 'support-4',
-    eyebrow: '04 / SUPPORT — Variant D',
-    title: '7/24 Teknik Destek',
-    subtitle: 'Garanti süresince yedek parça ve servis güvencesi',
-    gradient: LIGHT_SUPPORT,
-    image: 'https://design.canva.ai/NceVtI7s8Uu55F3',
+    image: UNSPLASH('1565299624946-b28f40a0ae38'),
     enabled: true,
   },
 ];
@@ -221,7 +111,7 @@ export const useBannerStore = create<BannerState>()(
     }),
     {
       name: '2mc-banner-slides',
-      version: 3,
+      version: 6,
       migrate: (_persisted, _ver) => ({ slides: DEFAULT_SLIDES, intervalMs: 10000 } as any),
     }
   )

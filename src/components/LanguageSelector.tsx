@@ -1,14 +1,36 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Globe, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 const LANGUAGES = [
-  { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
+  { code: 'tr', label: 'Türkçe', country: 'tr' },
+  { code: 'en', label: 'English', country: 'gb' },
+  { code: 'de', label: 'Deutsch', country: 'de' },
+  { code: 'fr', label: 'Français', country: 'fr' },
+  { code: 'nl', label: 'Nederlands', country: 'nl' },
+  { code: 'it', label: 'Italiano', country: 'it' },
+  { code: 'es', label: 'Español', country: 'es' },
+  { code: 'pt', label: 'Português', country: 'pt' },
+  { code: 'pl', label: 'Polski', country: 'pl' },
+  { code: 'cs', label: 'Čeština', country: 'cz' },
+  { code: 'ro', label: 'Română', country: 'ro' },
+  { code: 'el', label: 'Ελληνικά', country: 'gr' },
+  { code: 'sv', label: 'Svenska', country: 'se' },
+  { code: 'da', label: 'Dansk', country: 'dk' },
+  { code: 'hu', label: 'Magyar', country: 'hu' },
 ];
+
+const FlagIcon = ({ country, size = 20 }: { country: string; size?: number }) => (
+  <img
+    src={`https://flagcdn.com/w40/${country}.png`}
+    srcSet={`https://flagcdn.com/w80/${country}.png 2x`}
+    width={size}
+    height={Math.round(size * 0.75)}
+    alt=""
+    className="rounded-sm object-cover"
+    style={{ minWidth: size }}
+  />
+);
 
 interface Props {
   variant?: 'light' | 'dark';
@@ -24,7 +46,7 @@ export default function LanguageSelector({ variant = 'light', className = '' }: 
 
   const changeLang = (code: string) => {
     i18n.changeLanguage(code);
-    (window as any).__2mc_lang = code;
+    try { localStorage.setItem('2mc_lang', code); } catch {}
     setOpen(false);
   };
 
@@ -48,8 +70,7 @@ export default function LanguageSelector({ variant = 'light', className = '' }: 
             : 'text-slate-500 hover:bg-slate-100 border border-transparent hover:border-slate-200'
         }`}
       >
-        <span className="text-base leading-none">{current.flag}</span>
-        <span className="hidden sm:inline text-xs">{current.label}</span>
+        <FlagIcon country={current.country} size={20} />
         <svg
           className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''} ${isDark ? 'text-white/50' : 'text-slate-400'}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
@@ -80,7 +101,7 @@ export default function LanguageSelector({ variant = 'light', className = '' }: 
                       : 'text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                <span className="text-lg leading-none">{lang.flag}</span>
+                <FlagIcon country={lang.country} size={20} />
                 <span className="flex-1 text-left">{lang.label}</span>
                 {isActive && <Check size={14} className={isDark ? 'text-emerald-400' : 'text-primary'} />}
               </button>

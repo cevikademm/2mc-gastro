@@ -1,9 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-headline: "Space Grotesk", sans-serif;
-  --font-body: "Inter", sans-serif;
+  --font-headline: "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --color-primary: #001f65;
   --color-primary-container: #183585;
@@ -27,6 +28,86 @@
   --color-on-tertiary-fixed: #131b2e;
   --color-error-container: #ffdad6;
   --color-error: #ba1a1a;
+
+  --color-success: #1b7f3a;
+  --color-success-container: #c8f2d4;
+  --color-on-success-container: #003918;
+
+  --color-warning: #9a6700;
+  --color-warning-container: #ffe8b0;
+  --color-on-warning-container: #3a2600;
+
+  --color-info: #1e5fbf;
+  --color-info-container: #dbe9ff;
+  --color-on-info-container: #001a4a;
+
+  /* Spacing scale — 4px grid */
+  --spacing: 0.25rem;
+
+  /* Border radius tokens */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --radius-full: 9999px;
+
+  /* Shadow system — brand-tinted elevation */
+  --shadow-xs: 0 1px 2px 0 rgb(0 31 101 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(0 31 101 / 0.08), 0 1px 2px -1px rgb(0 31 101 / 0.06);
+  --shadow-md: 0 4px 6px -1px rgb(0 31 101 / 0.10), 0 2px 4px -2px rgb(0 31 101 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 31 101 / 0.12), 0 4px 6px -4px rgb(0 31 101 / 0.08);
+  --shadow-xl: 0 20px 25px -5px rgb(0 31 101 / 0.14), 0 8px 10px -6px rgb(0 31 101 / 0.10);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 31 101 / 0.25);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 31 101 / 0.06);
+
+  /* Motion — durations & easings */
+  --ease-brand: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in-brand: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out-brand: cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 500ms;
+
+  /* Animation presets */
+  --animate-fade-in: fade-in var(--duration-base) var(--ease-out-brand);
+  --animate-slide-up: slide-up var(--duration-slow) var(--ease-out-brand);
+  --animate-slide-down: slide-down var(--duration-slow) var(--ease-out-brand);
+  --animate-scale-in: scale-in var(--duration-base) var(--ease-spring);
+  --animate-shimmer: shimmer 2s linear infinite;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slide-down {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+
+  /* Breakpoints */
+  --breakpoint-sm: 40rem;    /* 640px  — phone landscape */
+  --breakpoint-md: 48rem;    /* 768px  — tablet */
+  --breakpoint-lg: 64rem;    /* 1024px — laptop */
+  --breakpoint-xl: 80rem;    /* 1280px — desktop */
+  --breakpoint-2xl: 96rem;   /* 1536px — wide */
 }
 
 @layer utilities {

@@ -47,7 +47,7 @@ MESHY_API_KEY = msy_uqIHqhCoqTRqQJJgSZOBXdc2bSRwqHhUH3hU
 ## 3. Edge Function'ı Deploy Et
 
 ```bash
-supabase functions deploy meshy-3d --project-ref mnlgbsfarubpvkmqqvff
+supabase functions deploy meshy-3d --project-ref ohcytmzyjvpfsqejujzs
 ```
 
 ## 4. Frontend Çalışır

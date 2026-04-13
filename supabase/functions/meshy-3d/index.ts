@@ -60,6 +60,8 @@ async function meshyCreatePreview(imageUrl: string): Promise<string> {
       symmetry_mode: "auto",
       enable_pbr: true,
       texture_resolution: 2048,
+      image_enhancement: true,
+      license: "CC_BY_4",
     }),
   });
   if (!res.ok) {

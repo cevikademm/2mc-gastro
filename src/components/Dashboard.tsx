@@ -12,10 +12,10 @@ export default function Dashboard() {
   const { user } = useAuthStore();
 
   const statusColors: Record<string, string> = {
-    drafting: 'bg-blue-50 text-[rgb(40,120,191)] border-[rgb(40,120,191)]/20',
-    quoted: 'bg-amber-50 text-amber-800 border-amber-200',
-    complete: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-    inProgress: 'bg-violet-50 text-violet-800 border-violet-200',
+    drafting: 'bg-info-container text-on-info-container border-info/20',
+    quoted: 'bg-warning-container text-on-warning-container border-warning/20',
+    complete: 'bg-success-container text-on-success-container border-success/20',
+    inProgress: 'bg-primary-fixed text-primary border-primary/20',
   };
 
   const statusLabels: Record<string, string> = {
@@ -48,7 +48,7 @@ export default function Dashboard() {
               {t('dashboard.title')}
             </h1>
             <p className="mt-3 text-base">
-              {t('dashboard.welcome', { name: user?.fullName || 'Kullanıcı', count: projects.length })}
+              {t('dashboard.welcome', { name: user?.fullName || t('common.user'), count: projects.length })}
             </p>
           </div>
           <Link
